@@ -1,0 +1,385 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ───────────────────────────────────────────────
+   Theme Inline — maps CSS vars to Tailwind utilities
+   ─────────────────────────────────────────────── */
+@theme inline {
+  --font-sans: var(--font-inter);
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-brand-red: var(--brand-red);
+  --color-brand-green: var(--brand-green);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+}
+
+/* ───────────────────────────────────────────────
+   Root — Dark-First (dark IS the default)
+   ─────────────────────────────────────────────── */
+:root {
+  --radius: 0.5rem;
+
+  /* Hypertune brand */
+  --brand-red: #e1251b;
+  --brand-green: #13f287;
+
+  /* Core palette */
+  --background: #0a0a0a;
+  --foreground: #ededed;
+
+  --card: oklch(0.12 0.005 25);
+  --card-foreground: oklch(0.98 0 0);
+
+  --popover: oklch(0.12 0.005 25);
+  --popover-foreground: oklch(0.98 0 0);
+
+  --primary: oklch(0.92 0 0);
+  --primary-foreground: oklch(0.12 0 0);
+
+  --secondary: oklch(0.17 0.005 25);
+  --secondary-foreground: oklch(0.98 0 0);
+
+  --muted: oklch(0.17 0.005 25);
+  --muted-foreground: oklch(0.63 0.01 25);
+
+  --accent: oklch(0.55 0.20 25);
+  --accent-foreground: oklch(0.98 0 0);
+
+  --destructive: oklch(0.63 0.24 25);
+  --destructive-foreground: oklch(0.98 0 0);
+
+  --success: oklch(0.72 0.19 155);
+  --success-foreground: oklch(0.98 0 0);
+
+  --warning: oklch(0.80 0.16 85);
+  --warning-foreground: oklch(0.07 0 0);
+
+  --border: oklch(0.23 0.005 25);
+  --input: oklch(0.23 0.005 25);
+  --ring: oklch(0.55 0.20 25);
+
+  /* Sidebar */
+  --sidebar: oklch(0.14 0.005 25);
+  --sidebar-foreground: oklch(0.87 0.005 25);
+  --sidebar-primary: oklch(0.55 0.20 25);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.20 0.01 25);
+  --sidebar-accent-foreground: oklch(0.90 0.005 25);
+  --sidebar-border: oklch(0.23 0.005 25);
+  --sidebar-ring: oklch(0.55 0.20 25);
+
+  /* Charts */
+  --chart-1: oklch(0.55 0.20 25);
+  --chart-2: oklch(0.72 0.19 155);
+  --chart-3: oklch(0.65 0.14 250);
+  --chart-4: oklch(0.80 0.16 85);
+  --chart-5: oklch(0.62 0.18 300);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 oklch(0.25 0.02 25 / 0.15);
+  --shadow-md: 0 4px 12px 0 oklch(0.2 0.02 25 / 0.2);
+  --shadow-lg: 0 8px 32px 0 oklch(0.15 0.03 25 / 0.25);
+  --shadow-glow: 0 0 20px 0 oklch(0.5 0.15 25 / 0.15);
+
+  /* Z-index scale */
+  --z-base: 0;
+  --z-raised: 10;
+  --z-dropdown: 50;
+  --z-sticky: 100;
+  --z-overlay: 200;
+  --z-modal: 300;
+  --z-toast: 400;
+  --z-max: 999;
+
+  /* Duration & easing */
+  --duration-fast: 100ms;
+  --duration-normal: 200ms;
+  --duration-smooth: 300ms;
+  --duration-slow: 500ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.87, 0, 0.13, 1);
+
+  /* Layout */
+  --sidebar-width: 260px;
+  --sidebar-width-collapsed: 68px;
+  --topbar-height: 52px;
+  --content-max-width: 1280px;
+  --content-max-width-public: 1440px;
+}
+
+/* ───────────────────────────────────────────────
+   Light Panel — overrides dark tokens for content area
+   ─────────────────────────────────────────────── */
+.light-panel {
+  --background: oklch(0.98 0.002 25);
+  --foreground: oklch(0.145 0.005 25);
+  color: var(--foreground);
+  background-color: var(--background);
+
+  --card: oklch(1.0 0 0);
+  --card-foreground: oklch(0.145 0.005 25);
+
+  --popover: oklch(1.0 0 0);
+  --popover-foreground: oklch(0.145 0.005 25);
+
+  --primary: oklch(0.205 0.005 25);
+  --primary-foreground: oklch(0.98 0 0);
+
+  --secondary: oklch(0.955 0.003 25);
+  --secondary-foreground: oklch(0.145 0.005 25);
+
+  --muted: oklch(0.955 0.003 25);
+  --muted-foreground: oklch(0.44 0.02 25);
+
+  --accent: oklch(0.55 0.20 25);
+  --accent-foreground: oklch(0.98 0 0);
+
+  --border: oklch(0.91 0.005 25);
+  --input: oklch(0.91 0.005 25);
+
+  --shadow-sm: 0 1px 2px 0 oklch(0.50 0.01 25 / 0.06);
+  --shadow-md: 0 4px 12px 0 oklch(0.40 0.01 25 / 0.08);
+  --shadow-lg: 0 8px 32px 0 oklch(0.30 0.01 25 / 0.10);
+}
+
+/* ───────────────────────────────────────────────
+   Glass Morphism
+   ─────────────────────────────────────────────── */
+.glass {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: oklch(0.12 0.005 25 / 0.8);
+  border: 1px solid oklch(0.33 0.10 25 / 0.2);
+}
+
+/* ───────────────────────────────────────────────
+   Base Layer
+   ─────────────────────────────────────────────── */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* ───────────────────────────────────────────────
+   Typography Scale
+   ─────────────────────────────────────────────── */
+@layer utilities {
+  .text-display-lg {
+    font-size: 2.25rem;
+    line-height: 1.15;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+  }
+
+  .text-display-sm {
+    font-size: 1.75rem;
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+  }
+
+  .text-heading-1 {
+    font-size: 1.375rem;
+    line-height: 1.25;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+
+  .text-heading-2 {
+    font-size: 1.125rem;
+    line-height: 1.3;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  .text-heading-3 {
+    font-size: 0.9375rem;
+    line-height: 1.35;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+
+  .text-heading-4 {
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  .text-body-lg {
+    font-size: 0.9375rem;
+    line-height: 1.625;
+    font-weight: 400;
+  }
+
+  .text-body {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    font-weight: 400;
+  }
+
+  .text-body-sm {
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    font-weight: 400;
+  }
+
+  .text-caption {
+    font-size: 0.75rem;
+    line-height: 1.5;
+    font-weight: 500;
+  }
+
+  .text-overline {
+    font-size: 0.625rem;
+    line-height: 1;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .text-code {
+    font-size: 0.8125rem;
+    font-weight: 400;
+    font-family: var(--font-mono);
+  }
+}
+
+/* ───────────────────────────────────────────────
+   Silver CTA Button
+   ─────────────────────────────────────────────── */
+@layer utilities {
+  .btn-silver {
+    position: relative;
+    z-index: 50;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    overflow: hidden;
+    border-radius: 99px;
+    border: 1px solid color-mix(in oklab, #fff 30%, transparent);
+    background-image: linear-gradient(
+      90.53deg,
+      #909096 -17.24%,
+      #fff 53.77%,
+      #909096 113.47%
+    );
+    padding-inline: 25px;
+    text-align: center;
+    font-size: 15px;
+    line-height: 1;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+    color: #000;
+    box-shadow:
+      inset 0px 1px 0px rgba(255, 255, 255, 0.4),
+      inset 0px 0px 20px rgba(255, 255, 255, 0.2);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 45px;
+  }
+
+  .btn-silver:hover {
+    box-shadow:
+      inset 0px 1px 0px rgba(255, 255, 255, 0.6),
+      inset 0px 0px 30px rgba(255, 255, 255, 0.3);
+  }
+}
+
+/* ───────────────────────────────────────────────
+   Scrollbar — Dark (default)
+   ─────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: oklch(0.30 0.005 25);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.40 0.01 25);
+}
+
+/* Scrollbar — Light Panel */
+.light-panel ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.light-panel ::-webkit-scrollbar-track {
+  background: transparent;
+}
+.light-panel ::-webkit-scrollbar-thumb {
+  background: oklch(0.85 0.005 25);
+  border-radius: 3px;
+}
+.light-panel ::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.75 0.01 25);
+}
+
+/* Scroll utility class */
+.light-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.85 0.005 25) transparent;
+}

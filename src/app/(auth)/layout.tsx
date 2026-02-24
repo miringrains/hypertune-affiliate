@@ -1,5 +1,5 @@
 import { AuroraBackdrop } from "@/components/shared/aurora";
-import { LogoWithText } from "@/components/shared/logo";
+import { Logo } from "@/components/shared/logo";
 
 export default function AuthLayout({
   children,
@@ -19,7 +19,7 @@ export default function AuthLayout({
           }}
         >
           <div className="mb-8 flex justify-center">
-            <LogoWithText size={34} />
+            <Logo size={40} />
           </div>
           {children}
         </div>

@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { LogoWithText } from "@/components/shared/logo";
+import { Logo } from "@/components/shared/logo";
 import { cn } from "@/lib/utils";
 import { ICON_STROKE_WIDTH } from "@/lib/constants";
 import { affiliateNav, adminNav } from "@/lib/navigation";
@@ -82,7 +82,7 @@ export function MobileNav({ isAdmin = false }: MobileNavProps) {
       >
         <SheetTitle className="sr-only">Navigation</SheetTitle>
         <div className="px-5 pt-6 pb-2 space-y-3">
-          <LogoWithText size={28} />
+          <Logo size={28} />
         </div>
 
         <div className="mx-5 border-t border-white/[0.06]" />

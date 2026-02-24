@@ -64,8 +64,8 @@ export function AppSidebar({ isAdmin = false }: AppSidebarProps) {
 
   return (
     <aside className="fixed inset-y-0 left-0 z-[var(--z-sticky)] flex w-[var(--sidebar-width)] flex-col">
-      <div className="flex items-center px-5 py-5">
-        <Logo size={38} variant="alt" />
+      <div className="flex items-center justify-center px-5 pt-6 pb-4">
+        <Logo size={80} variant="alt" />
       </div>
 
       <ScrollArea className="flex-1 px-3">

@@ -126,7 +126,7 @@ export default function LoginPage() {
               required
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" variant="chrome" className="w-full" disabled={loading}>
             {loading ? (
               "Signing in..."
             ) : (
@@ -157,7 +157,7 @@ export default function LoginPage() {
               required
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" variant="chrome" className="w-full" disabled={loading}>
             {loading ? (
               "Sending..."
             ) : (

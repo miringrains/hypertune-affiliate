@@ -1,186 +1,216 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { Renderer, Program, Mesh, Color, Triangle } from "ogl";
 import { cn } from "@/lib/utils";
 
-interface AuroraProps {
-  className?: string;
-  speed?: number;
-  intensity?: number;
+const VERT = `#version 300 es
+in vec2 position;
+void main() {
+  gl_Position = vec4(position, 0.0, 1.0);
+}
+`;
+
+const FRAG = `#version 300 es
+precision highp float;
+
+uniform float uTime;
+uniform float uAmplitude;
+uniform vec3 uColorStops[3];
+uniform vec2 uResolution;
+uniform float uBlend;
+
+out vec4 fragColor;
+
+vec3 permute(vec3 x) {
+  return mod(((x * 34.0) + 1.0) * x, 289.0);
 }
 
-const vertexShader = `
-  attribute vec2 position;
-  void main() {
-    gl_Position = vec4(position, 0.0, 1.0);
-  }
+float snoise(vec2 v){
+  const vec4 C = vec4(
+    0.211324865405187, 0.366025403784439,
+    -0.577350269189626, 0.024390243902439
+  );
+  vec2 i = floor(v + dot(v, C.yy));
+  vec2 x0 = v - i + dot(i, C.xx);
+  vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+  vec4 x12 = x0.xyxy + C.xxzz;
+  x12.xy -= i1;
+  i = mod(i, 289.0);
+
+  vec3 p = permute(
+    permute(i.y + vec3(0.0, i1.y, 1.0))
+    + i.x + vec3(0.0, i1.x, 1.0)
+  );
+
+  vec3 m = max(
+    0.5 - vec3(
+      dot(x0, x0),
+      dot(x12.xy, x12.xy),
+      dot(x12.zw, x12.zw)
+    ),
+    0.0
+  );
+  m = m * m;
+  m = m * m;
+
+  vec3 x = 2.0 * fract(p * C.www) - 1.0;
+  vec3 h = abs(x) - 0.5;
+  vec3 ox = floor(x + 0.5);
+  vec3 a0 = x - ox;
+  m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
+
+  vec3 g;
+  g.x = a0.x * x0.x + h.x * x0.y;
+  g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+  return 130.0 * dot(m, g);
+}
+
+struct ColorStop {
+  vec3 color;
+  float position;
+};
+
+#define COLOR_RAMP(colors, factor, finalColor) { \\
+  int index = 0; \\
+  for (int i = 0; i < 2; i++) { \\
+    ColorStop currentColor = colors[i]; \\
+    bool isInBetween = currentColor.position <= factor; \\
+    index = int(mix(float(index), float(i), float(isInBetween))); \\
+  } \\
+  ColorStop currentColor = colors[index]; \\
+  ColorStop nextColor = colors[index + 1]; \\
+  float range = nextColor.position - currentColor.position; \\
+  float lerpFactor = (factor - currentColor.position) / range; \\
+  finalColor = mix(currentColor.color, nextColor.color, lerpFactor); \\
+}
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / uResolution;
+
+  ColorStop colors[3];
+  colors[0] = ColorStop(uColorStops[0], 0.0);
+  colors[1] = ColorStop(uColorStops[1], 0.5);
+  colors[2] = ColorStop(uColorStops[2], 1.0);
+
+  vec3 rampColor;
+  COLOR_RAMP(colors, uv.x, rampColor);
+
+  float height = snoise(vec2(uv.x * 2.0 + uTime * 0.1, uTime * 0.25)) * 0.5 * uAmplitude;
+  height = exp(height);
+  height = (uv.y * 2.0 - height + 0.2);
+  float intensity = 0.6 * height;
+
+  float midPoint = 0.20;
+  float auroraAlpha = smoothstep(midPoint - uBlend * 0.5, midPoint + uBlend * 0.5, intensity);
+
+  vec3 auroraColor = intensity * rampColor;
+
+  fragColor = vec4(auroraColor * auroraAlpha, auroraAlpha);
+}
 `;
 
-const fragmentShader = `
-  precision highp float;
-  uniform float uTime;
-  uniform vec2 uResolution;
-  uniform float uIntensity;
+interface AuroraProps {
+  colorStops?: [string, string, string];
+  speed?: number;
+  amplitude?: number;
+  blend?: number;
+  className?: string;
+}
 
-  vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
-
-  float snoise(vec2 v){
-    const vec4 C = vec4(0.211324865405187, 0.366025403784439,
-           -0.577350269189626, 0.024390243902439);
-    vec2 i  = floor(v + dot(v, C.yy));
-    vec2 x0 = v -   i + dot(i, C.xx);
-    vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-    vec4 x12 = x0.xyxy + C.xxzz;
-    x12.xy -= i1;
-    i = mod(i, 289.0);
-    vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0))
-      + i.x + vec3(0.0, i1.x, 1.0));
-    vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy),
-      dot(x12.zw,x12.zw)), 0.0);
-    m = m*m;
-    m = m*m;
-    vec3 x = 2.0 * fract(p * C.www) - 1.0;
-    vec3 h = abs(x) - 0.5;
-    vec3 ox = floor(x + 0.5);
-    vec3 a0 = x - ox;
-    m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
-    vec3 g;
-    g.x  = a0.x  * x0.x  + h.x  * x0.y;
-    g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-    return 130.0 * dot(m, g);
-  }
-
-  void main() {
-    vec2 uv = gl_FragCoord.xy / uResolution;
-    float t = uTime * 0.08;
-
-    // Base: pure black #0A0A0A
-    vec3 base = vec3(0.039, 0.039, 0.039);
-
-    // Accent: deep red #E1261B
-    vec3 red = vec3(0.882, 0.149, 0.106);
-
-    // Dark maroon midtone
-    vec3 darkRed = vec3(0.25, 0.04, 0.02);
-
-    // Layered noise at different scales for organic feel
-    float n1 = snoise(uv * 1.8 + vec2(t * 0.3, t * 0.15));
-    float n2 = snoise(uv * 3.2 + vec2(-t * 0.2, t * 0.25));
-    float n3 = snoise(uv * 0.9 + vec2(t * 0.1, -t * 0.18));
-    float n4 = snoise(uv * 5.0 + vec2(t * 0.4, t * 0.1));
-
-    // Combine noise into soft blobs
-    float glow = n1 * 0.5 + n2 * 0.3 + n3 * 0.2;
-    glow = smoothstep(-0.2, 0.6, glow);
-
-    // Keep it very dark — red only bleeds through subtly
-    vec3 color = base;
-
-    // Dark red undertone
-    color = mix(color, darkRed, glow * 0.35 * uIntensity);
-
-    // Brighter red only in concentrated spots
-    float hotspot = smoothstep(0.5, 0.9, glow) * smoothstep(0.2, 0.6, n2);
-    color = mix(color, red, hotspot * 0.18 * uIntensity);
-
-    // Fine grain texture
-    color += n4 * 0.008;
-
-    // Heavy vignette to push edges to pure black
-    float vignette = smoothstep(0.0, 0.65, length(uv - 0.5));
-    color = mix(color, base, vignette * 0.85);
-
-    // Edge fade to absolute black
-    float edgeFade = smoothstep(0.0, 0.15, min(min(uv.x, 1.0-uv.x), min(uv.y, 1.0-uv.y)));
-    color *= edgeFade;
-
-    gl_FragColor = vec4(color, 1.0);
-  }
-`;
-
-export function Aurora({ speed = 1.0, intensity = 1.0, className }: AuroraProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animRef = useRef<number>(0);
+export function Aurora({
+  colorStops = ["#E1261B", "#3A0A08", "#E1261B"],
+  speed = 1.0,
+  amplitude = 1.0,
+  blend = 0.5,
+  className,
+}: AuroraProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const propsRef = useRef({ colorStops, speed, amplitude, blend });
+  propsRef.current = { colorStops, speed, amplitude, blend };
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const ctn = containerRef.current;
+    if (!ctn) return;
 
-    const gl = canvas.getContext("webgl", {
-      alpha: false,
-      antialias: false,
-      premultipliedAlpha: false,
+    const renderer = new Renderer({
+      alpha: true,
+      premultipliedAlpha: true,
+      antialias: true,
     });
-    if (!gl) return;
+    const gl = renderer.gl;
+    gl.clearColor(0, 0, 0, 0);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    gl.canvas.style.backgroundColor = "transparent";
 
-    const vs = gl.createShader(gl.VERTEX_SHADER)!;
-    gl.shaderSource(vs, vertexShader);
-    gl.compileShader(vs);
-
-    const fs = gl.createShader(gl.FRAGMENT_SHADER)!;
-    gl.shaderSource(fs, fragmentShader);
-    gl.compileShader(fs);
-
-    const program = gl.createProgram()!;
-    gl.attachShader(program, vs);
-    gl.attachShader(program, fs);
-    gl.linkProgram(program);
-    gl.useProgram(program);
-
-    const vertices = new Float32Array([-1, -1, 3, -1, -1, 3]);
-    const buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
-
-    const posLoc = gl.getAttribLocation(program, "position");
-    gl.enableVertexAttribArray(posLoc);
-    gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
-
-    const uTime = gl.getUniformLocation(program, "uTime");
-    const uResolution = gl.getUniformLocation(program, "uResolution");
-    const uIntensity = gl.getUniformLocation(program, "uIntensity");
-
-    gl.uniform1f(uIntensity, intensity);
+    let program: Program;
 
     function resize() {
-      const dpr = Math.min(window.devicePixelRatio, 2);
-      canvas!.width = canvas!.clientWidth * dpr;
-      canvas!.height = canvas!.clientHeight * dpr;
-      gl!.viewport(0, 0, canvas!.width, canvas!.height);
-      gl!.uniform2f(uResolution, canvas!.width, canvas!.height);
+      if (!ctn) return;
+      const width = ctn.offsetWidth;
+      const height = ctn.offsetHeight;
+      renderer.setSize(width, height);
+      if (program) {
+        program.uniforms.uResolution.value = [width, height];
+      }
     }
-
-    resize();
     window.addEventListener("resize", resize);
 
-    const startTime = performance.now();
+    const geometry = new Triangle(gl);
+    const attrs = (geometry as unknown as { attributes: Record<string, unknown> }).attributes;
+    if (attrs?.uv) delete attrs.uv;
 
-    function animate() {
-      const elapsed = (performance.now() - startTime) / 1000;
-      gl!.uniform1f(uTime, elapsed * speed);
-      gl!.drawArrays(gl!.TRIANGLES, 0, 3);
-      animRef.current = requestAnimationFrame(animate);
-    }
+    const colorStopsArray = colorStops.map((hex) => {
+      const c = new Color(hex);
+      return [c.r, c.g, c.b];
+    });
 
-    animate();
+    program = new Program(gl, {
+      vertex: VERT,
+      fragment: FRAG,
+      uniforms: {
+        uTime: { value: 0 },
+        uAmplitude: { value: amplitude },
+        uColorStops: { value: colorStopsArray },
+        uResolution: { value: [ctn.offsetWidth, ctn.offsetHeight] },
+        uBlend: { value: blend },
+      },
+    });
+
+    const mesh = new Mesh(gl, { geometry, program });
+    ctn.appendChild(gl.canvas);
+
+    let animateId = 0;
+    const update = (t: number) => {
+      animateId = requestAnimationFrame(update);
+      const p = propsRef.current;
+      program.uniforms.uTime.value = t * 0.01 * (p.speed ?? 1.0) * 0.1;
+      program.uniforms.uAmplitude.value = p.amplitude ?? 1.0;
+      program.uniforms.uBlend.value = p.blend ?? 0.5;
+      program.uniforms.uColorStops.value = (p.colorStops ?? colorStops).map(
+        (hex) => {
+          const c = new Color(hex);
+          return [c.r, c.g, c.b];
+        },
+      );
+      renderer.render({ scene: mesh });
+    };
+    animateId = requestAnimationFrame(update);
+
+    resize();
 
     return () => {
-      cancelAnimationFrame(animRef.current);
+      cancelAnimationFrame(animateId);
       window.removeEventListener("resize", resize);
-      gl.deleteProgram(program);
-      gl.deleteShader(vs);
-      gl.deleteShader(fs);
-      gl.deleteBuffer(buffer);
+      if (ctn && gl.canvas.parentNode === ctn) {
+        ctn.removeChild(gl.canvas);
+      }
+      gl.getExtension("WEBGL_lose_context")?.loseContext();
     };
-  }, [speed, intensity]);
+  }, [amplitude, blend, colorStops]);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      className={cn("h-full w-full", className)}
-      style={{ display: "block" }}
-    />
-  );
+  return <div ref={containerRef} className={cn("h-full w-full", className)} />;
 }
 
 interface AuroraBackdropProps {
@@ -189,11 +219,12 @@ interface AuroraBackdropProps {
 
 export function AuroraBackdrop({ subtle = false }: AuroraBackdropProps) {
   return (
-    <div className="fixed inset-0 z-0 pointer-events-none">
-      <div className="absolute inset-0" style={{ backgroundColor: "#0A0A0A" }} />
+    <div className="fixed inset-0 z-0 pointer-events-none" style={{ backgroundColor: "#0A0A0A" }}>
       <Aurora
-        speed={subtle ? 0.5 : 0.8}
-        intensity={subtle ? 0.6 : 1.0}
+        colorStops={["#E1261B", "#3A0A08", "#E1261B"]}
+        speed={subtle ? 0.6 : 1.0}
+        amplitude={subtle ? 0.8 : 1.0}
+        blend={subtle ? 0.4 : 0.5}
         className="absolute inset-0"
       />
     </div>

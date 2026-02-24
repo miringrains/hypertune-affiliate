@@ -4,11 +4,9 @@ import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 interface AuroraProps {
-  colorStops?: [string, string, string];
-  speed?: number;
-  amplitude?: number;
-  blend?: number;
   className?: string;
+  speed?: number;
+  intensity?: number;
 }
 
 const vertexShader = `
@@ -22,36 +20,30 @@ const fragmentShader = `
   precision highp float;
   uniform float uTime;
   uniform vec2 uResolution;
-  uniform vec3 uColor1;
-  uniform vec3 uColor2;
-  uniform vec3 uColor3;
-  uniform float uAmplitude;
-  uniform float uBlend;
+  uniform float uIntensity;
 
-  // Simplex 2D noise
   vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
 
   float snoise(vec2 v){
     const vec4 C = vec4(0.211324865405187, 0.366025403784439,
            -0.577350269189626, 0.024390243902439);
-    vec2 i  = floor(v + dot(v, C.yy) );
+    vec2 i  = floor(v + dot(v, C.yy));
     vec2 x0 = v -   i + dot(i, C.xx);
-    vec2 i1;
-    i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+    vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
     vec4 x12 = x0.xyxy + C.xxzz;
     x12.xy -= i1;
     i = mod(i, 289.0);
-    vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 ))
-    + i.x + vec3(0.0, i1.x, 1.0 ));
+    vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0))
+      + i.x + vec3(0.0, i1.x, 1.0));
     vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy),
       dot(x12.zw,x12.zw)), 0.0);
-    m = m*m ;
-    m = m*m ;
+    m = m*m;
+    m = m*m;
     vec3 x = 2.0 * fract(p * C.www) - 1.0;
     vec3 h = abs(x) - 0.5;
     vec3 ox = floor(x + 0.5);
     vec3 a0 = x - ox;
-    m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+    m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
     vec3 g;
     g.x  = a0.x  * x0.x  + h.x  * x0.y;
     g.yz = a0.yz * x12.xz + h.yz * x12.yw;
@@ -60,40 +52,53 @@ const fragmentShader = `
 
   void main() {
     vec2 uv = gl_FragCoord.xy / uResolution;
-    float t = uTime * 0.15;
+    float t = uTime * 0.08;
 
-    float n1 = snoise(uv * 2.0 + vec2(t * 0.3, t * 0.2)) * uAmplitude;
-    float n2 = snoise(uv * 3.0 + vec2(-t * 0.2, t * 0.4)) * uAmplitude;
-    float n3 = snoise(uv * 1.5 + vec2(t * 0.1, -t * 0.3)) * uAmplitude;
+    // Base: pure black #0A0A0A
+    vec3 base = vec3(0.039, 0.039, 0.039);
 
-    float blend1 = smoothstep(-uBlend, uBlend, n1 + uv.y - 0.5);
-    float blend2 = smoothstep(-uBlend, uBlend, n2 + uv.x - 0.5);
+    // Accent: deep red #E1261B
+    vec3 red = vec3(0.882, 0.149, 0.106);
 
-    vec3 color = mix(uColor1, uColor2, blend1);
-    color = mix(color, uColor3, blend2 * 0.5);
-    color += n3 * 0.05;
+    // Dark maroon midtone
+    vec3 darkRed = vec3(0.25, 0.04, 0.02);
 
-    float vignette = smoothstep(0.0, 0.7, length(uv - 0.5));
-    color = mix(color, vec3(0.0), vignette * 0.6);
+    // Layered noise at different scales for organic feel
+    float n1 = snoise(uv * 1.8 + vec2(t * 0.3, t * 0.15));
+    float n2 = snoise(uv * 3.2 + vec2(-t * 0.2, t * 0.25));
+    float n3 = snoise(uv * 0.9 + vec2(t * 0.1, -t * 0.18));
+    float n4 = snoise(uv * 5.0 + vec2(t * 0.4, t * 0.1));
+
+    // Combine noise into soft blobs
+    float glow = n1 * 0.5 + n2 * 0.3 + n3 * 0.2;
+    glow = smoothstep(-0.2, 0.6, glow);
+
+    // Keep it very dark — red only bleeds through subtly
+    vec3 color = base;
+
+    // Dark red undertone
+    color = mix(color, darkRed, glow * 0.35 * uIntensity);
+
+    // Brighter red only in concentrated spots
+    float hotspot = smoothstep(0.5, 0.9, glow) * smoothstep(0.2, 0.6, n2);
+    color = mix(color, red, hotspot * 0.18 * uIntensity);
+
+    // Fine grain texture
+    color += n4 * 0.008;
+
+    // Heavy vignette to push edges to pure black
+    float vignette = smoothstep(0.0, 0.65, length(uv - 0.5));
+    color = mix(color, base, vignette * 0.85);
+
+    // Edge fade to absolute black
+    float edgeFade = smoothstep(0.0, 0.15, min(min(uv.x, 1.0-uv.x), min(uv.y, 1.0-uv.y)));
+    color *= edgeFade;
 
     gl_FragColor = vec4(color, 1.0);
   }
 `;
 
-function hexToRGB(hex: string): [number, number, number] {
-  const r = parseInt(hex.slice(1, 3), 16) / 255;
-  const g = parseInt(hex.slice(3, 5), 16) / 255;
-  const b = parseInt(hex.slice(5, 7), 16) / 255;
-  return [r, g, b];
-}
-
-export function Aurora({
-  colorStops = ["#e1251b", "#13f287", "#000000"],
-  speed = 1.0,
-  amplitude = 1.2,
-  blend = 0.6,
-  className,
-}: AuroraProps) {
+export function Aurora({ speed = 1.0, intensity = 1.0, className }: AuroraProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
 
@@ -133,18 +138,9 @@ export function Aurora({
 
     const uTime = gl.getUniformLocation(program, "uTime");
     const uResolution = gl.getUniformLocation(program, "uResolution");
-    const uColor1 = gl.getUniformLocation(program, "uColor1");
-    const uColor2 = gl.getUniformLocation(program, "uColor2");
-    const uColor3 = gl.getUniformLocation(program, "uColor3");
-    const uAmplitude = gl.getUniformLocation(program, "uAmplitude");
-    const uBlend = gl.getUniformLocation(program, "uBlend");
+    const uIntensity = gl.getUniformLocation(program, "uIntensity");
 
-    const [c1, c2, c3] = colorStops.map(hexToRGB);
-    gl.uniform3f(uColor1, ...c1);
-    gl.uniform3f(uColor2, ...c2);
-    gl.uniform3f(uColor3, ...c3);
-    gl.uniform1f(uAmplitude, amplitude);
-    gl.uniform1f(uBlend, blend);
+    gl.uniform1f(uIntensity, intensity);
 
     function resize() {
       const dpr = Math.min(window.devicePixelRatio, 2);
@@ -157,7 +153,7 @@ export function Aurora({
     resize();
     window.addEventListener("resize", resize);
 
-    let startTime = performance.now();
+    const startTime = performance.now();
 
     function animate() {
       const elapsed = (performance.now() - startTime) / 1000;
@@ -176,7 +172,7 @@ export function Aurora({
       gl.deleteShader(fs);
       gl.deleteBuffer(buffer);
     };
-  }, [colorStops, speed, amplitude, blend]);
+  }, [speed, intensity]);
 
   return (
     <canvas
@@ -194,17 +190,11 @@ interface AuroraBackdropProps {
 export function AuroraBackdrop({ subtle = false }: AuroraBackdropProps) {
   return (
     <div className="fixed inset-0 z-0 pointer-events-none">
-      <div className="absolute inset-0 bg-background" />
+      <div className="absolute inset-0" style={{ backgroundColor: "#0A0A0A" }} />
       <Aurora
-        colorStops={["#e1251b", "#13f287", "#000000"]}
-        speed={subtle ? 0.4 : 0.6}
-        amplitude={1.2}
-        blend={0.6}
-        className={
-          subtle
-            ? "absolute inset-0 opacity-40"
-            : "absolute inset-0 opacity-60"
-        }
+        speed={subtle ? 0.5 : 0.8}
+        intensity={subtle ? 0.6 : 1.0}
+        className="absolute inset-0"
       />
     </div>
   );

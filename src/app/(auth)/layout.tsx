@@ -12,10 +12,10 @@ export default function AuthLayout({
 
       <div className="relative z-10 w-full max-w-[440px]">
         <div
-          className="rounded-2xl border p-10 shadow-2xl backdrop-blur-sm"
+          className="rounded-2xl p-10 backdrop-blur-md"
           style={{
-            backgroundColor: "rgba(14, 14, 16, 0.92)",
-            borderColor: "rgba(255, 255, 255, 0.12)",
+            backgroundColor: "rgba(12, 12, 14, 0.88)",
+            boxShadow: "0 0 0 1px rgba(255,255,255,0.05), 0 24px 48px -12px rgba(0,0,0,0.5)",
           }}
         >
           <div className="mb-10 flex justify-center">
@@ -25,7 +25,7 @@ export default function AuthLayout({
         </div>
       </div>
 
-      <p className="relative z-10 mt-8 text-[12px] text-white/30">
+      <p className="relative z-10 mt-8 text-[12px] text-white/25">
         &copy; {new Date().getFullYear()} Hypertune. All rights reserved.
       </p>
     </div>

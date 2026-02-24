@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Logo } from "@/components/shared/logo";
 import { cn } from "@/lib/utils";
 import { ICON_STROKE_WIDTH } from "@/lib/constants";
@@ -17,11 +16,11 @@ function NavGroupSection({ group }: { group: NavGroup }) {
   return (
     <div>
       {group.label && (
-        <p className="text-overline text-white/40 mb-2 px-3">
+        <p className="text-overline mb-2 px-3" style={{ color: "#555" }}>
           {group.label}
         </p>
       )}
-      <div className="flex flex-col gap-0.5">
+      <div className="flex flex-col gap-px">
         {group.items.map((item) => {
           const isActive =
             pathname === item.href ||
@@ -36,11 +35,15 @@ function NavGroupSection({ group }: { group: NavGroup }) {
               className={cn(
                 "flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
                 isActive
-                  ? "bg-white/10 text-white"
-                  : "text-white/70 hover:bg-white/[0.06] hover:text-white",
+                  ? "text-white"
+                  : "hover:text-white",
               )}
+              style={{
+                color: isActive ? "#fff" : "#999",
+                backgroundColor: isActive ? "rgba(255,255,255,0.07)" : undefined,
+              }}
             >
-              <item.icon size={17} strokeWidth={ICON_STROKE_WIDTH} />
+              <item.icon size={16} strokeWidth={ICON_STROKE_WIDTH} />
               <span>{item.label}</span>
             </Link>
           );
@@ -66,11 +69,11 @@ export function AppSidebar({ isAdmin = false }: AppSidebarProps) {
       </div>
 
       <ScrollArea className="flex-1 px-3">
-        <nav className="flex flex-col gap-5">
+        <nav className="flex flex-col gap-6">
           {allNavGroups.map((group, i) => (
             <div key={group.label || i}>
               {i > 0 && !group.label && (
-                <Separator className="mb-4 bg-white/[0.08]" />
+                <div className="mb-4 h-px mx-3" style={{ backgroundColor: "#1e1e1e" }} />
               )}
               <NavGroupSection group={group} />
             </div>
@@ -79,13 +82,14 @@ export function AppSidebar({ isAdmin = false }: AppSidebarProps) {
       </ScrollArea>
 
       <div className="px-3 pb-5">
-        <Separator className="mb-4 bg-white/[0.08]" />
+        <div className="mb-4 h-px mx-3" style={{ backgroundColor: "#1e1e1e" }} />
         <form action="/api/auth/signout" method="POST">
           <button
             type="submit"
-            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium text-white/50 hover:bg-white/[0.06] hover:text-white/70 transition-colors"
+            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors"
+            style={{ color: "#666" }}
           >
-            <LogOut size={17} strokeWidth={ICON_STROKE_WIDTH} />
+            <LogOut size={16} strokeWidth={ICON_STROKE_WIDTH} />
             <span>Log out</span>
           </button>
         </form>

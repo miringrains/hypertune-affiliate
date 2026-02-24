@@ -54,15 +54,15 @@ function StatCard({
   subtitle?: string;
 }) {
   return (
-    <Card className="border-border/60">
+    <Card>
       <CardContent className="pt-5 pb-5 px-5">
         <div className="flex items-center justify-between mb-3">
           <span className="text-[13px] font-medium text-muted-foreground">{title}</span>
-          <Icon size={16} strokeWidth={ICON_STROKE_WIDTH} className="text-muted-foreground/60" />
+          <Icon size={16} strokeWidth={ICON_STROKE_WIDTH} className="text-muted-foreground/50" />
         </div>
         <div className="text-[1.75rem] font-semibold tracking-tight leading-none">{value}</div>
         {subtitle && (
-          <p className="text-[12px] text-muted-foreground/70 mt-1.5">{subtitle}</p>
+          <p className="text-[12px] text-muted-foreground mt-1.5">{subtitle}</p>
         )}
       </CardContent>
     </Card>
@@ -112,9 +112,7 @@ export function DashboardClient({ affiliate, stats }: DashboardClientProps) {
   return (
     <div className="space-y-10">
       <div>
-        <h1 style={{ fontSize: "1.75rem", fontWeight: 600, letterSpacing: "-0.04em", lineHeight: 1.2 }}>
-          Dashboard
-        </h1>
+        <h1 className="text-display-sm">Dashboard</h1>
         <p className="text-[14px] text-muted-foreground mt-1">
           Welcome back, {affiliate.name}
         </p>
@@ -153,13 +151,11 @@ export function DashboardClient({ affiliate, stats }: DashboardClientProps) {
         />
       </div>
 
-      <Card className="border-border/60">
+      <Card>
         <CardContent className="pt-6 pb-6 px-6">
           <div className="flex items-center justify-between mb-5">
-            <h3 style={{ fontSize: "1rem", fontWeight: 600, letterSpacing: "-0.02em" }}>
-              Your Referral Link
-            </h3>
-            <span className="text-[12px] font-medium text-muted-foreground px-2.5 py-1 rounded-full border border-border/60">
+            <h3 className="text-heading-3">Your Referral Link</h3>
+            <span className="text-[12px] font-medium text-muted-foreground px-2.5 py-1 rounded-full border border-border">
               {affiliate.commission_rate}% commission
             </span>
           </div>
@@ -228,33 +224,39 @@ export function DashboardClient({ affiliate, stats }: DashboardClientProps) {
       </Card>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-border/60 bg-card p-6 text-center">
-          <p className="text-[12px] font-medium text-muted-foreground mb-2">Commission Rate</p>
-          <p style={{ fontSize: "2.25rem", fontWeight: 600, letterSpacing: "-0.04em", lineHeight: 1 }}>
-            {affiliate.commission_rate}%
-          </p>
-          <p className="text-[12px] text-muted-foreground/70 mt-2">
-            for {affiliate.commission_duration_months} months
-          </p>
-        </div>
+        <Card className="text-center">
+          <CardContent className="pt-6 pb-6 px-6">
+            <p className="text-[12px] font-medium text-muted-foreground mb-2">Commission Rate</p>
+            <p className="text-[2.25rem] font-semibold tracking-tight leading-none">
+              {affiliate.commission_rate}%
+            </p>
+            <p className="text-[12px] text-muted-foreground mt-2">
+              for {affiliate.commission_duration_months} months
+            </p>
+          </CardContent>
+        </Card>
 
-        <div className="rounded-xl border border-border/60 bg-card p-6 text-center">
-          <p className="text-[12px] font-medium text-muted-foreground mb-2">Sub-Affiliate Rate</p>
-          <p style={{ fontSize: "2.25rem", fontWeight: 600, letterSpacing: "-0.04em", lineHeight: 1 }}>
-            {affiliate.sub_affiliate_rate}%
-          </p>
-          <p className="text-[12px] text-muted-foreground/70 mt-2">per recruited affiliate</p>
-        </div>
+        <Card className="text-center">
+          <CardContent className="pt-6 pb-6 px-6">
+            <p className="text-[12px] font-medium text-muted-foreground mb-2">Sub-Affiliate Rate</p>
+            <p className="text-[2.25rem] font-semibold tracking-tight leading-none">
+              {affiliate.sub_affiliate_rate}%
+            </p>
+            <p className="text-[12px] text-muted-foreground mt-2">per recruited affiliate</p>
+          </CardContent>
+        </Card>
 
-        <div className="rounded-xl border border-border/60 bg-card p-6 text-center">
-          <p className="text-[12px] font-medium text-muted-foreground mb-2">Tier Level</p>
-          <p style={{ fontSize: "2.25rem", fontWeight: 600, letterSpacing: "-0.04em", lineHeight: 1 }}>
-            Tier {affiliate.tier_level}
-          </p>
-          <p className="text-[12px] text-muted-foreground/70 mt-2">
-            {affiliate.tier_level === 1 ? "Main Affiliate" : `Sub-Affiliate L${affiliate.tier_level}`}
-          </p>
-        </div>
+        <Card className="text-center">
+          <CardContent className="pt-6 pb-6 px-6">
+            <p className="text-[12px] font-medium text-muted-foreground mb-2">Tier Level</p>
+            <p className="text-[2.25rem] font-semibold tracking-tight leading-none">
+              Tier {affiliate.tier_level}
+            </p>
+            <p className="text-[12px] text-muted-foreground mt-2">
+              {affiliate.tier_level === 1 ? "Main Affiliate" : `Sub-Affiliate L${affiliate.tier_level}`}
+            </p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

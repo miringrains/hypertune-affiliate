@@ -97,7 +97,7 @@ export default function LoginPage() {
         <h2 style={{ fontSize: "2.45rem", letterSpacing: "-0.05em", fontWeight: 600, lineHeight: 1.1 }}>
           Welcome back
         </h2>
-        <p className="text-[15px] text-white/50">
+        <p className="text-[15px]" style={{ color: "#666" }}>
           Sign in to your affiliate dashboard
         </p>
       </div>

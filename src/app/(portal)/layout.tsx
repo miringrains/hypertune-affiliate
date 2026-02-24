@@ -27,7 +27,7 @@ export default async function PortalLayout({
   const isAdmin = affiliate?.role === "admin";
 
   return (
-    <div className="h-screen bg-background overflow-hidden">
+    <div className="h-screen overflow-hidden" style={{ backgroundColor: "#0a0a0a" }}>
       <AuroraBackdrop subtle />
 
       <div className="hidden lg:block">
@@ -35,7 +35,13 @@ export default async function PortalLayout({
       </div>
 
       <div className="relative z-[1] flex flex-col lg:pl-[var(--sidebar-width)] h-screen p-2 lg:p-3">
-        <div className="light-panel flex-1 min-h-0 rounded-2xl bg-background shadow-xl overflow-hidden">
+        <div
+          className="light-panel flex-1 min-h-0 overflow-hidden"
+          style={{
+            borderRadius: "16px",
+            boxShadow: "0 0 0 1px rgba(0,0,0,0.08), 0 16px 48px -8px rgba(0,0,0,0.12)",
+          }}
+        >
           <div className="h-full overflow-y-auto overflow-x-hidden light-scroll">
             <TopBar
               isAdmin={isAdmin}

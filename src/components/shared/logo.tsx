@@ -15,7 +15,7 @@ export function Logo({ size = 32, variant = "default", className }: LogoProps) {
         alt="Hypertune"
         width={size}
         height={size}
-        className={cn("rounded-xl", className)}
+        className={cn(className)}
         priority
       />
     );

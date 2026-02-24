@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Logo } from "@/components/shared/logo";
+import { LogoWithText } from "@/components/shared/logo";
 import { cn } from "@/lib/utils";
 import { ICON_STROKE_WIDTH } from "@/lib/constants";
 import { affiliateNav, adminNav } from "@/lib/navigation";
@@ -78,11 +78,11 @@ export function MobileNav({ isAdmin = false }: MobileNavProps) {
       </SheetTrigger>
       <SheetContent
         side="left"
-        className="w-[280px] p-0 border-r-0 bg-[oklch(0.09_0.005_25)] flex flex-col"
+        className="w-[280px] p-0 border-r-0 bg-[oklch(0.09_0_0)] flex flex-col"
       >
         <SheetTitle className="sr-only">Navigation</SheetTitle>
         <div className="px-5 pt-6 pb-2 space-y-3">
-          <Logo height={28} />
+          <LogoWithText size={28} />
         </div>
 
         <div className="mx-5 border-t border-white/[0.06]" />

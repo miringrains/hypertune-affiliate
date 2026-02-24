@@ -1,5 +1,5 @@
 import { AuroraBackdrop } from "@/components/shared/aurora";
-import { Logo } from "@/components/shared/logo";
+import { LogoWithText } from "@/components/shared/logo";
 
 export default function AuthLayout({
   children,
@@ -19,13 +19,13 @@ export default function AuthLayout({
           }}
         >
           <div className="mb-8 flex justify-center">
-            <Logo height={34} />
+            <LogoWithText size={34} />
           </div>
           {children}
         </div>
       </div>
 
-      <p className="relative z-10 mt-8 text-caption text-white/30">
+      <p className="relative z-10 mt-8 text-[12px] text-white/30">
         &copy; {new Date().getFullYear()} Hypertune. All rights reserved.
       </p>
     </div>

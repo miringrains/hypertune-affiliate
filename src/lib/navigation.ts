@@ -2,7 +2,6 @@ import {
   LayoutDashboard,
   Users,
   UserPlus,
-  MousePointerClick,
   DollarSign,
   Wallet,
   ImageIcon,
@@ -27,22 +26,17 @@ export interface NavGroup {
 
 export const affiliateNav: NavGroup[] = [
   {
-    label: "Overview",
+    label: "",
     items: [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { label: "Leads", href: "/leads", icon: Users },
+      { label: "Customers", href: "/customers", icon: Users },
+      { label: "Commissions", href: "/commissions", icon: DollarSign },
       { label: "Sub-Affiliates", href: "/sub-affiliates", icon: UserPlus },
     ],
   },
   {
-    label: "Performance",
-    items: [
-      { label: "Leads", href: "/leads", icon: MousePointerClick },
-      { label: "Customers", href: "/customers", icon: Users },
-      { label: "Commissions", href: "/commissions", icon: DollarSign },
-    ],
-  },
-  {
-    label: "Account",
+    label: "",
     items: [
       { label: "Payouts", href: "/payouts", icon: Wallet },
       { label: "Media", href: "/media", icon: ImageIcon },

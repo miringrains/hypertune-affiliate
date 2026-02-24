@@ -82,7 +82,7 @@ export function MobileNav({ isAdmin = false }: MobileNavProps) {
       >
         <SheetTitle className="sr-only">Navigation</SheetTitle>
         <div className="px-5 pt-6 pb-2 space-y-3">
-          <Logo size={28} />
+          <Logo size={38} variant="alt" />
         </div>
 
         <div className="mx-5 border-t border-white/[0.06]" />

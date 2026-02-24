@@ -19,7 +19,7 @@ export default function AuthLayout({
           }}
         >
           <div className="mb-10 flex justify-center">
-            <Logo size={140} />
+            <Logo size={120} variant="alt" />
           </div>
           {children}
         </div>

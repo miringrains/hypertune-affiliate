@@ -3,12 +3,23 @@ import { cn } from "@/lib/utils";
 
 interface LogoProps {
   size?: number;
-  iconRatio?: number;
+  variant?: "default" | "alt";
   className?: string;
 }
 
-export function Logo({ size = 32, iconRatio = 0.7, className }: LogoProps) {
-  const iconSize = Math.round(size * iconRatio);
+export function Logo({ size = 32, variant = "default", className }: LogoProps) {
+  if (variant === "alt") {
+    return (
+      <Image
+        src="/hypertunealt.svg"
+        alt="Hypertune"
+        width={size}
+        height={size}
+        className={cn("rounded-xl", className)}
+        priority
+      />
+    );
+  }
 
   return (
     <div
@@ -21,8 +32,8 @@ export function Logo({ size = 32, iconRatio = 0.7, className }: LogoProps) {
       <Image
         src="/hypertune-logo.svg"
         alt="Hypertune"
-        width={iconSize}
-        height={iconSize}
+        width={Math.round(size * 0.7)}
+        height={Math.round(size * 0.7)}
         priority
       />
     </div>

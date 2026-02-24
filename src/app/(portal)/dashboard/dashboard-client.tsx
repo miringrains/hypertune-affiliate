@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   MousePointerClick,
@@ -15,7 +13,6 @@ import {
   Clock,
   Copy,
   Check,
-  Link,
   ExternalLink,
   Pencil,
 } from "lucide-react";
@@ -41,7 +38,7 @@ function formatCurrency(amount: number) {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
+    maximumFractionDigits: 0,
   }).format(amount);
 }
 
@@ -57,17 +54,15 @@ function StatCard({
   subtitle?: string;
 }) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-body-sm font-medium text-muted-foreground">
-          {title}
-        </CardTitle>
-        <Icon size={18} strokeWidth={ICON_STROKE_WIDTH} className="text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        <div className="text-display-sm">{value}</div>
+    <Card className="border-border/60">
+      <CardContent className="pt-5 pb-5 px-5">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[13px] font-medium text-muted-foreground">{title}</span>
+          <Icon size={16} strokeWidth={ICON_STROKE_WIDTH} className="text-muted-foreground/60" />
+        </div>
+        <div className="text-[1.75rem] font-semibold tracking-tight leading-none">{value}</div>
         {subtitle && (
-          <p className="text-caption text-muted-foreground mt-1">{subtitle}</p>
+          <p className="text-[12px] text-muted-foreground/70 mt-1.5">{subtitle}</p>
         )}
       </CardContent>
     </Card>
@@ -115,10 +110,12 @@ export function DashboardClient({ affiliate, stats }: DashboardClientProps) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <div>
-        <h1 className="text-heading-1">Dashboard</h1>
-        <p className="text-body-sm text-muted-foreground mt-1">
+        <h1 style={{ fontSize: "1.75rem", fontWeight: 600, letterSpacing: "-0.04em", lineHeight: 1.2 }}>
+          Dashboard
+        </h1>
+        <p className="text-[14px] text-muted-foreground mt-1">
           Welcome back, {affiliate.name}
         </p>
       </div>
@@ -156,60 +153,58 @@ export function DashboardClient({ affiliate, stats }: DashboardClientProps) {
         />
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-heading-3 flex items-center gap-2">
-              <Link size={18} strokeWidth={ICON_STROKE_WIDTH} />
+      <Card className="border-border/60">
+        <CardContent className="pt-6 pb-6 px-6">
+          <div className="flex items-center justify-between mb-5">
+            <h3 style={{ fontSize: "1rem", fontWeight: 600, letterSpacing: "-0.02em" }}>
               Your Referral Link
-            </CardTitle>
-            <Badge variant="outline" className="font-mono text-xs">
+            </h3>
+            <span className="text-[12px] font-medium text-muted-foreground px-2.5 py-1 rounded-full border border-border/60">
               {affiliate.commission_rate}% commission
-            </Badge>
+            </span>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
+
           <div className="flex gap-2">
             <div className="flex-1 relative">
               <Input
                 value={referralLink}
                 readOnly
-                className="pr-10 font-mono text-xs"
+                className="pr-9 font-mono text-[12px] bg-muted/40"
               />
               <a
                 href={referralLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               >
-                <ExternalLink size={14} strokeWidth={ICON_STROKE_WIDTH} />
+                <ExternalLink size={13} strokeWidth={ICON_STROKE_WIDTH} />
               </a>
             </div>
-            <Button onClick={copyLink} variant="outline" size="default">
+            <Button onClick={copyLink} size="default">
               {copied ? (
-                <Check size={16} strokeWidth={ICON_STROKE_WIDTH} />
+                <Check size={15} strokeWidth={ICON_STROKE_WIDTH} />
               ) : (
-                <Copy size={16} strokeWidth={ICON_STROKE_WIDTH} />
+                <Copy size={15} strokeWidth={ICON_STROKE_WIDTH} />
               )}
               {copied ? "Copied" : "Copy"}
             </Button>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="text-caption text-muted-foreground">Slug:</span>
+          <div className="flex items-center gap-2.5 mt-4">
+            <span className="text-[12px] text-muted-foreground">Slug:</span>
             {editingSlug ? (
               <div className="flex items-center gap-2">
                 <Input
                   value={slug}
                   onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
-                  className="h-7 w-40 font-mono text-xs"
+                  className="h-7 w-36 font-mono text-[12px]"
                   autoFocus
                 />
-                <Button size="sm" variant="outline" onClick={saveSlug} disabled={saving}>
-                  {saving ? "Saving..." : "Save"}
+                <Button size="xs" onClick={saveSlug} disabled={saving}>
+                  {saving ? "..." : "Save"}
                 </Button>
                 <Button
-                  size="sm"
+                  size="xs"
                   variant="ghost"
                   onClick={() => {
                     setSlug(affiliate.slug);
@@ -222,44 +217,44 @@ export function DashboardClient({ affiliate, stats }: DashboardClientProps) {
             ) : (
               <button
                 onClick={() => setEditingSlug(true)}
-                className="flex items-center gap-1.5 text-caption font-mono hover:text-foreground text-muted-foreground transition-colors"
+                className="flex items-center gap-1.5 text-[12px] font-mono text-muted-foreground hover:text-foreground transition-colors"
               >
                 {affiliate.slug}
-                <Pencil size={12} strokeWidth={ICON_STROKE_WIDTH} />
+                <Pencil size={11} strokeWidth={ICON_STROKE_WIDTH} />
               </button>
             )}
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Card className="border-dashed">
-          <CardContent className="pt-6 text-center space-y-2">
-            <p className="text-heading-4 text-muted-foreground">Commission Rate</p>
-            <p className="text-display-lg">{affiliate.commission_rate}%</p>
-            <p className="text-caption text-muted-foreground">
-              for {affiliate.commission_duration_months} months
-            </p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div className="rounded-xl border border-border/60 bg-card p-6 text-center">
+          <p className="text-[12px] font-medium text-muted-foreground mb-2">Commission Rate</p>
+          <p style={{ fontSize: "2.25rem", fontWeight: 600, letterSpacing: "-0.04em", lineHeight: 1 }}>
+            {affiliate.commission_rate}%
+          </p>
+          <p className="text-[12px] text-muted-foreground/70 mt-2">
+            for {affiliate.commission_duration_months} months
+          </p>
+        </div>
 
-        <Card className="border-dashed">
-          <CardContent className="pt-6 text-center space-y-2">
-            <p className="text-heading-4 text-muted-foreground">Sub-Affiliate Rate</p>
-            <p className="text-display-lg">{affiliate.sub_affiliate_rate}%</p>
-            <p className="text-caption text-muted-foreground">per recruited affiliate</p>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border border-border/60 bg-card p-6 text-center">
+          <p className="text-[12px] font-medium text-muted-foreground mb-2">Sub-Affiliate Rate</p>
+          <p style={{ fontSize: "2.25rem", fontWeight: 600, letterSpacing: "-0.04em", lineHeight: 1 }}>
+            {affiliate.sub_affiliate_rate}%
+          </p>
+          <p className="text-[12px] text-muted-foreground/70 mt-2">per recruited affiliate</p>
+        </div>
 
-        <Card className="border-dashed">
-          <CardContent className="pt-6 text-center space-y-2">
-            <p className="text-heading-4 text-muted-foreground">Tier Level</p>
-            <p className="text-display-lg">Tier {affiliate.tier_level}</p>
-            <p className="text-caption text-muted-foreground">
-              {affiliate.tier_level === 1 ? "Main Affiliate" : `Sub-Affiliate (L${affiliate.tier_level})`}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border border-border/60 bg-card p-6 text-center">
+          <p className="text-[12px] font-medium text-muted-foreground mb-2">Tier Level</p>
+          <p style={{ fontSize: "2.25rem", fontWeight: 600, letterSpacing: "-0.04em", lineHeight: 1 }}>
+            Tier {affiliate.tier_level}
+          </p>
+          <p className="text-[12px] text-muted-foreground/70 mt-2">
+            {affiliate.tier_level === 1 ? "Main Affiliate" : `Sub-Affiliate L${affiliate.tier_level}`}
+          </p>
+        </div>
       </div>
     </div>
   );

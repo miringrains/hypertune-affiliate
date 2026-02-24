@@ -5,4 +5,4 @@ export { EmptyState } from "./empty-state";
 export { StatusBadge } from "./status-badge";
 export { SearchInput } from "./search-input";
 export { ConfirmDialog } from "./confirm-dialog";
-export { Logo, LogoWithText } from "./logo";
+export { Logo } from "./logo";

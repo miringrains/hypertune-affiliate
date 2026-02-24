@@ -92,10 +92,12 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="text-center space-y-2">
-        <h2 className="text-heading-2">Welcome back</h2>
-        <p className="text-body-sm text-muted-foreground">
+        <h2 style={{ fontSize: "2.45rem", letterSpacing: "-0.05em", fontWeight: 600, lineHeight: 1.1 }}>
+          Welcome back
+        </h2>
+        <p className="text-[15px] text-white/50">
           Sign in to your affiliate dashboard
         </p>
       </div>

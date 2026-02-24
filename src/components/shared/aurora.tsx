@@ -119,7 +119,7 @@ interface AuroraProps {
 }
 
 export function Aurora({
-  colorStops = ["#E1261B", "#3A0A08", "#E1261B"],
+  colorStops = ["#D42215", "#8B2500", "#E85D04"],
   speed = 1.0,
   amplitude = 1.0,
   blend = 0.5,
@@ -221,10 +221,10 @@ export function AuroraBackdrop({ subtle = false }: AuroraBackdropProps) {
   return (
     <div className="fixed inset-0 z-0 pointer-events-none" style={{ backgroundColor: "#0A0A0A" }}>
       <Aurora
-        colorStops={["#E1261B", "#3A0A08", "#E1261B"]}
+        colorStops={["#D42215", "#8B2500", "#E85D04"]}
         speed={subtle ? 0.6 : 1.0}
         amplitude={subtle ? 0.8 : 1.0}
-        blend={subtle ? 0.4 : 0.5}
+        blend={subtle ? 0.45 : 0.55}
         className="absolute inset-0"
       />
     </div>

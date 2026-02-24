@@ -6,15 +6,42 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Mail } from "lucide-react";
+import { Mail, Lock } from "lucide-react";
 import { ICON_STROKE_WIDTH } from "@/lib/constants";
+import { useRouter } from "next/navigation";
+
+type LoginMode = "password" | "magic-link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [mode, setMode] = useState<LoginMode>("password");
+  const router = useRouter();
 
-  async function handleLogin(e: React.FormEvent) {
+  async function handlePasswordLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    setLoading(false);
+
+    if (error) {
+      toast.error("Login failed", { description: error.message });
+      return;
+    }
+
+    router.push("/dashboard");
+    router.refresh();
+  }
+
+  async function handleMagicLink(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
 
@@ -73,22 +100,80 @@ export default function LoginPage() {
         </p>
       </div>
 
-      <form onSubmit={handleLogin} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email address</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Sending..." : "Send magic link"}
-        </Button>
-      </form>
+      {mode === "password" ? (
+        <form onSubmit={handlePasswordLogin} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email address</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? (
+              "Signing in..."
+            ) : (
+              <>
+                <Lock size={16} strokeWidth={ICON_STROKE_WIDTH} />
+                Sign in
+              </>
+            )}
+          </Button>
+          <button
+            type="button"
+            onClick={() => setMode("magic-link")}
+            className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Use magic link instead
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={handleMagicLink} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="email-ml">Email address</Label>
+            <Input
+              id="email-ml"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? (
+              "Sending..."
+            ) : (
+              <>
+                <Mail size={16} strokeWidth={ICON_STROKE_WIDTH} />
+                Send magic link
+              </>
+            )}
+          </Button>
+          <button
+            type="button"
+            onClick={() => setMode("password")}
+            className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Use password instead
+          </button>
+        </form>
+      )}
     </div>
   );
 }

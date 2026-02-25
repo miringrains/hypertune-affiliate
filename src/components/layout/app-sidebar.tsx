@@ -55,12 +55,21 @@ function NavGroupSection({ group }: { group: NavGroup }) {
 
 interface AppSidebarProps {
   isAdmin?: boolean;
+  tierLevel?: number;
 }
 
-export function AppSidebar({ isAdmin = false }: AppSidebarProps) {
+export function AppSidebar({ isAdmin = false, tierLevel = 1 }: AppSidebarProps) {
+  const filteredAffiliateNav = affiliateNav.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => {
+      if (item.href === "/sub-affiliates" && tierLevel !== 1) return false;
+      return true;
+    }),
+  }));
+
   const allNavGroups = isAdmin
-    ? [...affiliateNav, ...adminNav]
-    : affiliateNav;
+    ? [...filteredAffiliateNav, ...adminNav]
+    : filteredAffiliateNav;
 
   return (
     <aside className="fixed inset-y-0 left-0 z-[var(--z-sticky)] flex w-[var(--sidebar-width)] flex-col">

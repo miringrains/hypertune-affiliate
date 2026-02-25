@@ -49,12 +49,17 @@ export async function GET(request: NextRequest) {
         process.env.SUPABASE_SERVICE_ROLE_KEY!,
       );
 
-      const { data: invite } = await serviceClient
+      // Find invite by code — reusable links won't have used_by_affiliate_id = null
+      const { data: inviteRows } = await serviceClient
         .from("invite_links")
         .select("*")
-        .eq("code", inviteCode)
-        .is("used_by_affiliate_id", null)
-        .single();
+        .eq("code", inviteCode);
+
+      // Pick the reusable link or the unused one-time link
+      const invite =
+        inviteRows?.find((i) => i.is_reusable) ??
+        inviteRows?.find((i) => !i.used_by_affiliate_id) ??
+        null;
 
       if (invite) {
         const parentId = invite.parent_affiliate_id;
@@ -87,7 +92,8 @@ export async function GET(request: NextRequest) {
           .select("id")
           .single();
 
-        if (newAffiliate) {
+        // Only mark one-time links as used; reusable links stay active
+        if (newAffiliate && !invite.is_reusable) {
           await serviceClient
             .from("invite_links")
             .update({ used_by_affiliate_id: newAffiliate.id })

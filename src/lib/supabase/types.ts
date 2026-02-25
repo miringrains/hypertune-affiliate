@@ -276,7 +276,9 @@ export type Database = {
           created_by: string
           expires_at: string | null
           id: string
+          is_reusable: boolean
           is_tracking_only: boolean
+          label: string | null
           parent_affiliate_id: string | null
           used_by_affiliate_id: string | null
         }
@@ -287,7 +289,9 @@ export type Database = {
           created_by: string
           expires_at?: string | null
           id?: string
+          is_reusable?: boolean
           is_tracking_only?: boolean
+          label?: string | null
           parent_affiliate_id?: string | null
           used_by_affiliate_id?: string | null
         }
@@ -298,7 +302,9 @@ export type Database = {
           created_by?: string
           expires_at?: string | null
           id?: string
+          is_reusable?: boolean
           is_tracking_only?: boolean
+          label?: string | null
           parent_affiliate_id?: string | null
           used_by_affiliate_id?: string | null
         }

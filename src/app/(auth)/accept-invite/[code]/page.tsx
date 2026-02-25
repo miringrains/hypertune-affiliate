@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { ICON_STROKE_WIDTH } from "@/lib/constants";
 
 export default function AcceptInvitePage() {
@@ -23,10 +23,50 @@ export default function AcceptInvitePage() {
   const [step, setStep] = useState<"verify" | "setup">("verify");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-  const [slug, setSlug] = useState("");
+  const [gamerTag, setGamerTag] = useState("");
+  const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
+  const [checkingSlug, setCheckingSlug] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const slugTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const supabase = createClient();
+
+  const slug = gamerTag.toLowerCase().replace(/[^a-z0-9-]/g, "");
+
+  const checkSlugAvailability = useCallback(async (s: string) => {
+    if (s.length < 2) {
+      setSlugAvailable(null);
+      return;
+    }
+    setCheckingSlug(true);
+    try {
+      const res = await fetch("/api/affiliates/check-slug", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug: s }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSlugAvailable(data.available);
+      }
+    } finally {
+      setCheckingSlug(false);
+    }
+  }, []);
+
+  function handleGamerTagChange(value: string) {
+    setGamerTag(value);
+    const normalized = value.toLowerCase().replace(/[^a-z0-9-]/g, "");
+    setSlugAvailable(null);
+
+    if (slugTimer.current) clearTimeout(slugTimer.current);
+    if (normalized.length >= 2) {
+      slugTimer.current = setTimeout(
+        () => checkSlugAvailability(normalized),
+        400,
+      );
+    }
+  }
 
   useEffect(() => {
     async function checkInvite() {
@@ -44,6 +84,12 @@ export default function AcceptInvitePage() {
 
   async function handleSendMagicLink(e: React.FormEvent) {
     e.preventDefault();
+
+    if (slugAvailable === false) {
+      toast.error("That gamer tag is already taken. Please choose another.");
+      return;
+    }
+
     setSubmitting(true);
 
     const { error } = await supabase.auth.signInWithOtp({
@@ -118,7 +164,51 @@ export default function AcceptInvitePage() {
 
       <form onSubmit={handleSendMagicLink} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="name">Full name</Label>
+          <Label htmlFor="gamertag">Gamer Tag</Label>
+          <div className="relative">
+            <Input
+              id="gamertag"
+              placeholder="kuz2stronk"
+              value={gamerTag}
+              onChange={(e) => handleGamerTagChange(e.target.value)}
+              required
+            />
+            {slug.length >= 2 && (
+              <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                {checkingSlug ? (
+                  <Loader2
+                    size={14}
+                    strokeWidth={ICON_STROKE_WIDTH}
+                    className="animate-spin text-muted-foreground"
+                  />
+                ) : slugAvailable === true ? (
+                  <CheckCircle2
+                    size={14}
+                    strokeWidth={ICON_STROKE_WIDTH}
+                    className="text-emerald-500"
+                  />
+                ) : slugAvailable === false ? (
+                  <XCircle
+                    size={14}
+                    strokeWidth={ICON_STROKE_WIDTH}
+                    className="text-destructive"
+                  />
+                ) : null}
+              </div>
+            )}
+          </div>
+          <p className="text-caption text-muted-foreground">
+            Your referral link: hypertune.gg/?am_id=
+            <strong>{slug || "your-tag"}</strong>
+          </p>
+          {slugAvailable === false && (
+            <p className="text-caption text-destructive">
+              This gamer tag is already taken
+            </p>
+          )}
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="name">Full Name</Label>
           <Input
             id="name"
             placeholder="John Doe"
@@ -128,7 +218,7 @@ export default function AcceptInvitePage() {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="invite-email">Email address</Label>
+          <Label htmlFor="invite-email">Email</Label>
           <Input
             id="invite-email"
             type="email"
@@ -138,24 +228,13 @@ export default function AcceptInvitePage() {
             required
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="slug">Referral ID</Label>
-          <Input
-            id="slug"
-            placeholder="your-unique-id"
-            value={slug}
-            onChange={(e) =>
-              setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
-            }
-            required
-          />
-          <p className="text-caption text-muted-foreground">
-            Your links will look like: hypertune.gg/?am_id=
-            <strong>{slug || "your-id"}</strong>
-          </p>
-        </div>
-        <Button type="submit" className="w-full" disabled={submitting}>
-          {submitting ? "Setting up..." : "Create affiliate account"}
+        <Button
+          type="submit"
+          variant="chrome"
+          className="w-full"
+          disabled={submitting || slugAvailable === false}
+        >
+          {submitting ? "Setting up..." : "Sign Up"}
         </Button>
       </form>
     </div>

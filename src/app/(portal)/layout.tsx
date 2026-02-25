@@ -20,18 +20,19 @@ export default async function PortalLayout({
 
   const { data: affiliate } = await supabase
     .from("affiliates")
-    .select("name, email, role")
+    .select("name, email, role, tier_level")
     .eq("user_id", user.id)
     .single();
 
   const isAdmin = affiliate?.role === "admin";
+  const tierLevel = affiliate?.tier_level ?? 2;
 
   return (
     <div className="h-screen overflow-hidden" style={{ backgroundColor: "#0a0a0a" }}>
       <AuroraBackdrop subtle />
 
       <div className="hidden lg:block">
-        <AppSidebar isAdmin={isAdmin} />
+        <AppSidebar isAdmin={isAdmin} tierLevel={tierLevel} />
       </div>
 
       <div className="relative z-[1] flex flex-col lg:pl-[var(--sidebar-width)] h-screen p-2 lg:p-3">
@@ -45,6 +46,7 @@ export default async function PortalLayout({
           <div className="h-full overflow-y-auto overflow-x-hidden light-scroll">
             <TopBar
               isAdmin={isAdmin}
+              tierLevel={tierLevel}
               userName={affiliate?.name}
               userEmail={affiliate?.email}
             />

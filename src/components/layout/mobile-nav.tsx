@@ -55,9 +55,10 @@ function MobileNavGroup({ group }: { group: NavGroup }) {
 
 interface MobileNavProps {
   isAdmin?: boolean;
+  tierLevel?: number;
 }
 
-export function MobileNav({ isAdmin = false }: MobileNavProps) {
+export function MobileNav({ isAdmin = false, tierLevel = 1 }: MobileNavProps) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
@@ -65,9 +66,17 @@ export function MobileNav({ isAdmin = false }: MobileNavProps) {
     setOpen(false);
   }, [pathname]);
 
+  const filteredAffiliateNav = affiliateNav.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => {
+      if (item.href === "/sub-affiliates" && tierLevel !== 1) return false;
+      return true;
+    }),
+  }));
+
   const allNavGroups = isAdmin
-    ? [...affiliateNav, ...adminNav]
-    : affiliateNav;
+    ? [...filteredAffiliateNav, ...adminNav]
+    : filteredAffiliateNav;
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>

@@ -92,6 +92,23 @@ export function DashboardClient({ affiliate, stats }: DashboardClientProps) {
     }
 
     setSaving(true);
+
+    // Check availability first
+    const checkRes = await fetch("/api/affiliates/check-slug", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slug, exclude_id: affiliate.id }),
+    });
+
+    if (checkRes.ok) {
+      const { available } = await checkRes.json();
+      if (!available) {
+        setSaving(false);
+        toast.error("That gamer tag is already taken");
+        return;
+      }
+    }
+
     const supabase = createClient();
     const { error } = await supabase
       .from("affiliates")
@@ -101,10 +118,10 @@ export function DashboardClient({ affiliate, stats }: DashboardClientProps) {
     setSaving(false);
 
     if (error) {
-      toast.error("Failed to update slug", { description: error.message });
+      toast.error("Failed to update gamer tag", { description: error.message });
       setSlug(affiliate.slug);
     } else {
-      toast.success("Referral slug updated!");
+      toast.success("Gamer tag updated!");
     }
     setEditingSlug(false);
   }
@@ -187,7 +204,7 @@ export function DashboardClient({ affiliate, stats }: DashboardClientProps) {
           </div>
 
           <div className="flex items-center gap-2.5 mt-4">
-            <span className="text-[12px] text-muted-foreground">Slug:</span>
+            <span className="text-[12px] text-muted-foreground">Gamer Tag:</span>
             {editingSlug ? (
               <div className="flex items-center gap-2">
                 <Input

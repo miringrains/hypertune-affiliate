@@ -42,7 +42,12 @@ export async function GET(request: NextRequest) {
     user_agent: userAgent,
   });
 
-  const response = NextResponse.redirect(redirectUrl);
+  const targetUrl = new URL(redirectUrl);
+  if (!targetUrl.searchParams.has("am_id")) {
+    targetUrl.searchParams.set("am_id", amId);
+  }
+
+  const response = NextResponse.redirect(targetUrl.toString());
   const cookieOpts = getTrackingCookieOptions();
   response.cookies.set(cookieOpts.name, amId, {
     maxAge: cookieOpts.maxAge,

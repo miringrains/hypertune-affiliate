@@ -14,3 +14,15 @@ export const PLAN_PRICES = {
   monthly: 4.99,
   annual: 47.88,
 } as const;
+
+export const STRIPE_PRICE_IDS = {
+  monthly: "price_1RgK4xKgTpq6PPfToKt3vZdq",
+  yearly: "price_1RgK4xKgTpq6PPfT8f5nJVtY",
+} as const;
+
+export function getPlanTypeFromPriceId(priceId: string | null | undefined): "monthly" | "annual" | null {
+  if (!priceId) return null;
+  if (priceId === STRIPE_PRICE_IDS.monthly) return "monthly";
+  if (priceId === STRIPE_PRICE_IDS.yearly) return "annual";
+  return null;
+}

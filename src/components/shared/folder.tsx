@@ -59,13 +59,13 @@ export function Folder({
   const paper2 = darkenColor("#ffffff", 0.05);
   const paper3 = "#ffffff";
 
-  const handleClick = () => {
-    setOpen((prev) => !prev);
-    if (open) {
-      setPaperOffsets(
-        Array.from({ length: maxItems }, () => ({ x: 0, y: 0 }))
-      );
-    }
+  const handleMouseEnter = () => setOpen(true);
+
+  const handleMouseLeave = () => {
+    setOpen(false);
+    setPaperOffsets(
+      Array.from({ length: maxItems }, () => ({ x: 0, y: 0 }))
+    );
   };
 
   const handlePaperMouseMove = (
@@ -107,16 +107,17 @@ export function Folder({
   const scaleStyle = size !== 1 ? { transform: `scale(${size})` } : undefined;
 
   return (
-    <div className={`folder-card ${className}`} onClick={onClick}>
+    <div
+      className={`folder-card ${className}`}
+      onClick={onClick}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       <div className="folder-scene">
         <div style={scaleStyle}>
           <div
             className={`folder ${open ? "open" : ""}`}
             style={folderStyle}
-            onClick={(e) => {
-              e.stopPropagation();
-              handleClick();
-            }}
           >
             <div className="folder__back">
               {papers.map((item, i) => (

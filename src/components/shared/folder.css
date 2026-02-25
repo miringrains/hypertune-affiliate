@@ -1,24 +1,42 @@
-.folder-wrapper {
-  cursor: pointer;
+.folder-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 24px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  position: relative;
+  min-height: 200px;
+}
+
+.folder-scene {
+  position: relative;
+  width: 100px;
+  height: 140px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
 }
 
 .folder {
   transition: all 0.2s ease-in;
+  cursor: pointer;
 }
 
-.folder:not(.open):hover {
+.folder:not(.folder--click):hover {
   transform: translateY(-8px);
 }
 
-.folder:not(.open):hover .paper {
+.folder:not(.folder--click):hover .paper {
   transform: translate(-50%, 0%);
 }
 
-.folder:not(.open):hover .folder__front {
+.folder:not(.folder--click):hover .folder__front {
   transform: skew(15deg) scaleY(0.6);
 }
 
-.folder:not(.open):hover .folder__front.right {
+.folder:not(.folder--click):hover .right {
   transform: skew(-15deg) scaleY(0.6);
 }
 
@@ -56,7 +74,7 @@
   transform: skew(15deg) scaleY(0.6);
 }
 
-.folder.open .folder__front.right {
+.folder.open .right {
   transform: skew(-15deg) scaleY(0.6);
 }
 

@@ -185,38 +185,23 @@ export function MediaClient({ folders }: { folders: FolderData[] }) {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {folders.map((folder) => (
-            <div
+            <Folder
               key={folder.id}
-              className="flex flex-col items-center gap-3"
-            >
-              <Folder
-                color={folder.color}
-                size={1.2}
-                items={folder.assets.slice(0, 3).map((a, i) => (
-                  <PaperThumbnail
-                    key={i}
-                    title={a.title}
-                    file_type={a.file_type}
-                    thumbnail_url={a.thumbnail_url}
-                  />
-                ))}
-                onClick={() => setActiveFolder(folder)}
-              />
-              <div className="text-center">
-                <button
-                  onClick={() => setActiveFolder(folder)}
-                  className="text-[13px] font-semibold hover:underline"
-                >
-                  {folder.name}
-                </button>
-                <p className="text-[11px] text-muted-foreground">
-                  {folder.assets.length} file
-                  {folder.assets.length !== 1 ? "s" : ""}
-                </p>
-              </div>
-            </div>
+              color={folder.color}
+              label={folder.name}
+              subtitle={`${folder.assets.length} file${folder.assets.length !== 1 ? "s" : ""}`}
+              items={folder.assets.slice(0, 3).map((a, i) => (
+                <PaperThumbnail
+                  key={i}
+                  title={a.title}
+                  file_type={a.file_type}
+                  thumbnail_url={a.thumbnail_url}
+                />
+              ))}
+              onClick={() => setActiveFolder(folder)}
+            />
           ))}
         </div>
       )}

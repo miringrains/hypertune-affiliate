@@ -29,6 +29,8 @@ interface FolderProps {
   size?: number;
   items?: (ReactNode | null)[];
   className?: string;
+  label?: string;
+  subtitle?: string;
   onClick?: () => void;
 }
 
@@ -37,6 +39,8 @@ export function Folder({
   size = 1,
   items = [],
   className = "",
+  label,
+  subtitle,
   onClick,
 }: FolderProps) {
   const maxItems = 3;
@@ -62,7 +66,6 @@ export function Folder({
         Array.from({ length: maxItems }, () => ({ x: 0, y: 0 }))
       );
     }
-    onClick?.();
   };
 
   const handlePaperMouseMove = (
@@ -101,39 +104,53 @@ export function Folder({
     "--paper-3": paper3,
   } as React.CSSProperties;
 
+  const scaleStyle = size !== 1 ? { transform: `scale(${size})` } : undefined;
+
   return (
-    <div
-      className={`folder-wrapper ${className}`}
-      style={{ transform: `scale(${size})` }}
-    >
-      <div
-        className={`folder ${open ? "open" : ""}`}
-        style={folderStyle}
-        onClick={handleClick}
-      >
-        <div className="folder__back">
-          {papers.map((item, i) => (
-            <div
-              key={i}
-              className="paper"
-              onMouseMove={(e) => handlePaperMouseMove(e, i)}
-              onMouseLeave={(e) => handlePaperMouseLeave(e, i)}
-              style={
-                open
-                  ? ({
-                      "--magnet-x": `${paperOffsets[i]?.x || 0}px`,
-                      "--magnet-y": `${paperOffsets[i]?.y || 0}px`,
-                    } as React.CSSProperties)
-                  : {}
-              }
-            >
-              {item}
+    <div className={`folder-card ${className}`} onClick={onClick}>
+      <div className="folder-scene">
+        <div style={scaleStyle}>
+          <div
+            className={`folder ${open ? "open" : ""}`}
+            style={folderStyle}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleClick();
+            }}
+          >
+            <div className="folder__back">
+              {papers.map((item, i) => (
+                <div
+                  key={i}
+                  className={`paper paper-${i + 1}`}
+                  onMouseMove={(e) => handlePaperMouseMove(e, i)}
+                  onMouseLeave={(e) => handlePaperMouseLeave(e, i)}
+                  style={
+                    open
+                      ? ({
+                          "--magnet-x": `${paperOffsets[i]?.x || 0}px`,
+                          "--magnet-y": `${paperOffsets[i]?.y || 0}px`,
+                        } as React.CSSProperties)
+                      : {}
+                  }
+                >
+                  {item}
+                </div>
+              ))}
+              <div className="folder__front" />
+              <div className="folder__front right" />
             </div>
-          ))}
-          <div className="folder__front" />
-          <div className="folder__front right" />
+          </div>
         </div>
       </div>
+      {label && (
+        <div className="text-center">
+          <p className="text-[13px] font-semibold">{label}</p>
+          {subtitle && (
+            <p className="text-[11px] text-muted-foreground">{subtitle}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import "./folder.css";
 
 function darkenColor(hex: string, percent: number): string {
   let color = hex.startsWith("#") ? hex.slice(1) : hex;
@@ -18,7 +19,8 @@ function darkenColor(hex: string, percent: number): string {
   g = Math.max(0, Math.min(255, Math.floor(g * (1 - percent))));
   b = Math.max(0, Math.min(255, Math.floor(b * (1 - percent))));
   return (
-    "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()
+    "#" +
+    ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()
   );
 }
 
@@ -91,78 +93,46 @@ export function Folder({
     });
   };
 
+  const folderStyle = {
+    "--folder-color": color,
+    "--folder-back-color": folderBackColor,
+    "--paper-1": paper1,
+    "--paper-2": paper2,
+    "--paper-3": paper3,
+  } as React.CSSProperties;
+
   return (
     <div
-      className={`cursor-pointer transition-all duration-200 ease-in ${className}`}
-      onClick={handleClick}
+      className={`folder-wrapper ${className}`}
       style={{ transform: `scale(${size})` }}
     >
       <div
-        className={`relative transition-transform duration-200 ${open ? "-translate-y-2" : "hover:-translate-y-2"}`}
-        style={{ ["--folder-color" as string]: color, ["--folder-back-color" as string]: folderBackColor }}
+        className={`folder ${open ? "open" : ""}`}
+        style={folderStyle}
+        onClick={handleClick}
       >
-        {/* Folder back */}
-        <div
-          className="relative w-[100px] h-[80px] rounded-[0px_10px_10px_10px]"
-          style={{ background: folderBackColor }}
-        >
-          <div
-            className="absolute z-0 bottom-[98%] left-0 w-[30px] h-[10px] rounded-[5px_5px_0_0]"
-            style={{ background: folderBackColor }}
-          />
-        </div>
-
-        {/* Papers */}
-        {papers.map((item, i) => {
-          const bgColors = [paper1, paper2, paper3];
-          const widths = ["70%", "80%", "90%"];
-          const closedHeights = ["80%", "70%", "60%"];
-          const openTransforms = [
-            `translate(-120%, -70%) rotateZ(-15deg)`,
-            `translate(10%, -70%) rotateZ(15deg)`,
-            `translate(-50%, -100%) rotateZ(5deg)`,
-          ];
-          const openHoverTransforms = [
-            `translate(-120%, -70%) rotateZ(-15deg) scale(1.1)`,
-            `translate(10%, -70%) rotateZ(15deg) scale(1.1)`,
-            `translate(-50%, -100%) rotateZ(5deg) scale(1.1)`,
-          ];
-
-          const baseTransform = open
-            ? openTransforms[i]
-            : "translate(-50%, 10%)";
-
-          const magnetX = paperOffsets[i]?.x || 0;
-          const magnetY = paperOffsets[i]?.y || 0;
-
-          return (
+        <div className="folder__back">
+          {papers.map((item, i) => (
             <div
               key={i}
-              className="absolute z-[2] bottom-[10%] left-1/2 rounded-[10px] transition-all duration-300 ease-in-out overflow-hidden"
+              className="paper"
               onMouseMove={(e) => handlePaperMouseMove(e, i)}
               onMouseLeave={(e) => handlePaperMouseLeave(e, i)}
-              style={{
-                background: bgColors[i],
-                width: widths[i],
-                height: open ? (i === 0 ? closedHeights[i] : "80%") : closedHeights[i],
-                transform: open
-                  ? `${openTransforms[i]} translate(${magnetX}px, ${magnetY}px)`
-                  : baseTransform,
-              }}
+              style={
+                open
+                  ? ({
+                      "--magnet-x": `${paperOffsets[i]?.x || 0}px`,
+                      "--magnet-y": `${paperOffsets[i]?.y || 0}px`,
+                    } as React.CSSProperties)
+                  : {}
+              }
             >
               {item}
             </div>
-          );
-        })}
-
-        {/* Folder front */}
-        <div
-          className="absolute z-[3] inset-0 rounded-[5px_10px_10px_10px] origin-bottom transition-all duration-300 ease-in-out"
-          style={{
-            background: color,
-            transform: open ? "skew(15deg) scaleY(0.6)" : undefined,
-          }}
-        />
+          ))}
+          <div className="folder__front" />
+          <div className="folder__front right" />
+        </div>
       </div>
     </div>
   );

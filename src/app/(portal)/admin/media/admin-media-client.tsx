@@ -19,6 +19,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { PaperThumbnail } from "@/components/shared/paper-thumbnail";
 
 interface Asset {
   id: string;
@@ -28,6 +29,7 @@ interface Asset {
   file_path: string;
   description: string | null;
   created_at: string;
+  thumbnail_url?: string | null;
 }
 
 interface FolderData {
@@ -439,13 +441,12 @@ export function AdminMediaClient({
                   color={folder.color}
                   size={1.2}
                   items={folder.assets.slice(0, 3).map((a, i) => (
-                    <div
+                    <PaperThumbnail
                       key={i}
-                      className="p-2 flex items-center gap-1.5 text-[9px] text-gray-600 font-medium truncate"
-                    >
-                      <FileIcon type={a.file_type} />
-                      <span className="truncate">{a.title}</span>
-                    </div>
+                      title={a.title}
+                      file_type={a.file_type}
+                      thumbnail_url={a.thumbnail_url}
+                    />
                   ))}
                   onClick={() => setActiveFolder(folder)}
                 />

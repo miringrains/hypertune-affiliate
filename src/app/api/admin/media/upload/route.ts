@@ -16,7 +16,7 @@ async function requireAdmin() {
     .single();
 
   if (!affiliate || affiliate.role !== "admin") return null;
-  return affiliate;
+  return { ...affiliate, user_id: user.id };
 }
 
 /**
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       file_type: fileType,
       file_size: file_size || 0,
       folder_id,
-      uploaded_by: admin.id,
+      uploaded_by: admin.user_id,
     })
     .select()
     .single();

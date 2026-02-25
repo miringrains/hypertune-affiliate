@@ -367,13 +367,47 @@ export type Database = {
           },
         ]
       }
+      media_folders: {
+        Row: {
+          id: string
+          name: string
+          color: string
+          created_at: string
+          created_by: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          color?: string
+          created_at?: string
+          created_by: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          color?: string
+          created_at?: string
+          created_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_folders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       media_assets: {
         Row: {
           campaign: string | null
           created_at: string
           description: string | null
           file_path: string
+          file_size: number
           file_type: string
+          folder_id: string | null
           id: string
           title: string
           uploaded_by: string
@@ -383,7 +417,9 @@ export type Database = {
           created_at?: string
           description?: string | null
           file_path: string
+          file_size?: number
           file_type: string
+          folder_id?: string | null
           id?: string
           title: string
           uploaded_by: string
@@ -393,12 +429,22 @@ export type Database = {
           created_at?: string
           description?: string | null
           file_path?: string
+          file_size?: number
           file_type?: string
+          folder_id?: string | null
           id?: string
           title?: string
           uploaded_by?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "media_assets_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "media_folders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payout_methods: {
         Row: {

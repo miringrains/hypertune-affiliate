@@ -9,7 +9,7 @@ interface PaperThumbnailProps {
 }
 
 function TypeIcon({ type, className }: { type: string; className?: string }) {
-  const cn = className || "w-6 h-6 text-gray-400";
+  const cn = className || "w-6 h-6 text-gray-400/80";
   switch (type) {
     case "video":
       return <FileVideo className={cn} />;
@@ -41,9 +41,9 @@ export function PaperThumbnail({
   }
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-gray-50">
+    <div className="w-full h-full flex flex-col items-center justify-center gap-1">
       <TypeIcon type={file_type} />
-      <span className="text-[7px] text-gray-400 font-medium uppercase tracking-wide px-1 truncate max-w-full">
+      <span className="text-[7px] text-gray-500 font-medium uppercase tracking-wide px-1 truncate max-w-full">
         {file_type}
       </span>
     </div>

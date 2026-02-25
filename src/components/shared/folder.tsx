@@ -55,9 +55,9 @@ export function Folder({
   );
 
   const folderBackColor = darkenColor(color, 0.08);
-  const paper1 = darkenColor("#ffffff", 0.1);
-  const paper2 = darkenColor("#ffffff", 0.05);
-  const paper3 = "#ffffff";
+  const paper1 = "#1a1a1a";
+  const paper2 = "#222222";
+  const paper3 = "#2a2a2a";
 
   const handleMouseEnter = () => setOpen(true);
 

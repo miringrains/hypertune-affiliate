@@ -19,19 +19,45 @@ export default async function CustomersPage() {
 
   if (!affiliate) redirect("/login");
 
-  const { data: customers } = await supabase
+  const isTier1 = affiliate.tier_level === 1 && affiliate.role !== "admin";
+
+  let subIdMap: Record<string, string> = {};
+
+  if (isTier1) {
+    const { data: subs } = await supabase
+      .from("affiliates")
+      .select("id, name")
+      .eq("parent_id", affiliate.id);
+
+    if (subs) {
+      subIdMap[affiliate.id] = "You";
+      for (const s of subs) {
+        subIdMap[s.id] = s.name;
+      }
+    }
+  }
+
+  const query = supabase
     .from("customers")
     .select("*, leads(email)")
-    .eq("affiliate_id", affiliate.id)
     .order("created_at", { ascending: false });
 
-  const rows = customers ?? [];
+  if (!isTier1) {
+    query.eq("affiliate_id", affiliate.id);
+  }
+
+  const { data: customers } = await query;
+  const rows = (customers ?? []).filter(
+    (c) => isTier1 ? (c.affiliate_id === affiliate.id || subIdMap[c.affiliate_id]) : true
+  );
 
   return (
     <div>
       <h1 className="text-display-sm">Customers</h1>
       <p className="text-[14px] text-muted-foreground mt-1">
-        Leads that converted into paying customers.
+        {isTier1
+          ? "Customers from your referrals and your sub-affiliates."
+          : "Leads that converted into paying customers."}
       </p>
 
       <Card className="mt-6">
@@ -47,6 +73,11 @@ export default async function CustomersPage() {
                   <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                     Email
                   </th>
+                  {isTier1 && (
+                    <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                      Source
+                    </th>
+                  )}
                   <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                     State
                   </th>
@@ -54,7 +85,7 @@ export default async function CustomersPage() {
                     Plan Type
                   </th>
                   <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                    Payment Count
+                    Payments
                   </th>
                   <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                     First Payment
@@ -70,8 +101,17 @@ export default async function CustomersPage() {
                     <td className="px-5 py-3 text-[13px]">
                       {customer.leads?.email ?? "—"}
                     </td>
+                    {isTier1 && (
+                      <td className="px-5 py-3 text-[12px] text-muted-foreground">
+                        {customer.affiliate_id === affiliate.id
+                          ? "You"
+                          : subIdMap[customer.affiliate_id] ?? "—"}
+                      </td>
+                    )}
                     <td className="px-5 py-3">
-                      <StatusBadge status={customer.current_state ?? "unknown"} />
+                      <StatusBadge
+                        status={customer.current_state ?? "unknown"}
+                      />
                     </td>
                     <td className="px-5 py-3 text-[13px]">
                       {customer.plan_type ?? "—"}
@@ -81,7 +121,9 @@ export default async function CustomersPage() {
                     </td>
                     <td className="px-5 py-3 text-[12px] text-muted-foreground">
                       {customer.first_payment_at
-                        ? new Date(customer.first_payment_at).toLocaleDateString()
+                        ? new Date(
+                            customer.first_payment_at
+                          ).toLocaleDateString()
                         : "—"}
                     </td>
                     <td className="px-5 py-3 text-[12px] text-muted-foreground">

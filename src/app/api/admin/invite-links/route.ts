@@ -17,7 +17,7 @@ async function requireAdmin() {
     .single();
 
   if (!affiliate || affiliate.role !== "admin") return null;
-  return affiliate;
+  return { ...affiliate, user_id: user.id };
 }
 
 export async function GET() {
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       is_reusable,
       is_tracking_only: false,
       parent_affiliate_id: null,
-      created_by: admin.id,
+      created_by: admin.user_id,
       expires_at: expires_at || null,
     })
     .select()

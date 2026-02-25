@@ -58,13 +58,23 @@ interface AppSidebarProps {
   tierLevel?: number;
 }
 
+const ADMIN_REMAP: Record<string, string> = {
+  "/leads": "/admin",
+  "/customers": "/admin",
+  "/commissions": "/admin/commissions",
+  "/payouts": "/admin/payouts",
+  "/sub-affiliates": "/admin",
+};
+
 export function AppSidebar({ isAdmin = false, tierLevel = 1 }: AppSidebarProps) {
   const filteredAffiliateNav = affiliateNav.map((group) => ({
     ...group,
-    items: group.items.filter((item) => {
-      if (item.href === "/sub-affiliates" && tierLevel !== 1) return false;
-      return true;
-    }),
+    items: group.items
+      .filter((item) => {
+        if (isAdmin && (item.href === "/sub-affiliates" || item.href === "/leads" || item.href === "/customers" || item.href === "/commissions" || item.href === "/payouts")) return false;
+        if (item.href === "/sub-affiliates" && tierLevel !== 1) return false;
+        return true;
+      }),
   }));
 
   const allNavGroups = isAdmin

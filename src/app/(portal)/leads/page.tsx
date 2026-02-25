@@ -18,19 +18,45 @@ export default async function LeadsPage() {
 
   if (!affiliate) redirect("/login");
 
-  const { data: leads } = await supabase
+  const isTier1 = affiliate.tier_level === 1 && affiliate.role !== "admin";
+
+  let subIdMap: Record<string, string> = {};
+
+  if (isTier1) {
+    const { data: subs } = await supabase
+      .from("affiliates")
+      .select("id, name")
+      .eq("parent_id", affiliate.id);
+
+    if (subs) {
+      subIdMap[affiliate.id] = "You";
+      for (const s of subs) {
+        subIdMap[s.id] = s.name;
+      }
+    }
+  }
+
+  const query = supabase
     .from("leads")
     .select("*")
-    .eq("affiliate_id", affiliate.id)
     .order("created_at", { ascending: false });
 
-  const rows = leads ?? [];
+  if (!isTier1) {
+    query.eq("affiliate_id", affiliate.id);
+  }
+
+  const { data: leads } = await query;
+  const rows = (leads ?? []).filter(
+    (l) => isTier1 ? (l.affiliate_id === affiliate.id || subIdMap[l.affiliate_id]) : true
+  );
 
   return (
     <div>
       <h1 className="text-display-sm">Leads</h1>
       <p className="text-[14px] text-muted-foreground mt-1">
-        People who signed up through your referral link.
+        {isTier1
+          ? "Leads from your referral link and your sub-affiliates."
+          : "People who signed up through your referral link."}
       </p>
 
       <Card className="mt-6">
@@ -46,6 +72,11 @@ export default async function LeadsPage() {
                   <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                     Email
                   </th>
+                  {isTier1 && (
+                    <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                      Source
+                    </th>
+                  )}
                   <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                     Stripe Customer ID
                   </th>
@@ -58,6 +89,13 @@ export default async function LeadsPage() {
                 {rows.map((lead) => (
                   <tr key={lead.id} className="border-b border-border">
                     <td className="px-5 py-3 text-[13px]">{lead.email}</td>
+                    {isTier1 && (
+                      <td className="px-5 py-3 text-[12px] text-muted-foreground">
+                        {lead.affiliate_id === affiliate.id
+                          ? "You"
+                          : subIdMap[lead.affiliate_id] ?? "—"}
+                      </td>
+                    )}
                     <td className="px-5 py-3 text-[13px] font-mono">
                       {lead.stripe_customer_id
                         ? lead.stripe_customer_id.slice(0, 8) + "…"

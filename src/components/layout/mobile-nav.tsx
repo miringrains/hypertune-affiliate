@@ -69,6 +69,7 @@ export function MobileNav({ isAdmin = false, tierLevel = 1 }: MobileNavProps) {
   const filteredAffiliateNav = affiliateNav.map((group) => ({
     ...group,
     items: group.items.filter((item) => {
+      if (isAdmin && ["/sub-affiliates", "/leads", "/customers", "/commissions", "/payouts"].includes(item.href)) return false;
       if (item.href === "/sub-affiliates" && tierLevel !== 1) return false;
       return true;
     }),

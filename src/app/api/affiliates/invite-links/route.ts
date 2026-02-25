@@ -17,7 +17,7 @@ async function requireTier1Affiliate() {
     .single();
 
   if (!affiliate || affiliate.tier_level !== 1) return null;
-  return affiliate;
+  return { ...affiliate, user_id: user.id };
 }
 
 export async function GET() {
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       is_reusable: true,
       is_tracking_only: false,
       parent_affiliate_id: affiliate.id,
-      created_by: affiliate.id,
+      created_by: affiliate.user_id,
     })
     .select()
     .single();

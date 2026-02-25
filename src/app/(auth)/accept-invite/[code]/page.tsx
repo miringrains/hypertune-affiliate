@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Eye, EyeOff } from "lucide-react";
 import { ICON_STROKE_WIDTH } from "@/lib/constants";
 
 export default function AcceptInvitePage() {
@@ -20,8 +20,10 @@ export default function AcceptInvitePage() {
     parent_affiliate_id: string | null;
   } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [step, setStep] = useState<"verify" | "setup">("verify");
+  const [step, setStep] = useState<"form" | "confirm">("form");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
   const [gamerTag, setGamerTag] = useState("");
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
@@ -82,7 +84,7 @@ export default function AcceptInvitePage() {
     checkInvite();
   }, [code]);
 
-  async function handleSendMagicLink(e: React.FormEvent) {
+  async function handleSignUp(e: React.FormEvent) {
     e.preventDefault();
 
     if (slugAvailable === false) {
@@ -90,10 +92,16 @@ export default function AcceptInvitePage() {
       return;
     }
 
+    if (password.length < 8) {
+      toast.error("Password must be at least 8 characters.");
+      return;
+    }
+
     setSubmitting(true);
 
-    const { error } = await supabase.auth.signInWithOtp({
+    const { error } = await supabase.auth.signUp({
       email,
+      password,
       options: {
         emailRedirectTo: `${window.location.origin}/api/auth/callback?invite_code=${code}&name=${encodeURIComponent(name)}&slug=${encodeURIComponent(slug)}`,
       },
@@ -102,15 +110,13 @@ export default function AcceptInvitePage() {
     setSubmitting(false);
 
     if (error) {
-      toast.error("Failed to send verification email", {
-        description: error.message,
-      });
+      toast.error("Signup failed", { description: error.message });
       return;
     }
 
-    setStep("setup");
+    setStep("confirm");
     toast.success("Check your email!", {
-      description: "Click the link to complete your registration.",
+      description: "Click the confirmation link to activate your account.",
     });
   }
 
@@ -140,13 +146,13 @@ export default function AcceptInvitePage() {
     );
   }
 
-  if (step === "setup") {
+  if (step === "confirm") {
     return (
       <div className="text-center space-y-4">
-        <h2 className="text-heading-2">Check your email</h2>
+        <h2 className="text-heading-2">Confirm your email</h2>
         <p className="text-body-sm text-muted-foreground">
-          We sent a verification link to <strong>{email}</strong>. Click it to
-          activate your affiliate account.
+          We sent a confirmation link to <strong>{email}</strong>. Click it to
+          activate your affiliate account, then sign in with your password.
         </p>
       </div>
     );
@@ -158,11 +164,11 @@ export default function AcceptInvitePage() {
         <h2 className="text-heading-2">Join as an Affiliate</h2>
         <p className="text-body-sm text-muted-foreground">
           You&apos;ve been invited to the Hypertune affiliate program at{" "}
-          <strong>{invite.commission_rate}%</strong> commission.
+          <strong>70%</strong> commission.
         </p>
       </div>
 
-      <form onSubmit={handleSendMagicLink} className="space-y-4">
+      <form onSubmit={handleSignUp} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="gamertag">Gamer Tag</Label>
           <div className="relative">
@@ -228,13 +234,38 @@ export default function AcceptInvitePage() {
             required
           />
         </div>
+        <div className="space-y-2">
+          <Label htmlFor="invite-password">Password</Label>
+          <div className="relative">
+            <Input
+              id="invite-password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Min 8 characters"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={8}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {showPassword ? (
+                <EyeOff size={14} strokeWidth={ICON_STROKE_WIDTH} />
+              ) : (
+                <Eye size={14} strokeWidth={ICON_STROKE_WIDTH} />
+              )}
+            </button>
+          </div>
+        </div>
         <Button
           type="submit"
           variant="chrome"
           className="w-full"
           disabled={submitting || slugAvailable === false}
         >
-          {submitting ? "Setting up..." : "Sign Up"}
+          {submitting ? "Creating account..." : "Sign Up"}
         </Button>
       </form>
     </div>

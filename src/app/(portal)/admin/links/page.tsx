@@ -14,7 +14,7 @@ import {
   Link2,
   Loader2,
 } from "lucide-react";
-import { ICON_STROKE_WIDTH, COMMISSION_RATES } from "@/lib/constants";
+import { ICON_STROKE_WIDTH } from "@/lib/constants";
 
 interface InviteLink {
   id: string;
@@ -36,7 +36,6 @@ export default function AdminLinksPage() {
   const [creating, setCreating] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [newRate, setNewRate] = useState<number>(COMMISSION_RATES[0]);
   const [newLabel, setNewLabel] = useState("");
 
   const appUrl = typeof window !== "undefined" ? window.location.origin : "";
@@ -61,7 +60,6 @@ export default function AdminLinksPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        commission_rate: newRate,
         label: newLabel || null,
         is_reusable: true,
       }),
@@ -134,25 +132,16 @@ export default function AdminLinksPage() {
             <form onSubmit={createLink} className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="rate">Commission Rate</Label>
-                  <select
-                    id="rate"
-                    value={newRate}
-                    onChange={(e) => setNewRate(Number(e.target.value))}
-                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-                  >
-                    {COMMISSION_RATES.map((rate) => (
-                      <option key={rate} value={rate}>
-                        {rate}%
-                      </option>
-                    ))}
-                  </select>
+                  <Label>Commission Rate</Label>
+                  <div className="flex h-9 items-center rounded-md border border-input bg-transparent px-3 text-sm text-muted-foreground">
+                    70% — fixed for Tier 1
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="label">Label (optional)</Label>
                   <Input
                     id="label"
-                    placeholder="e.g. Main 70% tier"
+                    placeholder="e.g. Streamer batch Q1"
                     value={newLabel}
                     onChange={(e) => setNewLabel(e.target.value)}
                   />

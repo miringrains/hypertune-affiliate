@@ -77,6 +77,8 @@ export async function GET(request: NextRequest) {
           }
         }
 
+        const commissionRate = tierLevel === 1 ? 70 : invite.commission_rate;
+
         const { data: newAffiliate } = await serviceClient
           .from("affiliates")
           .insert({
@@ -86,7 +88,7 @@ export async function GET(request: NextRequest) {
             slug: decodeURIComponent(slug),
             parent_id: parentId,
             tier_level: tierLevel,
-            commission_rate: invite.commission_rate,
+            commission_rate: commissionRate,
             status: "active",
           })
           .select("id")

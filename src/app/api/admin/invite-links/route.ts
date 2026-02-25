@@ -47,14 +47,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
   const body = await request.json();
-  const { commission_rate, label, is_reusable = true, expires_at } = body;
-
-  if (!commission_rate || ![50, 70].includes(commission_rate)) {
-    return NextResponse.json(
-      { error: "Commission rate must be 50 or 70" },
-      { status: 400 },
-    );
-  }
+  const { label, is_reusable = true, expires_at } = body;
 
   const code = nanoid(12);
   const supabase = await createServiceClient();
@@ -63,7 +56,7 @@ export async function POST(request: NextRequest) {
     .from("invite_links")
     .insert({
       code,
-      commission_rate,
+      commission_rate: 70,
       label: label || null,
       is_reusable,
       is_tracking_only: false,

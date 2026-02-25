@@ -78,7 +78,7 @@ export default async function CommissionsPage() {
                       {formatCurrency(Number(commission.amount))}
                     </td>
                     <td className="px-5 py-3 text-[13px]">
-                      {(Number(commission.rate_snapshot) * 100).toFixed(0)}%
+                      {commission.rate_snapshot}%
                     </td>
                     <td className="px-5 py-3 text-[13px] capitalize">
                       {commission.tier_type ?? "—"}

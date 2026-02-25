@@ -34,13 +34,13 @@ function NavGroupSection({ group }: { group: NavGroup }) {
               href={item.href}
               className={cn(
                 "flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
-                isActive
-                  ? "text-white"
-                  : "hover:text-white",
+                isActive ? "text-white" : "hover:text-white"
               )}
               style={{
                 color: isActive ? "#fff" : "#999",
-                backgroundColor: isActive ? "rgba(255,255,255,0.07)" : undefined,
+                backgroundColor: isActive
+                  ? "rgba(255,255,255,0.07)"
+                  : undefined,
               }}
             >
               <item.icon size={16} strokeWidth={ICON_STROKE_WIDTH} />
@@ -58,28 +58,19 @@ interface AppSidebarProps {
   tierLevel?: number;
 }
 
-const ADMIN_REMAP: Record<string, string> = {
-  "/leads": "/admin",
-  "/customers": "/admin",
-  "/commissions": "/admin/commissions",
-  "/payouts": "/admin/payouts",
-  "/sub-affiliates": "/admin",
-};
-
-export function AppSidebar({ isAdmin = false, tierLevel = 1 }: AppSidebarProps) {
-  const filteredAffiliateNav = affiliateNav.map((group) => ({
-    ...group,
-    items: group.items
-      .filter((item) => {
-        if (isAdmin && (item.href === "/sub-affiliates" || item.href === "/leads" || item.href === "/customers" || item.href === "/commissions" || item.href === "/payouts")) return false;
-        if (item.href === "/sub-affiliates" && tierLevel !== 1) return false;
-        return true;
-      }),
-  }));
-
-  const allNavGroups = isAdmin
-    ? [...filteredAffiliateNav, ...adminNav]
-    : filteredAffiliateNav;
+export function AppSidebar({
+  isAdmin = false,
+  tierLevel = 1,
+}: AppSidebarProps) {
+  const navGroups = isAdmin
+    ? adminNav
+    : affiliateNav.map((group) => ({
+        ...group,
+        items: group.items.filter((item) => {
+          if (item.href === "/sub-affiliates" && tierLevel !== 1) return false;
+          return true;
+        }),
+      }));
 
   return (
     <aside className="fixed inset-y-0 left-0 z-[var(--z-sticky)] flex w-[var(--sidebar-width)] flex-col">
@@ -89,10 +80,13 @@ export function AppSidebar({ isAdmin = false, tierLevel = 1 }: AppSidebarProps) 
 
       <ScrollArea className="flex-1 px-3">
         <nav className="flex flex-col gap-6">
-          {allNavGroups.map((group, i) => (
+          {navGroups.map((group, i) => (
             <div key={group.label || i}>
               {i > 0 && !group.label && (
-                <div className="mb-4 h-px mx-3" style={{ backgroundColor: "#1e1e1e" }} />
+                <div
+                  className="mb-4 h-px mx-3"
+                  style={{ backgroundColor: "rgba(255,255,255,0.08)" }}
+                />
               )}
               <NavGroupSection group={group} />
             </div>
@@ -101,7 +95,10 @@ export function AppSidebar({ isAdmin = false, tierLevel = 1 }: AppSidebarProps) 
       </ScrollArea>
 
       <div className="px-3 pb-5">
-        <div className="mb-4 h-px mx-3" style={{ backgroundColor: "#1e1e1e" }} />
+        <div
+          className="mb-4 h-px mx-3"
+          style={{ backgroundColor: "rgba(255,255,255,0.08)" }}
+        />
         <form action="/api/auth/signout" method="POST">
           <button
             type="submit"

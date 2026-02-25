@@ -8,8 +8,7 @@ import {
   Settings,
   Shield,
   Link2,
-  CreditCard,
-  Sliders,
+  Activity,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -47,14 +46,25 @@ export const affiliateNav: NavGroup[] = [
 
 export const adminNav: NavGroup[] = [
   {
-    label: "Admin",
+    label: "",
     items: [
+      { label: "Overview", href: "/dashboard", icon: Activity },
       { label: "Affiliates", href: "/admin", icon: Shield },
-      { label: "Links", href: "/admin/links", icon: Link2 },
+      { label: "Invite Links", href: "/admin/links", icon: Link2 },
+    ],
+  },
+  {
+    label: "",
+    items: [
       { label: "Commissions", href: "/admin/commissions", icon: DollarSign },
-      { label: "Payouts", href: "/admin/payouts", icon: CreditCard },
+      { label: "Payouts", href: "/admin/payouts", icon: Wallet },
+    ],
+  },
+  {
+    label: "",
+    items: [
       { label: "Media", href: "/admin/media", icon: ImageIcon },
-      { label: "Settings", href: "/admin/settings", icon: Sliders },
+      { label: "Settings", href: "/admin/settings", icon: Settings },
     ],
   },
 ];

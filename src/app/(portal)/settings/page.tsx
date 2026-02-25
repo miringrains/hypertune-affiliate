@@ -29,7 +29,7 @@ export default async function SettingsPage() {
     },
     {
       label: "Commission Rate",
-      value: `${(Number(affiliate.commission_rate) * 100).toFixed(0)}%`,
+      value: `${affiliate.commission_rate}%`,
     },
     {
       label: "Tier Level",

@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { Card } from "@/components/ui/card";
 import { LeadsStats } from "./leads-stats";
+import { LeadsTable } from "./leads-table";
 
 export default async function LeadsPage() {
   const supabase = await createClient();
@@ -39,7 +39,7 @@ export default async function LeadsPage() {
 
   const query = supabase
     .from("leads")
-    .select("*")
+    .select("id, email, affiliate_id, stripe_customer_id, created_at")
     .order("created_at", { ascending: false });
 
   if (!isTier1) {
@@ -89,66 +89,12 @@ export default async function LeadsPage() {
         sparkline={weeklySparkline}
       />
 
-      <Card className="mt-6">
-        <div className="overflow-x-auto">
-          {rows.length === 0 ? (
-            <div className="px-5 py-12 text-center text-[13px] text-muted-foreground">
-              No leads yet. Share your referral link to start generating leads.
-            </div>
-          ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                    Email
-                  </th>
-                  {isTier1 && (
-                    <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                      Source
-                    </th>
-                  )}
-                  <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                    Signed Up
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((lead) => (
-                  <tr key={lead.id} className="border-b border-border">
-                    <td className="px-5 py-3 text-[13px]">{lead.email}</td>
-                    {isTier1 && (
-                      <td className="px-5 py-3 text-[12px] text-muted-foreground">
-                        {lead.affiliate_id === affiliate.id
-                          ? "You"
-                          : subIdMap[lead.affiliate_id] ?? "—"}
-                      </td>
-                    )}
-                    <td className="px-5 py-3">
-                      {lead.stripe_customer_id ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-500">
-                          <span className="size-1.5 rounded-full bg-emerald-500" />
-                          Converted
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
-                          <span className="size-1.5 rounded-full bg-muted-foreground/50" />
-                          Lead
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3 text-[12px] text-muted-foreground">
-                      {new Date(lead.created_at).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </Card>
+      <LeadsTable
+        leads={rows}
+        affiliateId={affiliate.id}
+        isTier1={isTier1}
+        subIdMap={subIdMap}
+      />
     </div>
   );
 }

@@ -1,9 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { Card } from "@/components/ui/card";
-import { StatusBadge } from "@/components/shared/status-badge";
-import { formatCurrency } from "@/lib/utils";
 import { CommissionsStats } from "./commissions-stats";
+import { CommissionsTable } from "./commissions-table";
 
 export default async function CommissionsPage() {
   const supabase = await createClient();
@@ -23,7 +21,7 @@ export default async function CommissionsPage() {
 
   const { data: commissions } = await supabase
     .from("commissions")
-    .select("*, customers(leads(email))")
+    .select("id, amount, rate_snapshot, status, created_at, customers(leads(email))")
     .eq("affiliate_id", affiliate.id)
     .order("created_at", { ascending: false });
 
@@ -71,58 +69,7 @@ export default async function CommissionsPage() {
         sparkline={monthlySparkline}
       />
 
-      <Card className="mt-6">
-        <div className="overflow-x-auto">
-          {rows.length === 0 ? (
-            <div className="px-5 py-12 text-center text-[13px] text-muted-foreground">
-              No commissions yet.
-            </div>
-          ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                    Customer
-                  </th>
-                  <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                    Amount
-                  </th>
-                  <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                    Rate
-                  </th>
-                  <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                    Date
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((commission) => (
-                  <tr key={commission.id} className="border-b border-border">
-                    <td className="px-5 py-3 text-[13px]">
-                      {commission.customers?.leads?.email ?? "—"}
-                    </td>
-                    <td className="px-5 py-3 text-[13px] font-medium tabular-nums">
-                      {formatCurrency(Number(commission.amount))}
-                    </td>
-                    <td className="px-5 py-3 text-[13px] tabular-nums">
-                      {commission.rate_snapshot}%
-                    </td>
-                    <td className="px-5 py-3">
-                      <StatusBadge status={commission.status ?? "unknown"} />
-                    </td>
-                    <td className="px-5 py-3 text-[12px] text-muted-foreground">
-                      {new Date(commission.created_at).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </Card>
+      <CommissionsTable commissions={rows} />
     </div>
   );
 }

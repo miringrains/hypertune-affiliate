@@ -1,10 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
-import { StatusBadge } from "@/components/shared/status-badge";
-import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { PayoutsStats } from "./payouts-stats";
+import { PayoutsTable } from "./payouts-table";
 
 export default async function PayoutsPage() {
   const supabase = await createClient();
@@ -26,7 +25,7 @@ export default async function PayoutsPage() {
     await Promise.all([
       supabase
         .from("payouts")
-        .select("*")
+        .select("id, amount, status, method, completed_at, created_at")
         .eq("affiliate_id", affiliate.id)
         .order("created_at", { ascending: false }),
       supabase
@@ -102,54 +101,7 @@ export default async function PayoutsPage() {
       {/* Payout History */}
       <div className="mt-6">
         <h2 className="text-[14px] font-semibold mb-3">Payout History</h2>
-        <Card>
-          <div className="overflow-x-auto">
-            {payoutRows.length === 0 ? (
-              <div className="px-5 py-12 text-center text-[13px] text-muted-foreground">
-                No payouts yet.
-              </div>
-            ) : (
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                      Amount
-                    </th>
-                    <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                      Method
-                    </th>
-                    <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                      Completed
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {payoutRows.map((payout) => (
-                    <tr key={payout.id} className="border-b border-border">
-                      <td className="px-5 py-3 text-[13px] font-medium">
-                        {formatCurrency(Number(payout.amount))}
-                      </td>
-                      <td className="px-5 py-3">
-                        <StatusBadge status={payout.status ?? "unknown"} />
-                      </td>
-                      <td className="px-5 py-3 text-[13px] capitalize">
-                        {payout.method ?? "—"}
-                      </td>
-                      <td className="px-5 py-3 text-[12px] text-muted-foreground">
-                        {payout.completed_at
-                          ? new Date(payout.completed_at).toLocaleDateString()
-                          : "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </Card>
+        <PayoutsTable payouts={payoutRows} />
       </div>
     </div>
   );

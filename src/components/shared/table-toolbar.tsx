@@ -99,7 +99,7 @@ export function TableToolbar({
   );
 }
 
-export function filterByPeriod<T extends Record<string, unknown>>(
+export function filterByPeriod<T>(
   rows: T[],
   period: string,
   dateKey: string = "created_at",
@@ -107,5 +107,8 @@ export function filterByPeriod<T extends Record<string, unknown>>(
   if (period === "all") return rows;
   const days = period === "7d" ? 7 : period === "30d" ? 30 : 90;
   const cutoff = new Date(Date.now() - days * 86_400_000);
-  return rows.filter((r) => new Date(r[dateKey] as string) >= cutoff);
+  return rows.filter((r) => {
+    const val = (r as Record<string, unknown>)[dateKey];
+    return new Date(String(val)) >= cutoff;
+  });
 }

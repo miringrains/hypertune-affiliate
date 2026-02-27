@@ -16,35 +16,27 @@ function buildDailySparkline(
   return buckets;
 }
 
-function buildWeeklySparkline(
-  rows: { created_at: string }[],
-  weeks: number,
-): number[] {
-  const now = new Date();
-  const buckets = new Array(weeks).fill(0);
-  for (const r of rows) {
-    const d = new Date(r.created_at);
-    const weeksAgo = Math.floor(
-      (now.getTime() - d.getTime()) / (7 * 86_400_000),
-    );
-    if (weeksAgo >= 0 && weeksAgo < weeks) buckets[weeks - 1 - weeksAgo]++;
-  }
-  return buckets;
-}
-
-function buildMonthlySparkline(
-  rows: { created_at: string; amount: number }[],
+function buildMonthlyEarnings(
+  rows: { created_at: string; amount: number; status: string }[],
   months: number,
-): number[] {
+): { month: string; amount: number }[] {
   const now = new Date();
-  const buckets = new Array(months).fill(0);
+  const buckets: { month: string; amount: number }[] = [];
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    buckets.push({
+      month: d.toLocaleDateString("en-US", { month: "short" }),
+      amount: 0,
+    });
+  }
   for (const r of rows) {
     const d = new Date(r.created_at);
     const monthsAgo =
       (now.getFullYear() - d.getFullYear()) * 12 +
       (now.getMonth() - d.getMonth());
-    if (monthsAgo >= 0 && monthsAgo < months)
-      buckets[months - 1 - monthsAgo] += Number(r.amount);
+    if (monthsAgo >= 0 && monthsAgo < months) {
+      buckets[months - 1 - monthsAgo].amount += Number(r.amount);
+    }
   }
   return buckets;
 }
@@ -66,47 +58,28 @@ export default async function DashboardPage() {
   if (!affiliate) redirect("/login");
 
   const now = new Date();
-  const thirtyDaysAgo = new Date(
-    now.getTime() - 30 * 86_400_000,
-  ).toISOString();
-  const twelveWeeksAgo = new Date(
-    now.getTime() - 84 * 86_400_000,
-  ).toISOString();
-  const sixMonthsAgo = new Date(
-    now.getTime() - 180 * 86_400_000,
-  ).toISOString();
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 86_400_000).toISOString();
+  const sixMonthsAgo = new Date(now.getTime() - 180 * 86_400_000).toISOString();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
 
   if (affiliate.role === "admin") {
     const service = await createServiceClient();
     const [
       affiliatesRes,
       clicksTimeRes,
-      leadsTimeRes,
       leadsCountRes,
       customersRes,
       customerStatesRes,
       commissionsRes,
       recentAffiliatesRes,
     ] = await Promise.all([
-      service
-        .from("affiliates")
-        .select("id", { count: "exact", head: true })
-        .neq("role", "admin"),
-      service
-        .from("clicks")
-        .select("clicked_at")
-        .gte("clicked_at", thirtyDaysAgo),
-      service
-        .from("leads")
-        .select("created_at")
-        .gte("created_at", twelveWeeksAgo),
+      service.from("affiliates").select("id", { count: "exact", head: true }).neq("role", "admin"),
+      service.from("clicks").select("clicked_at").gte("clicked_at", thirtyDaysAgo),
       service.from("leads").select("id", { count: "exact", head: true }),
       service.from("customers").select("id", { count: "exact", head: true }),
       service.from("customers").select("current_state"),
-      service
-        .from("commissions")
-        .select("amount, status, created_at")
-        .gte("created_at", sixMonthsAgo),
+      service.from("commissions").select("amount, status, created_at").gte("created_at", sixMonthsAgo),
       service
         .from("affiliates")
         .select("id, name, slug, tier_level, commission_rate, created_at")
@@ -116,7 +89,6 @@ export default async function DashboardPage() {
     ]);
 
     const clickRows = clicksTimeRes.data ?? [];
-    const leadRows = leadsTimeRes.data ?? [];
     const commRows = commissionsRes.data ?? [];
     const stateRows = customerStatesRes.data ?? [];
 
@@ -125,15 +97,10 @@ export default async function DashboardPage() {
       .filter((c) => c.status === "pending" || c.status === "approved")
       .reduce((s, c) => s + Number(c.amount), 0);
 
-    const totalLeads = leadsCountRes.count ?? 0;
-    const totalCustomers = customersRes.count ?? 0;
-
     const activeCount = stateRows.filter(
       (c) => c.current_state === "active_monthly" || c.current_state === "active_annual",
     ).length;
-    const trialingCount = stateRows.filter(
-      (c) => c.current_state === "trialing",
-    ).length;
+    const trialingCount = stateRows.filter((c) => c.current_state === "trialing").length;
     const churned = stateRows.filter(
       (c) => c.current_state === "canceled" || c.current_state === "dormant",
     ).length;
@@ -143,16 +110,16 @@ export default async function DashboardPage() {
         affiliate={affiliate}
         stats={{
           clicks: clickRows.length,
-          leads: totalLeads,
-          customers: totalCustomers,
+          leads: leadsCountRes.count ?? 0,
+          customers: customersRes.count ?? 0,
           earned: allAmount,
           pending: pendingAmount,
+          thisMonthEarned: 0,
+          lastMonthEarned: 0,
         }}
         chartData={{
           clicksByDay: buildDailySparkline(clickRows, 30),
-          leadsByWeek: buildWeeklySparkline(leadRows, 12),
-          commissionsByMonth: buildMonthlySparkline(commRows, 6),
-          conversionRate: totalLeads > 0 ? Math.round((totalCustomers / totalLeads) * 100) : 0,
+          earningsByMonth: buildMonthlyEarnings(commRows, 6),
           customerStates: { active: activeCount, trialing: trialingCount, churned },
         }}
         adminData={{
@@ -163,19 +130,14 @@ export default async function DashboardPage() {
     );
   }
 
-  // Affiliate flow
-  const [clicksTimeRes, leadsTimeRes, leadsCountRes, customersCountRes, commissionsRes] =
+  // ── Affiliate flow ──
+  const [clicksTimeRes, leadsCountRes, customersCountRes, commissionsRes, recentCommissionsRes] =
     await Promise.all([
       supabase
         .from("clicks")
         .select("clicked_at")
         .eq("affiliate_id", affiliate.id)
         .gte("clicked_at", thirtyDaysAgo),
-      supabase
-        .from("leads")
-        .select("created_at")
-        .eq("affiliate_id", affiliate.id)
-        .gte("created_at", twelveWeeksAgo),
       supabase
         .from("leads")
         .select("id", { count: "exact", head: true })
@@ -189,11 +151,17 @@ export default async function DashboardPage() {
         .select("amount, status, created_at")
         .eq("affiliate_id", affiliate.id)
         .gte("created_at", sixMonthsAgo),
+      supabase
+        .from("commissions")
+        .select("id, amount, status, created_at, tier_type, customers(leads(email))")
+        .eq("affiliate_id", affiliate.id)
+        .order("created_at", { ascending: false })
+        .limit(8),
     ]);
 
   const clickRows = clicksTimeRes.data ?? [];
-  const leadRows = leadsTimeRes.data ?? [];
   const commRows = commissionsRes.data ?? [];
+  const recentComms = recentCommissionsRes.data ?? [];
   const totalLeads = leadsCountRes.count ?? 0;
   const totalCustomers = customersCountRes.count ?? 0;
 
@@ -204,86 +172,59 @@ export default async function DashboardPage() {
     .filter((c) => c.status === "pending" || c.status === "approved")
     .reduce((s, c) => s + Number(c.amount), 0);
 
-  const baseStats = {
-    clicks: clickRows.length,
-    leads: totalLeads,
-    customers: totalCustomers,
-    earned: totalEarned,
-    pending: totalPending,
-  };
+  const startOfMonthDate = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfLastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
-  const chartData = {
-    clicksByDay: buildDailySparkline(clickRows, 30),
-    leadsByWeek: buildWeeklySparkline(leadRows, 12),
-    commissionsByMonth: buildMonthlySparkline(commRows, 6),
-    conversionRate:
-      totalLeads > 0 ? Math.round((totalCustomers / totalLeads) * 100) : 0,
-    customerStates: { active: 0, trialing: 0, churned: 0 },
+  const thisMonthEarned = commRows
+    .filter((c) => new Date(c.created_at) >= startOfMonthDate)
+    .reduce((s, c) => s + Number(c.amount), 0);
+  const lastMonthEarned = commRows
+    .filter((c) => {
+      const d = new Date(c.created_at);
+      return d >= startOfLastMonthDate && d < startOfMonthDate;
+    })
+    .reduce((s, c) => s + Number(c.amount), 0);
+
+  const baseProps = {
+    affiliate,
+    stats: {
+      clicks: clickRows.length,
+      leads: totalLeads,
+      customers: totalCustomers,
+      earned: totalEarned,
+      pending: totalPending,
+      thisMonthEarned,
+      lastMonthEarned,
+    },
+    chartData: {
+      clicksByDay: buildDailySparkline(clickRows, 30),
+      earningsByMonth: buildMonthlyEarnings(commRows, 6),
+      customerStates: { active: 0, trialing: 0, churned: 0 },
+    },
+    recentActivity: recentComms.map((c) => ({
+      id: c.id,
+      amount: Number(c.amount),
+      status: c.status,
+      tier_type: c.tier_type,
+      created_at: c.created_at,
+      email:
+        (c.customers as unknown as { leads: { email: string } | null })?.leads?.email ?? null,
+    })),
   };
 
   if (affiliate.tier_level === 1) {
     const { data: subAffiliates } = await supabase
       .from("affiliates")
-      .select("id, name, slug, commission_rate, created_at")
+      .select("id, name")
       .eq("parent_id", affiliate.id);
-
-    const subs = subAffiliates ?? [];
-
-    const subStats = await Promise.all(
-      subs.map(async (sub) => {
-        const [subClicks, subLeads, subCustomers, subCommissions] =
-          await Promise.all([
-            supabase
-              .from("clicks")
-              .select("id", { count: "exact", head: true })
-              .eq("affiliate_id", sub.id)
-              .gte("clicked_at", thirtyDaysAgo),
-            supabase
-              .from("leads")
-              .select("id", { count: "exact", head: true })
-              .eq("affiliate_id", sub.id),
-            supabase
-              .from("customers")
-              .select("id", { count: "exact", head: true })
-              .eq("affiliate_id", sub.id),
-            supabase
-              .from("commissions")
-              .select("amount, status")
-              .eq("affiliate_id", sub.id),
-          ]);
-
-        const subComms = subCommissions.data ?? [];
-        return {
-          id: sub.id,
-          name: sub.name,
-          slug: sub.slug,
-          commission_rate: sub.commission_rate,
-          created_at: sub.created_at,
-          clicks: subClicks.count ?? 0,
-          leads: subLeads.count ?? 0,
-          customers: subCustomers.count ?? 0,
-          earned: subComms
-            .filter((c) => c.status === "paid")
-            .reduce((s, c) => s + Number(c.amount), 0),
-        };
-      }),
-    );
 
     return (
       <DashboardClient
-        affiliate={affiliate}
-        stats={baseStats}
-        chartData={chartData}
-        subAffiliateData={subStats}
+        {...baseProps}
+        subAffiliateCount={(subAffiliates ?? []).length}
       />
     );
   }
 
-  return (
-    <DashboardClient
-      affiliate={affiliate}
-      stats={baseStats}
-      chartData={chartData}
-    />
-  );
+  return <DashboardClient {...baseProps} />;
 }

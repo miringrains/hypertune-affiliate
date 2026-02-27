@@ -1,15 +1,14 @@
 import {
   LayoutDashboard,
-  Users,
-  UserCheck,
-  UserPlus,
+  TrendingUp,
   DollarSign,
-  Wallet,
+  Users,
   ImageIcon,
   Settings,
   Shield,
   Link2,
   Activity,
+  Wallet,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -17,6 +16,7 @@ export interface NavItem {
   label: string;
   href: string;
   icon: LucideIcon;
+  tierRequired?: number;
 }
 
 export interface NavGroup {
@@ -29,16 +29,14 @@ export const affiliateNav: NavGroup[] = [
     label: "",
     items: [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { label: "Leads", href: "/leads", icon: Users },
-      { label: "Customers", href: "/customers", icon: UserCheck },
-      { label: "Commissions", href: "/commissions", icon: DollarSign },
-      { label: "Sub-Affiliates", href: "/sub-affiliates", icon: UserPlus },
+      { label: "Performance", href: "/performance", icon: TrendingUp },
+      { label: "Earnings", href: "/earnings", icon: DollarSign },
+      { label: "Team", href: "/team", icon: Users, tierRequired: 1 },
     ],
   },
   {
     label: "",
     items: [
-      { label: "Payouts", href: "/payouts", icon: Wallet },
       { label: "Media", href: "/media", icon: ImageIcon },
       { label: "Settings", href: "/settings", icon: Settings },
     ],

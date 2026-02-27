@@ -71,7 +71,7 @@ export function MobileNav({ isAdmin = false, tierLevel = 1 }: MobileNavProps) {
     : affiliateNav.map((group) => ({
         ...group,
         items: group.items.filter((item) => {
-          if (item.href === "/sub-affiliates" && tierLevel !== 1) return false;
+          if (item.tierRequired && tierLevel !== item.tierRequired) return false;
           return true;
         }),
       }));

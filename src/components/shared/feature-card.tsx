@@ -40,29 +40,23 @@ export function FeatureCard({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-xl border border-white/[0.06] p-5 flex flex-col h-full",
+        "relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 p-5 flex flex-col h-full",
         className,
       )}
-      style={{
-        background:
-          "radial-gradient(ellipse 80% 60% at 100% 0%, rgba(225,38,27,0.07) 0%, transparent 60%), linear-gradient(135deg, #111 0%, #1a1a1a 100%)",
-      }}
     >
-      {/* Top bar: title + icon anchored top-left / top-right */}
       <div className="flex justify-between items-start w-full">
-        <span className="text-[12px] font-medium text-white/50 truncate">
+        <span className="text-[12px] font-medium text-zinc-400 truncate">
           {title}
         </span>
         {Icon && (
           <Icon
             size={14}
             strokeWidth={ICON_STROKE_WIDTH}
-            className="text-white/40 shrink-0 ml-2"
+            className="text-zinc-500 shrink-0 ml-2"
           />
         )}
       </div>
 
-      {/* Primary data: number + trend, left-aligned */}
       <div className="flex items-end gap-2.5 mt-2">
         <span className="text-[1.625rem] font-semibold tracking-tight leading-none text-white">
           {value}
@@ -71,7 +65,7 @@ export function FeatureCard({
           <span
             className={cn(
               "flex items-center gap-0.5 text-[11px] font-medium pb-0.5",
-              trend.positive ? "text-emerald-400" : "text-red-400",
+              trend.positive ? "text-emerald-400" : "text-rose-500",
             )}
           >
             {trend.positive ? (
@@ -85,10 +79,9 @@ export function FeatureCard({
       </div>
 
       {subtitle && (
-        <p className="text-[11px] text-white/40 mt-1">{subtitle}</p>
+        <p className="text-[11px] text-zinc-500 mt-1">{subtitle}</p>
       )}
 
-      {/* Bottom-anchored content: sparkline or ring pushed down via mt-auto */}
       {hasChart && !hasRing && (
         <div className="mt-auto pt-3 -mx-1 w-[calc(100%+0.5rem)]">
           <MiniSparkline data={sparklineData!} color={sparklineColor} />

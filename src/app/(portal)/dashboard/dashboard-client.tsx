@@ -6,8 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import {
-  AreaChart,
-  Area,
   BarChart,
   Bar,
   ResponsiveContainer,
@@ -111,7 +109,6 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString();
 }
 
-// ── Hero Earnings Card ──
 function HeroEarnings({ stats }: { stats: DashboardStats }) {
   const pctChange =
     stats.lastMonthEarned > 0
@@ -125,15 +122,8 @@ function HeroEarnings({ stats }: { stats: DashboardStats }) {
   const isUp = pctChange >= 0;
 
   return (
-    <div
-      className="relative overflow-hidden rounded-2xl p-6 sm:p-8"
-      style={{
-        background:
-          "radial-gradient(ellipse 90% 80% at 10% 100%, rgba(225,38,27,0.12) 0%, transparent 50%), radial-gradient(ellipse 60% 50% at 90% 0%, rgba(19,242,135,0.06) 0%, transparent 50%), linear-gradient(135deg, #111 0%, #1a1a1a 100%)",
-        border: "1px solid rgba(255,255,255,0.06)",
-      }}
-    >
-      <p className="text-[12px] font-medium text-white/50 uppercase tracking-wider">
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 sm:p-8">
+      <p className="text-[12px] font-medium text-zinc-400 uppercase tracking-wider">
         This Month&apos;s Earnings
       </p>
       <div className="flex items-end gap-3 mt-2">
@@ -142,7 +132,7 @@ function HeroEarnings({ stats }: { stats: DashboardStats }) {
         </span>
         {pctChange !== 0 && (
           <span
-            className={`flex items-center gap-1 text-[13px] font-medium pb-1 ${isUp ? "text-emerald-400" : "text-red-400"}`}
+            className={`flex items-center gap-1 text-[13px] font-medium pb-1 ${isUp ? "text-emerald-400" : "text-rose-500"}`}
           >
             {isUp ? (
               <TrendingUp size={14} strokeWidth={2} />
@@ -153,21 +143,20 @@ function HeroEarnings({ stats }: { stats: DashboardStats }) {
           </span>
         )}
       </div>
-      <div className="flex items-center gap-6 mt-4 text-[13px] text-white/40">
+      <div className="flex items-center gap-6 mt-4 text-[13px] text-zinc-500">
         <span>
           Lifetime earned:{" "}
-          <span className="text-white/70 font-medium">{fmtCurrencyShort(stats.earned)}</span>
+          <span className="text-zinc-300 font-medium">{fmtCurrencyShort(stats.earned)}</span>
         </span>
         <span>
           Pending:{" "}
-          <span className="text-amber-400/90 font-medium">{fmtCurrencyShort(stats.pending)}</span>
+          <span className="text-amber-400 font-medium">{fmtCurrencyShort(stats.pending)}</span>
         </span>
       </div>
     </div>
   );
 }
 
-// ── Referral Link Bar ──
 function ReferralLinkBar({ affiliate }: { affiliate: Tables<"affiliates"> }) {
   const [copied, setCopied] = useState(false);
   const [editingSlug, setEditingSlug] = useState(false);
@@ -219,17 +208,11 @@ function ReferralLinkBar({ affiliate }: { affiliate: Tables<"affiliates"> }) {
   }
 
   return (
-    <div
-      className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl px-4 py-3 sm:px-5"
-      style={{
-        background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.06)",
-      }}
-    >
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 sm:px-5">
       <div className="flex items-center gap-2 shrink-0">
-        <div className="flex items-center gap-1.5 text-[12px] text-white/40">
-          <span className="font-medium text-white/60">Your link</span>
-          <span className="px-1.5 py-0.5 rounded bg-white/[0.06] text-[10px] font-medium text-white/50">
+        <div className="flex items-center gap-1.5 text-[12px]">
+          <span className="font-medium text-zinc-300">Your link</span>
+          <span className="px-1.5 py-0.5 rounded border border-zinc-800 text-[10px] font-medium text-zinc-500">
             {affiliate.commission_rate}% · {affiliate.commission_duration_months}mo
           </span>
         </div>
@@ -240,13 +223,13 @@ function ReferralLinkBar({ affiliate }: { affiliate: Tables<"affiliates"> }) {
           <Input
             value={referralLink}
             readOnly
-            className="pr-9 font-mono text-[11px] sm:text-[12px] bg-transparent border-white/[0.08] text-white/70 h-9"
+            className="pr-9 font-mono text-[11px] sm:text-[12px] bg-black border-zinc-800 text-zinc-400 h-9"
           />
           <a
             href={referralLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-400 transition-colors"
           >
             <ExternalLink size={13} strokeWidth={ICON_STROKE_WIDTH} />
           </a>
@@ -254,7 +237,7 @@ function ReferralLinkBar({ affiliate }: { affiliate: Tables<"affiliates"> }) {
         <Button
           onClick={copyLink}
           size="sm"
-          className="shrink-0 bg-white/10 hover:bg-white/15 text-white border-0"
+          className="shrink-0 bg-zinc-800 hover:bg-zinc-700 text-white border-0"
         >
           {copied ? (
             <Check size={14} strokeWidth={ICON_STROKE_WIDTH} />
@@ -265,8 +248,8 @@ function ReferralLinkBar({ affiliate }: { affiliate: Tables<"affiliates"> }) {
         </Button>
       </div>
 
-      <div className="flex items-center gap-2 sm:border-l sm:border-white/[0.08] sm:pl-4">
-        <span className="text-[11px] text-white/40">Tag:</span>
+      <div className="flex items-center gap-2 sm:border-l sm:border-zinc-800 sm:pl-4">
+        <span className="text-[11px] text-zinc-500">Tag:</span>
         {editingSlug ? (
           <div className="flex items-center gap-1.5">
             <Input
@@ -274,14 +257,14 @@ function ReferralLinkBar({ affiliate }: { affiliate: Tables<"affiliates"> }) {
               onChange={(e) =>
                 setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
               }
-              className="h-7 w-28 font-mono text-[11px] bg-transparent border-white/[0.08] text-white/70"
+              className="h-7 w-28 font-mono text-[11px] bg-black border-zinc-800 text-zinc-300"
               autoFocus
             />
             <Button
               size="xs"
               onClick={saveSlug}
               disabled={saving}
-              className="bg-white/10 hover:bg-white/15 text-white border-0 text-[11px]"
+              className="bg-zinc-800 hover:bg-zinc-700 text-white border-0 text-[11px]"
             >
               {saving ? "..." : "Save"}
             </Button>
@@ -292,7 +275,7 @@ function ReferralLinkBar({ affiliate }: { affiliate: Tables<"affiliates"> }) {
                 setSlug(affiliate.slug);
                 setEditingSlug(false);
               }}
-              className="text-white/40 hover:text-white/60 text-[11px]"
+              className="text-zinc-500 hover:text-zinc-300 text-[11px]"
             >
               Cancel
             </Button>
@@ -300,7 +283,7 @@ function ReferralLinkBar({ affiliate }: { affiliate: Tables<"affiliates"> }) {
         ) : (
           <button
             onClick={() => setEditingSlug(true)}
-            className="flex items-center gap-1 text-[11px] font-mono text-white/50 hover:text-white/70 transition-colors"
+            className="flex items-center gap-1 text-[11px] font-mono text-zinc-500 hover:text-zinc-300 transition-colors"
           >
             {affiliate.slug}
             <Pencil size={10} strokeWidth={ICON_STROKE_WIDTH} />
@@ -311,7 +294,6 @@ function ReferralLinkBar({ affiliate }: { affiliate: Tables<"affiliates"> }) {
   );
 }
 
-// ── Funnel Strip ──
 function FunnelStrip({ stats }: { stats: DashboardStats }) {
   const clickToLead =
     stats.clicks > 0 ? ((stats.leads / stats.clicks) * 100).toFixed(1) : "0";
@@ -319,9 +301,9 @@ function FunnelStrip({ stats }: { stats: DashboardStats }) {
     stats.leads > 0 ? ((stats.customers / stats.leads) * 100).toFixed(1) : "0";
 
   const steps = [
-    { label: "Clicks", value: stats.clicks, sublabel: "Last 30 days", icon: MousePointerClick },
-    { label: "Leads", value: stats.leads, sublabel: "All time", icon: Users },
-    { label: "Customers", value: stats.customers, sublabel: "Converted", icon: UserCheck },
+    { label: "Clicks", value: stats.clicks, icon: MousePointerClick },
+    { label: "Leads", value: stats.leads, icon: Users },
+    { label: "Customers", value: stats.customers, icon: UserCheck },
   ];
 
   const rates = [clickToLead, leadToCustomer];
@@ -330,27 +312,24 @@ function FunnelStrip({ stats }: { stats: DashboardStats }) {
     <div className="flex flex-col sm:flex-row items-stretch gap-0">
       {steps.map((step, i) => (
         <div key={step.label} className="flex items-stretch flex-1 min-w-0">
-          <Card className="flex-1 border-white/[0.06]" style={{ background: "linear-gradient(135deg, #111, #1a1a1a)" }}>
-            <CardContent className="p-4 sm:p-5 flex items-center gap-3">
-              <div
-                className="shrink-0 flex items-center justify-center w-10 h-10 rounded-lg"
-                style={{ background: "rgba(255,255,255,0.05)" }}
-              >
-                <step.icon size={18} strokeWidth={ICON_STROKE_WIDTH} className="text-white/60" />
+          <div className="flex-1 rounded-xl border border-zinc-800 bg-zinc-950">
+            <div className="p-4 sm:p-5 flex items-center gap-3">
+              <div className="shrink-0 flex items-center justify-center w-10 h-10 rounded-lg border border-zinc-800 bg-black">
+                <step.icon size={18} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-400" />
               </div>
               <div className="min-w-0">
                 <p className="text-[22px] sm:text-[26px] font-semibold tracking-tight leading-none text-white">
                   {step.value.toLocaleString()}
                 </p>
-                <p className="text-[11px] text-white/40 mt-0.5">{step.label}</p>
+                <p className="text-[11px] text-zinc-500 mt-0.5">{step.label}</p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {i < steps.length - 1 && (
             <div className="hidden sm:flex flex-col items-center justify-center px-2 shrink-0">
-              <ArrowRight size={14} className="text-white/20" />
-              <span className="text-[10px] font-semibold text-emerald-400/80 mt-0.5">
+              <ArrowRight size={14} className="text-zinc-700" />
+              <span className="text-[10px] font-semibold text-emerald-400 mt-0.5">
                 {rates[i]}%
               </span>
             </div>
@@ -358,7 +337,7 @@ function FunnelStrip({ stats }: { stats: DashboardStats }) {
 
           {i < steps.length - 1 && (
             <div className="flex sm:hidden items-center justify-center py-1">
-              <span className="text-[10px] font-semibold text-emerald-400/80">
+              <span className="text-[10px] font-semibold text-emerald-400">
                 ↓ {rates[i]}%
               </span>
             </div>
@@ -369,141 +348,112 @@ function FunnelStrip({ stats }: { stats: DashboardStats }) {
   );
 }
 
-// ── Earnings Trend Chart ──
 function EarningsTrend({ data }: { data: { month: string; amount: number }[] }) {
   return (
-    <Card className="border-white/[0.06]" style={{ background: "linear-gradient(135deg, #111, #1a1a1a)" }}>
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-[13px] font-medium text-white/60">Earnings Trend</h3>
-          <span className="text-[11px] text-white/30">Last 6 months</span>
-        </div>
-        <ResponsiveContainer width="100%" height={180}>
-          <BarChart data={data} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
-            <XAxis
-              dataKey="month"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 11 }}
-            />
-            <YAxis hide />
-            <Tooltip
-              cursor={{ fill: "rgba(255,255,255,0.03)" }}
-              contentStyle={{
-                background: "#1a1a1a",
-                border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: 8,
-                fontSize: 12,
-                color: "#fff",
-              }}
-              formatter={(value: number) => [fmtCurrency(value), "Earned"]}
-            />
-            <defs>
-              <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#22c55e" stopOpacity={0.9} />
-                <stop offset="100%" stopColor="#22c55e" stopOpacity={0.4} />
-              </linearGradient>
-            </defs>
-            <Bar dataKey="amount" fill="url(#barGrad)" radius={[4, 4, 0, 0]} maxBarSize={40} />
-          </BarChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
+    <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-[13px] font-medium text-zinc-300">Earnings Trend</h3>
+        <span className="text-[11px] text-zinc-600">Last 6 months</span>
+      </div>
+      <ResponsiveContainer width="100%" height={180}>
+        <BarChart data={data} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+          <XAxis
+            dataKey="month"
+            axisLine={false}
+            tickLine={false}
+            tick={{ fill: "#a1a1aa", fontSize: 11 }}
+          />
+          <YAxis hide />
+          <Tooltip
+            cursor={{ fill: "rgba(255,255,255,0.02)" }}
+            contentStyle={{
+              background: "#09090b",
+              border: "1px solid #27272a",
+              borderRadius: 8,
+              fontSize: 12,
+              color: "#fff",
+            }}
+            formatter={(value: number) => [fmtCurrency(value), "Earned"]}
+          />
+          <defs>
+            <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#ffffff" stopOpacity={0.9} />
+              <stop offset="100%" stopColor="#ffffff" stopOpacity={0.3} />
+            </linearGradient>
+          </defs>
+          <Bar dataKey="amount" fill="url(#barGrad)" radius={[4, 4, 0, 0]} maxBarSize={40} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 
-// ── Activity Feed ──
 function ActivityFeed({ items }: { items: ActivityItem[] }) {
   if (items.length === 0) {
     return (
-      <Card className="border-white/[0.06]" style={{ background: "linear-gradient(135deg, #111, #1a1a1a)" }}>
-        <CardContent className="p-5">
-          <h3 className="text-[13px] font-medium text-white/60 mb-4">Recent Activity</h3>
-          <p className="text-[13px] text-white/30 text-center py-6">
-            No activity yet. Share your link to start earning!
-          </p>
-        </CardContent>
-      </Card>
+      <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-5">
+        <h3 className="text-[13px] font-medium text-zinc-300 mb-4">Recent Activity</h3>
+        <p className="text-[13px] text-zinc-600 text-center py-6">
+          No activity yet. Share your link to start earning!
+        </p>
+      </div>
     );
   }
 
   return (
-    <Card className="border-white/[0.06]" style={{ background: "linear-gradient(135deg, #111, #1a1a1a)" }}>
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-[13px] font-medium text-white/60">Recent Activity</h3>
-          <a
-            href="/earnings"
-            className="text-[11px] font-medium text-white/30 hover:text-white/50 transition-colors"
+    <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-[13px] font-medium text-zinc-300">Recent Activity</h3>
+        <a
+          href="/earnings"
+          className="text-[11px] font-medium text-zinc-600 hover:text-zinc-400 transition-colors"
+        >
+          View all →
+        </a>
+      </div>
+      <div className="space-y-0">
+        {items.map((item) => (
+          <div
+            key={item.id}
+            className="flex items-center justify-between py-2.5 border-b border-zinc-800/50 last:border-0"
           >
-            View all →
-          </a>
-        </div>
-        <div className="space-y-0">
-          {items.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center justify-between py-2.5 border-b border-white/[0.04] last:border-0"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div
-                  className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center"
-                  style={{
-                    background:
-                      item.status === "paid"
-                        ? "rgba(34,197,94,0.12)"
-                        : item.status === "voided"
-                          ? "rgba(239,68,68,0.12)"
-                          : "rgba(234,179,8,0.12)",
-                  }}
-                >
-                  <DollarSign
-                    size={13}
-                    strokeWidth={2}
-                    className={
-                      item.status === "paid"
-                        ? "text-emerald-400"
-                        : item.status === "voided"
-                          ? "text-red-400"
-                          : "text-amber-400"
-                    }
-                  />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[13px] text-white/80 truncate">
-                    {fmtCurrency(item.amount)} commission
-                    {item.tier_type !== "direct" && (
-                      <span className="text-white/30 ml-1">· {item.tier_type}</span>
-                    )}
-                  </p>
-                  {item.email && (
-                    <p className="text-[11px] text-white/30 truncate">{item.email}</p>
-                  )}
-                </div>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center border border-zinc-800 bg-black">
+                <DollarSign size={13} strokeWidth={2} className="text-zinc-400" />
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <span
-                  className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
-                    item.status === "paid"
-                      ? "bg-emerald-500/10 text-emerald-400"
-                      : item.status === "voided"
-                        ? "bg-red-500/10 text-red-400"
-                        : "bg-amber-500/10 text-amber-400"
-                  }`}
-                >
-                  {item.status}
-                </span>
-                <span className="text-[11px] text-white/25">{timeAgo(item.created_at)}</span>
+              <div className="min-w-0">
+                <p className="text-[13px] text-zinc-100 truncate">
+                  {fmtCurrency(item.amount)} commission
+                  {item.tier_type !== "direct" && (
+                    <span className="text-zinc-600 ml-1">· {item.tier_type}</span>
+                  )}
+                </p>
+                {item.email && (
+                  <p className="text-[11px] text-zinc-600 truncate">{item.email}</p>
+                )}
               </div>
             </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+            <div className="flex items-center gap-2 shrink-0">
+              <span
+                className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${
+                  item.status === "paid"
+                    ? "border-emerald-500/20 text-emerald-400"
+                    : item.status === "voided"
+                      ? "border-rose-500/20 text-rose-500"
+                      : "border-amber-500/20 text-amber-400"
+                }`}
+              >
+                {item.status}
+              </span>
+              <span className="text-[11px] text-zinc-600">{timeAgo(item.created_at)}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
-// ── Main Dashboard ──
 export function DashboardClient({
   affiliate,
   stats,
@@ -526,49 +476,12 @@ export function DashboardClient({
         </div>
 
         <div className="grid grid-cols-12 gap-4">
-          <FeatureCard
-            className="col-span-12 sm:col-span-6 lg:col-span-4"
-            title="Affiliates"
-            value={adminData?.totalAffiliates.toLocaleString() ?? "0"}
-            icon={Shield}
-            subtitle="Total active"
-          />
-          <FeatureCard
-            className="col-span-12 sm:col-span-6 lg:col-span-4"
-            title="Clicks"
-            value={stats.clicks.toLocaleString()}
-            icon={MousePointerClick}
-            subtitle="Last 30 days"
-            sparklineData={chartData.clicksByDay}
-          />
-          <FeatureCard
-            className="col-span-12 sm:col-span-6 lg:col-span-4"
-            title="Customers"
-            value={stats.customers.toLocaleString()}
-            icon={UserCheck}
-            subtitle={`${chartData.customerStates.active} active · ${chartData.customerStates.trialing} trialing · ${chartData.customerStates.churned} churned`}
-          />
-          <FeatureCard
-            className="col-span-12 sm:col-span-6 lg:col-span-4"
-            title="Leads"
-            value={stats.leads.toLocaleString()}
-            icon={Users}
-            subtitle="All affiliates"
-          />
-          <FeatureCard
-            className="col-span-12 sm:col-span-6 lg:col-span-4"
-            title="Total Commissions"
-            value={fmtCurrencyShort(stats.earned)}
-            icon={DollarSign}
-            subtitle="All time"
-          />
-          <FeatureCard
-            className="col-span-12 sm:col-span-6 lg:col-span-4"
-            title="Pending"
-            value={fmtCurrencyShort(stats.pending)}
-            icon={Clock}
-            subtitle="Awaiting payout"
-          />
+          <FeatureCard className="col-span-12 sm:col-span-6 lg:col-span-4" title="Affiliates" value={adminData?.totalAffiliates.toLocaleString() ?? "0"} icon={Shield} subtitle="Total active" />
+          <FeatureCard className="col-span-12 sm:col-span-6 lg:col-span-4" title="Clicks" value={stats.clicks.toLocaleString()} icon={MousePointerClick} subtitle="Last 30 days" sparklineData={chartData.clicksByDay} />
+          <FeatureCard className="col-span-12 sm:col-span-6 lg:col-span-4" title="Customers" value={stats.customers.toLocaleString()} icon={UserCheck} subtitle={`${chartData.customerStates.active} active · ${chartData.customerStates.trialing} trialing · ${chartData.customerStates.churned} churned`} />
+          <FeatureCard className="col-span-12 sm:col-span-6 lg:col-span-4" title="Leads" value={stats.leads.toLocaleString()} icon={Users} subtitle="All affiliates" />
+          <FeatureCard className="col-span-12 sm:col-span-6 lg:col-span-4" title="Total Commissions" value={fmtCurrencyShort(stats.earned)} icon={DollarSign} subtitle="All time" />
+          <FeatureCard className="col-span-12 sm:col-span-6 lg:col-span-4" title="Pending" value={fmtCurrencyShort(stats.pending)} icon={Clock} subtitle="Awaiting payout" />
         </div>
 
         {adminData && adminData.recentAffiliates.length > 0 && (
@@ -576,24 +489,14 @@ export function DashboardClient({
             <CardContent className="pt-6 pb-4 px-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-heading-3">Recent Affiliates</h3>
-                <a
-                  href="/admin"
-                  className="text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  View all →
-                </a>
+                <a href="/admin" className="text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors">View all →</a>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-border">
                       {["Name", "Slug", "Tier", "Rate", "Joined"].map((h) => (
-                        <th
-                          key={h}
-                          className="px-3 py-2.5 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider"
-                        >
-                          {h}
-                        </th>
+                        <th key={h} className="px-3 py-2.5 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -601,14 +504,10 @@ export function DashboardClient({
                     {adminData.recentAffiliates.map((a) => (
                       <tr key={a.id} className="border-b border-border">
                         <td className="px-3 py-2.5 text-[13px] font-medium">{a.name}</td>
-                        <td className="px-3 py-2.5 text-[12px] font-mono text-muted-foreground">
-                          {a.slug}
-                        </td>
+                        <td className="px-3 py-2.5 text-[12px] font-mono text-muted-foreground">{a.slug}</td>
                         <td className="px-3 py-2.5 text-[13px]">Tier {a.tier_level}</td>
                         <td className="px-3 py-2.5 text-[13px]">{a.commission_rate}%</td>
-                        <td className="px-3 py-2.5 text-[12px] text-muted-foreground">
-                          {new Date(a.created_at).toLocaleDateString()}
-                        </td>
+                        <td className="px-3 py-2.5 text-[12px] text-muted-foreground">{new Date(a.created_at).toLocaleDateString()}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -621,22 +520,15 @@ export function DashboardClient({
     );
   }
 
-  // ── Affiliate Dashboard ──
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-display-sm">Dashboard</h1>
-          <p className="text-[14px] text-muted-foreground mt-1">
-            Welcome back, {affiliate.name}
-          </p>
+          <p className="text-[14px] text-muted-foreground mt-1">Welcome back, {affiliate.name}</p>
         </div>
         {isTier1 && subAffiliateCount !== undefined && (
-          <a
-            href="/team"
-            className="flex items-center gap-2 text-[12px] font-medium text-white/40 hover:text-white/60 transition-colors px-3 py-1.5 rounded-lg"
-            style={{ background: "rgba(255,255,255,0.04)" }}
-          >
+          <a href="/team" className="flex items-center gap-2 text-[12px] font-medium text-zinc-500 hover:text-zinc-300 transition-colors px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950">
             <Users size={14} strokeWidth={ICON_STROKE_WIDTH} />
             {subAffiliateCount} sub-affiliate{subAffiliateCount !== 1 ? "s" : ""}
             <ArrowRight size={12} />
@@ -644,16 +536,10 @@ export function DashboardClient({
         )}
       </div>
 
-      {/* Hero: This month's earnings with trend */}
       <HeroEarnings stats={stats} />
-
-      {/* Referral Link Bar */}
       <ReferralLinkBar affiliate={affiliate} />
-
-      {/* Funnel: Clicks → Leads → Customers */}
       <FunnelStrip stats={stats} />
 
-      {/* Bottom row: Earnings Trend + Activity Feed */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <EarningsTrend data={chartData.earningsByMonth} />
         <ActivityFeed items={recentActivity ?? []} />

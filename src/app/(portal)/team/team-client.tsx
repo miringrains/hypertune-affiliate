@@ -121,7 +121,6 @@ export function TeamClient({ affiliate, summary, members }: Props) {
     setTimeout(() => setCopiedId(null), 2000);
   }
 
-  // Sorted by earned desc for leaderboard
   const leaderboard = [...members]
     .filter((m) => m.status === "active")
     .sort((a, b) => b.earned - a.earned);
@@ -132,7 +131,7 @@ export function TeamClient({ affiliate, summary, members }: Props) {
     <div className="space-y-8">
       <div>
         <h1 className="text-display-sm">Team</h1>
-        <p className="text-[14px] text-muted-foreground mt-1">
+        <p className="text-[14px] text-zinc-400 mt-1">
           Recruit sub-affiliates and track your team&apos;s performance.
         </p>
       </div>
@@ -140,92 +139,44 @@ export function TeamClient({ affiliate, summary, members }: Props) {
       {/* ── Summary Strip ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          {
-            icon: UserPlus,
-            label: "Recruited",
-            value: summary.recruited.toString(),
-            sub: "sub-affiliates",
-            iconColor: "text-blue-400",
-          },
-          {
-            icon: Users,
-            label: "Active",
-            value: summary.active.toString(),
-            sub: "producing",
-            iconColor: "text-emerald-400",
-          },
-          {
-            icon: DollarSign,
-            label: "Their Revenue",
-            value: fmtCurrency(summary.combinedRevenue),
-            sub: "combined",
-            iconColor: "text-white/50",
-          },
-          {
-            icon: ArrowUpRight,
-            label: "Your Earnings",
-            value: fmtCurrency(summary.teamEarnings),
-            sub: "from team",
-            iconColor: "text-emerald-400",
-          },
+          { icon: UserPlus, label: "Recruited", value: summary.recruited.toString(), sub: "sub-affiliates" },
+          { icon: Users, label: "Active", value: summary.active.toString(), sub: "producing" },
+          { icon: DollarSign, label: "Their Revenue", value: fmtCurrency(summary.combinedRevenue), sub: "combined" },
+          { icon: ArrowUpRight, label: "Your Earnings", value: fmtCurrency(summary.teamEarnings), sub: "from team" },
         ].map((item) => (
-          <div
-            key={item.label}
-            className="rounded-xl p-4"
-            style={{
-              background: "linear-gradient(135deg, #111, #1a1a1a)",
-              border: "1px solid rgba(255,255,255,0.06)",
-            }}
-          >
-            <item.icon size={14} strokeWidth={ICON_STROKE_WIDTH} className={`mb-2 ${item.iconColor}`} />
+          <div key={item.label} className="rounded-xl border border-zinc-800 bg-zinc-950 p-4">
+            <item.icon size={14} strokeWidth={ICON_STROKE_WIDTH} className="mb-2 text-zinc-500" />
             <p className="text-[20px] sm:text-[22px] font-semibold tracking-tight leading-none text-white">
               {item.value}
             </p>
-            <p className="text-[11px] text-white/35 mt-1">{item.sub}</p>
+            <p className="text-[11px] text-zinc-500 mt-1">{item.sub}</p>
           </div>
         ))}
       </div>
 
       {/* ── Leaderboard ── */}
       {top3.length > 0 && (
-        <div
-          className="rounded-xl p-5"
-          style={{
-            background:
-              "radial-gradient(ellipse 70% 60% at 50% 0%, rgba(234,179,8,0.08) 0%, transparent 50%), linear-gradient(135deg, #111, #1a1a1a)",
-            border: "1px solid rgba(255,255,255,0.06)",
-          }}
-        >
+        <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-5">
           <div className="flex items-center gap-2 mb-5">
-            <Trophy size={15} strokeWidth={ICON_STROKE_WIDTH} className="text-amber-400/60" />
-            <h3 className="text-[13px] font-medium text-white/50">Top Performers</h3>
+            <Trophy size={15} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-500" />
+            <h3 className="text-[13px] font-medium text-zinc-300">Top Performers</h3>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {top3.map((m, i) => (
               <div
                 key={m.id}
-                className="flex items-center gap-3 rounded-lg p-3"
-                style={{ background: "rgba(255,255,255,0.03)" }}
+                className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-black p-3"
               >
                 <div
-                  className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-[14px] font-bold"
-                  style={{
-                    background:
-                      i === 0
-                        ? "rgba(234,179,8,0.2)"
-                        : i === 1
-                          ? "rgba(192,192,192,0.15)"
-                          : "rgba(205,127,50,0.15)",
-                    color: i === 0 ? "#eab308" : i === 1 ? "#c0c0c0" : "#cd7f32",
-                  }}
+                  className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-[14px] font-bold border border-zinc-800 bg-zinc-950 text-zinc-400"
                 >
-                  {i === 0 ? <Crown size={16} /> : `#${i + 1}`}
+                  {i === 0 ? <Crown size={16} className="text-amber-400" /> : `#${i + 1}`}
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-[13px] font-medium text-white truncate">{m.name}</p>
-                  <div className="flex items-center gap-3 text-[11px] text-white/35 mt-0.5">
+                  <div className="flex items-center gap-3 text-[11px] text-zinc-500 mt-0.5">
                     <span>{m.customers} customers</span>
-                    <span className="font-medium text-emerald-400/70">{fmtCurrency(m.earned)}</span>
+                    <span className="font-medium text-zinc-300">{fmtCurrency(m.earned)}</span>
                   </div>
                 </div>
               </div>
@@ -242,12 +193,10 @@ export function TeamClient({ affiliate, summary, members }: Props) {
             <select
               value={selectedRate}
               onChange={(e) => setSelectedRate(Number(e.target.value))}
-              className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+              className="flex h-9 rounded-md border border-zinc-800 bg-black px-3 py-1 text-sm text-zinc-300 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
             >
               {COMMISSION_RATES.map((rate) => (
-                <option key={rate} value={rate}>
-                  {rate}%
-                </option>
+                <option key={rate} value={rate}>{rate}%</option>
               ))}
             </select>
             <Button onClick={createLink} disabled={creating} size="sm">
@@ -259,51 +208,34 @@ export function TeamClient({ affiliate, summary, members }: Props) {
 
         {loadingLinks ? (
           <div className="flex justify-center py-6">
-            <Loader2 size={20} strokeWidth={ICON_STROKE_WIDTH} className="animate-spin text-muted-foreground" />
+            <Loader2 size={20} strokeWidth={ICON_STROKE_WIDTH} className="animate-spin text-zinc-500" />
           </div>
         ) : links.length === 0 ? (
-          <Card>
+          <Card className="border-zinc-800 bg-zinc-950">
             <CardContent className="py-8 text-center">
-              <Link2 size={28} strokeWidth={ICON_STROKE_WIDTH} className="mx-auto mb-2 text-muted-foreground" />
-              <p className="text-[13px] text-muted-foreground">
-                Create a recruit link to start building your team.
-              </p>
+              <Link2 size={28} strokeWidth={ICON_STROKE_WIDTH} className="mx-auto mb-2 text-zinc-600" />
+              <p className="text-[13px] text-zinc-500">Create a recruit link to start building your team.</p>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-2">
             {links.map((link) => (
-              <Card key={link.id}>
+              <Card key={link.id} className="border-zinc-800 bg-zinc-950">
                 <CardContent className="py-3 px-5">
                   <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-0.5">
-                        <span className="text-[13px] font-semibold">
-                          {link.commission_rate}% Commission
-                        </span>
-                        {link.label && (
-                          <span className="text-[11px] text-muted-foreground">{link.label}</span>
-                        )}
+                        <span className="text-[13px] font-semibold text-white">{link.commission_rate}% Commission</span>
+                        {link.label && <span className="text-[11px] text-zinc-500">{link.label}</span>}
                       </div>
-                      <p className="text-[12px] font-mono text-muted-foreground truncate">
-                        {appUrl}/accept-invite/{link.code}
-                      </p>
+                      <p className="text-[12px] font-mono text-zinc-500 truncate">{appUrl}/accept-invite/{link.code}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Button size="sm" variant="outline" onClick={() => copyLink(link)}>
-                        {copiedId === link.id ? (
-                          <Check size={14} strokeWidth={ICON_STROKE_WIDTH} />
-                        ) : (
-                          <Copy size={14} strokeWidth={ICON_STROKE_WIDTH} />
-                        )}
+                        {copiedId === link.id ? <Check size={14} strokeWidth={ICON_STROKE_WIDTH} /> : <Copy size={14} strokeWidth={ICON_STROKE_WIDTH} />}
                         {copiedId === link.id ? "Copied" : "Copy"}
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => deleteLink(link.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
+                      <Button size="sm" variant="ghost" onClick={() => deleteLink(link.id)} className="text-destructive hover:text-destructive">
                         <Trash2 size={14} strokeWidth={ICON_STROKE_WIDTH} />
                       </Button>
                     </div>
@@ -319,60 +251,43 @@ export function TeamClient({ affiliate, summary, members }: Props) {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-heading-3">All Members</h2>
-          <span className="text-[12px] text-muted-foreground">{members.length} total</span>
+          <span className="text-[12px] text-zinc-500">{members.length} total</span>
         </div>
 
         {members.length === 0 ? (
-          <Card>
+          <Card className="border-zinc-800 bg-zinc-950">
             <CardContent className="py-8 text-center">
-              <Users size={28} strokeWidth={ICON_STROKE_WIDTH} className="mx-auto mb-2 text-muted-foreground" />
-              <p className="text-[13px] text-muted-foreground">
-                No sub-affiliates yet. Share your recruit links to build your team.
-              </p>
+              <Users size={28} strokeWidth={ICON_STROKE_WIDTH} className="mx-auto mb-2 text-zinc-600" />
+              <p className="text-[13px] text-zinc-500">No sub-affiliates yet. Share your recruit links to build your team.</p>
             </CardContent>
           </Card>
         ) : (
-          <Card>
+          <Card className="border-zinc-800 bg-zinc-950">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-border">
-                    {["Name", "Tag", "Rate", "Leads", "Customers", "Earned", "Status", "Joined"].map(
-                      (h) => (
-                        <th
-                          key={h}
-                          className="text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider px-5 py-3"
-                        >
-                          {h}
-                        </th>
-                      ),
-                    )}
+                  <tr className="border-b border-zinc-800">
+                    {["Name", "Tag", "Rate", "Leads", "Customers", "Earned", "Status", "Joined"].map((h) => (
+                      <th key={h} className="text-left text-[11px] font-medium text-zinc-500 uppercase tracking-wider px-5 py-3">{h}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
                   {members.map((m) => (
-                    <tr key={m.id} className="border-b border-border last:border-0">
+                    <tr key={m.id} className="border-b border-zinc-800/50 last:border-0">
                       <td className="px-5 py-3">
                         <div>
-                          <p className="text-[13px] font-medium">{m.name}</p>
-                          <p className="text-[11px] text-muted-foreground">{m.email}</p>
+                          <p className="text-[13px] font-medium text-white">{m.name}</p>
+                          <p className="text-[11px] text-zinc-500">{m.email}</p>
                         </div>
                       </td>
-                      <td className="px-5 py-3 text-[12px] font-mono text-muted-foreground">
-                        {m.slug}
-                      </td>
-                      <td className="px-5 py-3 text-[13px]">{m.commission_rate}%</td>
-                      <td className="px-5 py-3 text-[13px] tabular-nums">{m.leads}</td>
-                      <td className="px-5 py-3 text-[13px] tabular-nums">{m.customers}</td>
-                      <td className="px-5 py-3 text-[13px] font-medium tabular-nums">
-                        {fmtCurrency(m.earned)}
-                      </td>
-                      <td className="px-5 py-3">
-                        <StatusBadge status={m.status} />
-                      </td>
-                      <td className="px-5 py-3 text-[12px] text-muted-foreground">
-                        {new Date(m.created_at).toLocaleDateString()}
-                      </td>
+                      <td className="px-5 py-3 text-[12px] font-mono text-zinc-500">{m.slug}</td>
+                      <td className="px-5 py-3 text-[13px] text-zinc-300">{m.commission_rate}%</td>
+                      <td className="px-5 py-3 text-[13px] text-zinc-300 tabular-nums">{m.leads}</td>
+                      <td className="px-5 py-3 text-[13px] text-zinc-300 tabular-nums">{m.customers}</td>
+                      <td className="px-5 py-3 text-[13px] font-medium text-white tabular-nums">{fmtCurrency(m.earned)}</td>
+                      <td className="px-5 py-3"><StatusBadge status={m.status} /></td>
+                      <td className="px-5 py-3 text-[12px] text-zinc-500">{new Date(m.created_at).toLocaleDateString()}</td>
                     </tr>
                   ))}
                 </tbody>

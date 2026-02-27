@@ -14,8 +14,8 @@ export function ConversionRing({
   label,
   size = 56,
   strokeWidth = 5,
-  color = "#E1261B",
-  trackColor = "rgba(255,255,255,0.08)",
+  color = "#ffffff",
+  trackColor = "#27272a",
 }: ConversionRingProps) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;

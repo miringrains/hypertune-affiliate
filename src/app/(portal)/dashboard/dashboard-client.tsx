@@ -141,9 +141,14 @@ function ReferralLinkSection({
       <CardContent className="pt-6 pb-6 px-6">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-heading-3">Your Referral Link</h3>
-          <span className="text-[12px] font-medium text-muted-foreground px-2.5 py-1 rounded-full border border-border">
-            {affiliate.commission_rate}% commission
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[12px] font-medium text-muted-foreground px-2.5 py-1 rounded-full border border-border">
+              Tier {affiliate.tier_level}
+            </span>
+            <span className="text-[12px] font-medium text-muted-foreground px-2.5 py-1 rounded-full border border-border">
+              {affiliate.commission_rate}% for {affiliate.commission_duration_months}mo
+            </span>
+          </div>
         </div>
         <div className="flex gap-2">
           <div className="flex-1 relative">
@@ -338,7 +343,15 @@ export function DashboardClient({
       {isAdmin && adminData && adminData.recentAffiliates.length > 0 && (
         <Card>
           <CardContent className="pt-6 pb-4 px-6">
-            <h3 className="text-heading-3 mb-4">Recent Affiliates</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-heading-3">Recent Affiliates</h3>
+              <a
+                href="/admin"
+                className="text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                View all &rarr;
+              </a>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -390,149 +403,71 @@ export function DashboardClient({
       {/* Affiliate: Referral Link */}
       {!isAdmin && <ReferralLinkSection affiliate={affiliate} />}
 
-      {/* Tier 1: Sub-Affiliate Performance */}
+      {/* Tier 1: Sub-Affiliate Summary */}
       {isTier1 && subAffiliateData && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <UserPlus
-              size={18}
-              strokeWidth={ICON_STROKE_WIDTH}
-              className="text-muted-foreground"
-            />
-            <h3 className="text-heading-3">Sub-Affiliate Performance</h3>
-          </div>
-
-          {subAffiliateData.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <p className="text-[14px] text-muted-foreground">
-                  No sub-affiliates yet. Generate invite links from the
-                  Sub-Affiliates page to start recruiting.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                        Affiliate
-                      </th>
-                      <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                        Rate
-                      </th>
-                      <th className="px-5 py-3 text-right text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                        Clicks
-                      </th>
-                      <th className="px-5 py-3 text-right text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                        Leads
-                      </th>
-                      <th className="px-5 py-3 text-right text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                        Customers
-                      </th>
-                      <th className="px-5 py-3 text-right text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                        Earned
-                      </th>
-                      <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                        Joined
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {subAffiliateData.map((sub) => (
-                      <tr key={sub.id} className="border-b border-border">
-                        <td className="px-5 py-3">
-                          <div>
-                            <span className="text-[13px] font-medium">
-                              {sub.name}
-                            </span>
-                            <span className="text-[11px] text-muted-foreground ml-2 font-mono">
-                              {sub.slug}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-5 py-3 text-[13px]">
-                          {sub.commission_rate}%
-                        </td>
-                        <td className="px-5 py-3 text-[13px] text-right tabular-nums">
-                          {sub.clicks.toLocaleString()}
-                        </td>
-                        <td className="px-5 py-3 text-[13px] text-right tabular-nums">
-                          {sub.leads.toLocaleString()}
-                        </td>
-                        <td className="px-5 py-3 text-[13px] text-right tabular-nums">
-                          {sub.customers.toLocaleString()}
-                        </td>
-                        <td className="px-5 py-3 text-[13px] text-right tabular-nums font-medium">
-                          {formatCurrency(sub.earned)}
-                        </td>
-                        <td className="px-5 py-3 text-[12px] text-muted-foreground">
-                          {new Date(sub.created_at).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+        <Card>
+          <CardContent className="pt-6 pb-5 px-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <UserPlus
+                  size={16}
+                  strokeWidth={ICON_STROKE_WIDTH}
+                  className="text-muted-foreground"
+                />
+                <h3 className="text-heading-3">Sub-Affiliates</h3>
+                <span className="text-[12px] text-muted-foreground">
+                  ({subAffiliateData.length})
+                </span>
               </div>
-            </Card>
-          )}
-        </div>
+              {subAffiliateData.length > 0 && (
+                <a
+                  href="/sub-affiliates"
+                  className="text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  View all &rarr;
+                </a>
+              )}
+            </div>
+
+            {subAffiliateData.length === 0 ? (
+              <p className="text-[13px] text-muted-foreground py-4 text-center">
+                No sub-affiliates yet.{" "}
+                <a href="/sub-affiliates" className="underline hover:text-foreground transition-colors">
+                  Generate invite links
+                </a>{" "}
+                to start recruiting.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {subAffiliateData.slice(0, 3).map((sub) => (
+                  <div
+                    key={sub.id}
+                    className="flex items-center justify-between py-2 border-b border-border last:border-0"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-[13px] font-medium truncate">
+                        {sub.name}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground font-mono shrink-0">
+                        {sub.commission_rate}%
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4 shrink-0 text-[12px] tabular-nums text-muted-foreground">
+                      <span>{sub.leads} leads</span>
+                      <span>{sub.customers} customers</span>
+                      <span className="font-medium text-foreground">
+                        {formatCurrency(sub.earned)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
-      {/* Rate cards - only for non-admin */}
-      {!isAdmin && (
-        <div
-          className={`grid gap-4 ${isTier1 ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}
-        >
-          <Card className="text-center">
-            <CardContent className="pt-6 pb-6 px-6">
-              <p className="text-[12px] font-medium text-muted-foreground mb-2">
-                Commission Rate
-              </p>
-              <p className="text-[2.25rem] font-semibold tracking-tight leading-none">
-                {affiliate.commission_rate}%
-              </p>
-              <p className="text-[12px] text-muted-foreground mt-2">
-                for {affiliate.commission_duration_months} months
-              </p>
-            </CardContent>
-          </Card>
-
-          {isTier1 && (
-            <Card className="text-center">
-              <CardContent className="pt-6 pb-6 px-6">
-                <p className="text-[12px] font-medium text-muted-foreground mb-2">
-                  Sub-Affiliate Rate
-                </p>
-                <p className="text-[2.25rem] font-semibold tracking-tight leading-none">
-                  {affiliate.sub_affiliate_rate}%
-                </p>
-                <p className="text-[12px] text-muted-foreground mt-2">
-                  per recruited affiliate
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          <Card className="text-center">
-            <CardContent className="pt-6 pb-6 px-6">
-              <p className="text-[12px] font-medium text-muted-foreground mb-2">
-                Tier Level
-              </p>
-              <p className="text-[2.25rem] font-semibold tracking-tight leading-none">
-                Tier {affiliate.tier_level}
-              </p>
-              <p className="text-[12px] text-muted-foreground mt-2">
-                {affiliate.tier_level === 1
-                  ? "Main Affiliate"
-                  : "Sub-Affiliate"}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+      {/* Removed: redundant rate/tier cards — info folded into referral link section */}
     </div>
   );
 }

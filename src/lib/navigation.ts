@@ -1,6 +1,7 @@
 import {
   LayoutDashboard,
   Users,
+  UserCheck,
   UserPlus,
   DollarSign,
   Wallet,
@@ -29,7 +30,7 @@ export const affiliateNav: NavGroup[] = [
     items: [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       { label: "Leads", href: "/leads", icon: Users },
-      { label: "Customers", href: "/customers", icon: Users },
+      { label: "Customers", href: "/customers", icon: UserCheck },
       { label: "Commissions", href: "/commissions", icon: DollarSign },
       { label: "Sub-Affiliates", href: "/sub-affiliates", icon: UserPlus },
     ],

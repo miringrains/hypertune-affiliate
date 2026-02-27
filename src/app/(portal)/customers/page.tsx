@@ -113,19 +113,13 @@ export default async function CustomersPage() {
                     </th>
                   )}
                   <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                    State
+                    Status
                   </th>
                   <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                    Plan Type
+                    Plan
                   </th>
                   <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                    Payments
-                  </th>
-                  <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                    First Payment
-                  </th>
-                  <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                    Created
+                    Since
                   </th>
                 </tr>
               </thead>
@@ -147,18 +141,8 @@ export default async function CustomersPage() {
                         status={customer.current_state ?? "unknown"}
                       />
                     </td>
-                    <td className="px-5 py-3 text-[13px]">
+                    <td className="px-5 py-3 text-[13px] capitalize">
                       {customer.plan_type ?? "—"}
-                    </td>
-                    <td className="px-5 py-3 text-[13px]">
-                      {customer.payment_count ?? 0}
-                    </td>
-                    <td className="px-5 py-3 text-[12px] text-muted-foreground">
-                      {customer.first_payment_at
-                        ? new Date(
-                            customer.first_payment_at,
-                          ).toLocaleDateString()
-                        : "—"}
                     </td>
                     <td className="px-5 py-3 text-[12px] text-muted-foreground">
                       {new Date(customer.created_at).toLocaleDateString()}

@@ -82,7 +82,7 @@ export default async function CommissionsPage() {
               <thead>
                 <tr className="border-b border-border">
                   <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                    Customer Email
+                    Customer
                   </th>
                   <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                     Amount
@@ -91,16 +91,10 @@ export default async function CommissionsPage() {
                     Rate
                   </th>
                   <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                    Tier
-                  </th>
-                  <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                    Payment #
-                  </th>
-                  <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                    Created
+                    Date
                   </th>
                 </tr>
               </thead>
@@ -110,17 +104,11 @@ export default async function CommissionsPage() {
                     <td className="px-5 py-3 text-[13px]">
                       {commission.customers?.leads?.email ?? "—"}
                     </td>
-                    <td className="px-5 py-3 text-[13px] font-medium">
+                    <td className="px-5 py-3 text-[13px] font-medium tabular-nums">
                       {formatCurrency(Number(commission.amount))}
                     </td>
-                    <td className="px-5 py-3 text-[13px]">
+                    <td className="px-5 py-3 text-[13px] tabular-nums">
                       {commission.rate_snapshot}%
-                    </td>
-                    <td className="px-5 py-3 text-[13px] capitalize">
-                      {commission.tier_type ?? "—"}
-                    </td>
-                    <td className="px-5 py-3 text-[13px]">
-                      {commission.payment_number ?? "—"}
                     </td>
                     <td className="px-5 py-3">
                       <StatusBadge status={commission.status ?? "unknown"} />

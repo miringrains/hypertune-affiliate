@@ -112,7 +112,7 @@ export default async function DashboardPage() {
         .select("id, name, slug, tier_level, commission_rate, created_at")
         .neq("role", "admin")
         .order("created_at", { ascending: false })
-        .limit(10),
+        .limit(5),
     ]);
 
     const clickRows = clicksTimeRes.data ?? [];

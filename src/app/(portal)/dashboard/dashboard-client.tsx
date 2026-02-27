@@ -236,16 +236,18 @@ export function DashboardClient({
         </p>
       </div>
 
-      {/* Feature Card Grid */}
+      {/* Feature Card Grid — 12-col bento */}
       {isAdmin ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-12 gap-4">
           <FeatureCard
+            className="col-span-12 sm:col-span-6 lg:col-span-4"
             title="Affiliates"
             value={adminData?.totalAffiliates.toLocaleString() ?? "0"}
             icon={Shield}
             subtitle="Total active"
           />
           <FeatureCard
+            className="col-span-12 sm:col-span-6 lg:col-span-4"
             title="Clicks"
             value={stats.clicks.toLocaleString()}
             icon={MousePointerClick}
@@ -253,6 +255,7 @@ export function DashboardClient({
             sparklineData={chartData?.clicksByDay}
           />
           <FeatureCard
+            className="col-span-12 sm:col-span-6 lg:col-span-4"
             title="Leads"
             value={stats.leads.toLocaleString()}
             icon={Users}
@@ -261,6 +264,7 @@ export function DashboardClient({
             sparklineColor="#22c55e"
           />
           <FeatureCard
+            className="col-span-12 sm:col-span-6 lg:col-span-4"
             title="Customers"
             value={stats.customers.toLocaleString()}
             icon={UserCheck}
@@ -269,6 +273,7 @@ export function DashboardClient({
             ringLabel={`${chartData?.conversionRate ?? 0}%`}
           />
           <FeatureCard
+            className="col-span-12 sm:col-span-6 lg:col-span-4"
             title="Total Commissions"
             value={formatCurrency(stats.earned)}
             icon={DollarSign}
@@ -277,6 +282,7 @@ export function DashboardClient({
             sparklineColor="#eab308"
           />
           <FeatureCard
+            className="col-span-12 sm:col-span-6 lg:col-span-4"
             title="Pending"
             value={formatCurrency(stats.pending)}
             icon={Clock}
@@ -284,8 +290,9 @@ export function DashboardClient({
           />
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-12 gap-4">
           <FeatureCard
+            className="col-span-12 sm:col-span-6 lg:col-span-4"
             title="Clicks"
             value={stats.clicks.toLocaleString()}
             icon={MousePointerClick}
@@ -293,6 +300,7 @@ export function DashboardClient({
             sparklineData={chartData?.clicksByDay}
           />
           <FeatureCard
+            className="col-span-12 sm:col-span-6 lg:col-span-4"
             title="Leads"
             value={stats.leads.toLocaleString()}
             icon={Users}
@@ -301,12 +309,14 @@ export function DashboardClient({
             ringLabel={`${chartData?.conversionRate ?? 0}%`}
           />
           <FeatureCard
+            className="col-span-12 sm:col-span-6 lg:col-span-4"
             title="Customers"
             value={stats.customers.toLocaleString()}
             icon={UserCheck}
             subtitle="Converted"
           />
           <FeatureCard
+            className="col-span-12 sm:col-span-6 lg:col-span-6"
             title="Earned"
             value={formatCurrency(stats.earned)}
             icon={DollarSign}
@@ -315,6 +325,7 @@ export function DashboardClient({
             sparklineColor="#22c55e"
           />
           <FeatureCard
+            className="col-span-12 sm:col-span-6 lg:col-span-6"
             title="Pending"
             value={formatCurrency(stats.pending)}
             icon={Clock}

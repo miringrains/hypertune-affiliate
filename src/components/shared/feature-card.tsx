@@ -40,7 +40,7 @@ export function FeatureCard({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-xl border border-white/[0.06] p-5",
+        "relative overflow-hidden rounded-xl border border-white/[0.06] p-5 flex flex-col h-full",
         className,
       )}
       style={{
@@ -48,64 +48,72 @@ export function FeatureCard({
           "radial-gradient(ellipse 80% 60% at 100% 0%, rgba(225,38,27,0.07) 0%, transparent 60%), linear-gradient(135deg, #111 0%, #1a1a1a 100%)",
       }}
     >
-      {/* Header row */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-2">
-            {Icon && (
-              <Icon
-                size={14}
-                strokeWidth={ICON_STROKE_WIDTH}
-                className="text-white/40 shrink-0"
-              />
-            )}
-            <span className="text-[12px] font-medium text-white/50 truncate">
-              {title}
-            </span>
-          </div>
-
-          <div className="flex items-end gap-2.5">
-            <span className="text-[1.625rem] font-semibold tracking-tight leading-none text-white">
-              {value}
-            </span>
-            {trend && (
-              <span
-                className={cn(
-                  "flex items-center gap-0.5 text-[11px] font-medium pb-0.5",
-                  trend.positive ? "text-emerald-400" : "text-red-400",
-                )}
-              >
-                {trend.positive ? (
-                  <TrendingUp size={12} strokeWidth={2} />
-                ) : (
-                  <TrendingDown size={12} strokeWidth={2} />
-                )}
-                {Math.abs(trend.value)}%
-              </span>
-            )}
-          </div>
-
-          {subtitle && (
-            <p className="text-[11px] text-white/40 mt-1.5">{subtitle}</p>
-          )}
-        </div>
-
-        {hasRing && (
-          <div className="shrink-0">
-            <ConversionRing value={ringValue!} label={ringLabel} />
-          </div>
+      {/* Top bar: title + icon anchored top-left / top-right */}
+      <div className="flex justify-between items-start w-full">
+        <span className="text-[12px] font-medium text-white/50 truncate">
+          {title}
+        </span>
+        {Icon && (
+          <Icon
+            size={14}
+            strokeWidth={ICON_STROKE_WIDTH}
+            className="text-white/40 shrink-0 ml-2"
+          />
         )}
       </div>
 
-      {/* Sparkline */}
-      {hasChart && (
-        <div className="mt-3 -mx-1">
+      {/* Primary data: number + trend, left-aligned */}
+      <div className="flex items-end gap-2.5 mt-2">
+        <span className="text-[1.625rem] font-semibold tracking-tight leading-none text-white">
+          {value}
+        </span>
+        {trend && (
+          <span
+            className={cn(
+              "flex items-center gap-0.5 text-[11px] font-medium pb-0.5",
+              trend.positive ? "text-emerald-400" : "text-red-400",
+            )}
+          >
+            {trend.positive ? (
+              <TrendingUp size={12} strokeWidth={2} />
+            ) : (
+              <TrendingDown size={12} strokeWidth={2} />
+            )}
+            {Math.abs(trend.value)}%
+          </span>
+        )}
+      </div>
+
+      {subtitle && (
+        <p className="text-[11px] text-white/40 mt-1">{subtitle}</p>
+      )}
+
+      {/* Bottom-anchored content: sparkline or ring pushed down via mt-auto */}
+      {hasChart && !hasRing && (
+        <div className="mt-auto pt-3 -mx-1 w-[calc(100%+0.5rem)]">
           <MiniSparkline data={sparklineData!} color={sparklineColor} />
         </div>
       )}
 
-      {/* Custom content slot */}
-      {children}
+      {hasRing && !hasChart && (
+        <div className="flex justify-between items-end mt-auto pt-3">
+          <div />
+          <ConversionRing value={ringValue!} label={ringLabel} />
+        </div>
+      )}
+
+      {hasChart && hasRing && (
+        <div className="flex justify-between items-end mt-auto pt-3 gap-3">
+          <div className="flex-1 min-w-0 -ml-1">
+            <MiniSparkline data={sparklineData!} color={sparklineColor} />
+          </div>
+          <div className="shrink-0">
+            <ConversionRing value={ringValue!} label={ringLabel} />
+          </div>
+        </div>
+      )}
+
+      {children && <div className="mt-auto pt-3">{children}</div>}
     </div>
   );
 }

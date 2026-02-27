@@ -139,20 +139,23 @@ export function SubAffiliatesClient({
 
       {/* Summary Stats */}
       {summaryStats && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-12 gap-4">
           <FeatureCard
+            className="col-span-12 sm:col-span-6 lg:col-span-4"
             title="Recruited"
             value={summaryStats.recruited.toLocaleString()}
             icon={UserPlus}
             subtitle="Sub-affiliates"
           />
           <FeatureCard
+            className="col-span-12 sm:col-span-6 lg:col-span-4"
             title="Combined Revenue"
             value={fmtCurrency(summaryStats.combinedRevenue)}
             icon={DollarSign}
             subtitle="Total sub-affiliate earnings"
           />
           <FeatureCard
+            className="col-span-12 sm:col-span-12 lg:col-span-4"
             title="Top Performer"
             value={summaryStats.topPerformer ?? "—"}
             icon={Trophy}

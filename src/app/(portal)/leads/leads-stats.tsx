@@ -11,20 +11,23 @@ interface LeadsStatsProps {
 
 export function LeadsStats({ total, thisMonth, sparkline }: LeadsStatsProps) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-6">
+    <div className="grid grid-cols-12 gap-4 mt-6">
       <FeatureCard
+        className="col-span-12 sm:col-span-6 lg:col-span-4"
         title="Total Leads"
         value={total.toLocaleString()}
         icon={Users}
         subtitle="All time"
       />
       <FeatureCard
+        className="col-span-12 sm:col-span-6 lg:col-span-4"
         title="This Month"
         value={thisMonth.toLocaleString()}
         icon={CalendarDays}
         subtitle="Leads generated"
       />
       <FeatureCard
+        className="col-span-12 sm:col-span-12 lg:col-span-4"
         title="Weekly Trend"
         value={sparkline[sparkline.length - 1]?.toLocaleString() ?? "0"}
         icon={TrendingUp}

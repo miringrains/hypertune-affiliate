@@ -24,20 +24,23 @@ export function PayoutsStats({
   totalPayouts,
 }: PayoutsStatsProps) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-6">
+    <div className="grid grid-cols-12 gap-4 mt-6">
       <FeatureCard
+        className="col-span-12 sm:col-span-6 lg:col-span-4"
         title="Lifetime Paid"
         value={fmt(lifetimePaid)}
         icon={Wallet}
         subtitle="Total payouts completed"
       />
       <FeatureCard
+        className="col-span-12 sm:col-span-6 lg:col-span-4"
         title="Next Estimate"
         value={fmt(pendingEstimate)}
         icon={Clock}
         subtitle="Pending commissions"
       />
       <FeatureCard
+        className="col-span-12 sm:col-span-12 lg:col-span-4"
         title="Total Payouts"
         value={totalPayouts.toLocaleString()}
         icon={Receipt}

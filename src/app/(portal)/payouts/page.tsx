@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { PayoutsStats } from "./payouts-stats";
 
 export default async function PayoutsPage() {
   const supabase = await createClient();
@@ -21,20 +22,34 @@ export default async function PayoutsPage() {
 
   if (!affiliate) redirect("/login");
 
-  const [{ data: payouts }, { data: payoutMethods }] = await Promise.all([
-    supabase
-      .from("payouts")
-      .select("*")
-      .eq("affiliate_id", affiliate.id)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("payout_methods")
-      .select("*")
-      .eq("affiliate_id", affiliate.id),
-  ]);
+  const [{ data: payouts }, { data: payoutMethods }, { data: commissions }] =
+    await Promise.all([
+      supabase
+        .from("payouts")
+        .select("*")
+        .eq("affiliate_id", affiliate.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("payout_methods")
+        .select("*")
+        .eq("affiliate_id", affiliate.id),
+      supabase
+        .from("commissions")
+        .select("amount, status")
+        .eq("affiliate_id", affiliate.id),
+    ]);
 
   const payoutRows = payouts ?? [];
   const methods = payoutMethods ?? [];
+  const comms = commissions ?? [];
+
+  const lifetimePaid = payoutRows
+    .filter((p) => p.status === "completed")
+    .reduce((s, p) => s + Number(p.amount), 0);
+
+  const pendingCommissions = comms
+    .filter((c) => c.status === "pending" || c.status === "approved")
+    .reduce((s, c) => s + Number(c.amount), 0);
 
   return (
     <div>
@@ -42,6 +57,12 @@ export default async function PayoutsPage() {
       <p className="text-[14px] text-muted-foreground mt-1">
         Your payout methods and payment history.
       </p>
+
+      <PayoutsStats
+        lifetimePaid={lifetimePaid}
+        pendingEstimate={pendingCommissions}
+        totalPayouts={payoutRows.length}
+      />
 
       {/* Payout Methods */}
       <div className="mt-6">

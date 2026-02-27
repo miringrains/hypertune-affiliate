@@ -12,9 +12,13 @@ import {
   Link2,
   Users,
   Loader2,
+  UserPlus,
+  DollarSign,
+  Trophy,
 } from "lucide-react";
 import { ICON_STROKE_WIDTH, COMMISSION_RATES } from "@/lib/constants";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { FeatureCard } from "@/components/shared/feature-card";
 import type { Tables } from "@/lib/supabase/types";
 
 interface InviteLink {
@@ -37,12 +41,33 @@ interface SubAffiliate {
   tier_level: number;
 }
 
+interface SummaryStats {
+  recruited: number;
+  combinedRevenue: number;
+  topPerformer: string | null;
+  topRevenue: number;
+}
+
 interface Props {
   affiliate: Tables<"affiliates">;
   subAffiliates: SubAffiliate[];
+  summaryStats?: SummaryStats;
 }
 
-export function SubAffiliatesClient({ affiliate, subAffiliates }: Props) {
+function fmtCurrency(amount: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+export function SubAffiliatesClient({
+  affiliate,
+  subAffiliates,
+  summaryStats,
+}: Props) {
   const [links, setLinks] = useState<InviteLink[]>([]);
   const [loadingLinks, setLoadingLinks] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -111,6 +136,34 @@ export function SubAffiliatesClient({ affiliate, subAffiliates }: Props) {
           Recruit sub-affiliates and manage your team
         </p>
       </div>
+
+      {/* Summary Stats */}
+      {summaryStats && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <FeatureCard
+            title="Recruited"
+            value={summaryStats.recruited.toLocaleString()}
+            icon={UserPlus}
+            subtitle="Sub-affiliates"
+          />
+          <FeatureCard
+            title="Combined Revenue"
+            value={fmtCurrency(summaryStats.combinedRevenue)}
+            icon={DollarSign}
+            subtitle="Total sub-affiliate earnings"
+          />
+          <FeatureCard
+            title="Top Performer"
+            value={summaryStats.topPerformer ?? "—"}
+            icon={Trophy}
+            subtitle={
+              summaryStats.topPerformer
+                ? `${fmtCurrency(summaryStats.topRevenue)} earned`
+                : "No earnings yet"
+            }
+          />
+        </div>
+      )}
 
       {/* Recruit Links Section */}
       <div className="space-y-4">

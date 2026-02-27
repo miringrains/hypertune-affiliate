@@ -32,14 +32,56 @@ export default async function SubAffiliatesPage() {
 
   const { data: subAffiliates } = await supabase
     .from("affiliates")
-    .select("id, name, slug, email, status, created_at, commission_rate, tier_level")
+    .select(
+      "id, name, slug, email, status, created_at, commission_rate, tier_level",
+    )
     .eq("parent_id", affiliate.id)
     .order("created_at", { ascending: false });
+
+  const subs = subAffiliates ?? [];
+
+  let combinedRevenue = 0;
+  let topPerformer = "";
+  let topRevenue = 0;
+
+  if (subs.length > 0) {
+    const subIds = subs.map((s) => s.id);
+    const { data: subComms } = await supabase
+      .from("commissions")
+      .select("affiliate_id, amount, status")
+      .in("affiliate_id", subIds);
+
+    const comms = subComms ?? [];
+    const revenueByAffiliate: Record<string, number> = {};
+
+    for (const c of comms) {
+      if (c.status === "paid") {
+        const amt = Number(c.amount);
+        combinedRevenue += amt;
+        revenueByAffiliate[c.affiliate_id] =
+          (revenueByAffiliate[c.affiliate_id] ?? 0) + amt;
+      }
+    }
+
+    for (const [affId, rev] of Object.entries(revenueByAffiliate)) {
+      if (rev > topRevenue) {
+        topRevenue = rev;
+        const sub = subs.find((s) => s.id === affId);
+        topPerformer = sub?.name ?? "";
+      }
+    }
+  }
 
   return (
     <SubAffiliatesClient
       affiliate={affiliate}
-      subAffiliates={subAffiliates ?? []}
+      subAffiliates={subs}
+      summaryStats={{
+        recruited: subs.length,
+        combinedRevenue,
+        topPerformer: topPerformer || null,
+        topRevenue,
+      }}
     />
   );
 }

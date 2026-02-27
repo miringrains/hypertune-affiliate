@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/card";
+import { LeadsStats } from "./leads-stats";
 
 export default async function LeadsPage() {
   const supabase = await createClient();
@@ -46,9 +47,32 @@ export default async function LeadsPage() {
   }
 
   const { data: leads } = await query;
-  const rows = (leads ?? []).filter(
-    (l) => isTier1 ? (l.affiliate_id === affiliate.id || subIdMap[l.affiliate_id]) : true
+  const rows = (leads ?? []).filter((l) =>
+    isTier1
+      ? l.affiliate_id === affiliate.id || subIdMap[l.affiliate_id]
+      : true,
   );
+
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const twelveWeeksAgo = new Date(now.getTime() - 84 * 86_400_000);
+
+  const thisMonthCount = rows.filter(
+    (l) => new Date(l.created_at) >= startOfMonth,
+  ).length;
+
+  const weeklySparkline = (() => {
+    const buckets = new Array(12).fill(0);
+    for (const l of rows) {
+      const d = new Date(l.created_at);
+      if (d < twelveWeeksAgo) continue;
+      const weeksAgo = Math.floor(
+        (now.getTime() - d.getTime()) / (7 * 86_400_000),
+      );
+      if (weeksAgo >= 0 && weeksAgo < 12) buckets[11 - weeksAgo]++;
+    }
+    return buckets;
+  })();
 
   return (
     <div>
@@ -58,6 +82,12 @@ export default async function LeadsPage() {
           ? "Leads from your referral link and your sub-affiliates."
           : "People who signed up through your referral link."}
       </p>
+
+      <LeadsStats
+        total={rows.length}
+        thisMonth={thisMonthCount}
+        sparkline={weeklySparkline}
+      />
 
       <Card className="mt-6">
         <div className="overflow-x-auto">

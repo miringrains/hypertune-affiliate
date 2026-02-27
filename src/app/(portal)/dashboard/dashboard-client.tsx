@@ -17,10 +17,10 @@ import {
   Pencil,
   Shield,
   UserPlus,
-  TrendingUp,
 } from "lucide-react";
 import { ICON_STROKE_WIDTH } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
+import { FeatureCard } from "@/components/shared/feature-card";
 import type { Tables } from "@/lib/supabase/types";
 
 interface DashboardStats {
@@ -29,6 +29,14 @@ interface DashboardStats {
   customers: number;
   earned: number;
   pending: number;
+}
+
+interface ChartData {
+  clicksByDay: number[];
+  leadsByWeek: number[];
+  commissionsByMonth: number[];
+  conversionRate: number;
+  customerStates: { active: number; trialing: number; churned: number };
 }
 
 interface SubAffiliateStat {
@@ -58,6 +66,7 @@ interface AdminData {
 interface DashboardClientProps {
   affiliate: Tables<"affiliates">;
   stats: DashboardStats;
+  chartData?: ChartData;
   subAffiliateData?: SubAffiliateStat[];
   adminData?: AdminData;
 }
@@ -69,47 +78,6 @@ function formatCurrency(amount: number) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
-}
-
-function StatCard({
-  title,
-  value,
-  icon: Icon,
-  subtitle,
-}: {
-  title: string;
-  value: string | number;
-  icon: React.ComponentType<{
-    size?: number;
-    strokeWidth?: number;
-    className?: string;
-  }>;
-  subtitle?: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="pt-5 pb-5 px-5">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-[13px] font-medium text-muted-foreground">
-            {title}
-          </span>
-          <Icon
-            size={16}
-            strokeWidth={ICON_STROKE_WIDTH}
-            className="text-muted-foreground/50"
-          />
-        </div>
-        <div className="text-[1.75rem] font-semibold tracking-tight leading-none">
-          {value}
-        </div>
-        {subtitle && (
-          <p className="text-[12px] text-muted-foreground mt-1.5">
-            {subtitle}
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  );
 }
 
 function ReferralLinkSection({
@@ -210,7 +178,7 @@ function ReferralLinkSection({
                 value={slug}
                 onChange={(e) =>
                   setSlug(
-                    e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "")
+                    e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""),
                   )
                 }
                 className="h-7 w-36 font-mono text-[12px]"
@@ -248,6 +216,7 @@ function ReferralLinkSection({
 export function DashboardClient({
   affiliate,
   stats,
+  chartData,
   subAffiliateData,
   adminData,
 }: DashboardClientProps) {
@@ -267,49 +236,92 @@ export function DashboardClient({
         </p>
       </div>
 
-      {/* Stats Grid */}
-      <div
-        className={`grid gap-4 sm:grid-cols-2 ${isAdmin ? "lg:grid-cols-6" : "lg:grid-cols-5"}`}
-      >
-        {isAdmin && (
-          <StatCard
+      {/* Feature Card Grid */}
+      {isAdmin ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <FeatureCard
             title="Affiliates"
             value={adminData?.totalAffiliates.toLocaleString() ?? "0"}
             icon={Shield}
             subtitle="Total active"
           />
-        )}
-        <StatCard
-          title="Clicks"
-          value={stats.clicks.toLocaleString()}
-          icon={MousePointerClick}
-          subtitle={isAdmin ? "Last 30 days (all)" : "Last 30 days"}
-        />
-        <StatCard
-          title="Leads"
-          value={stats.leads.toLocaleString()}
-          icon={Users}
-          subtitle={isAdmin ? "All affiliates" : "All time"}
-        />
-        <StatCard
-          title="Customers"
-          value={stats.customers.toLocaleString()}
-          icon={UserCheck}
-          subtitle={isAdmin ? "All affiliates" : "Converted"}
-        />
-        <StatCard
-          title={isAdmin ? "Total Commissions" : "Earned"}
-          value={formatCurrency(stats.earned)}
-          icon={DollarSign}
-          subtitle={isAdmin ? "All time" : "Paid out"}
-        />
-        <StatCard
-          title="Pending"
-          value={formatCurrency(stats.pending)}
-          icon={Clock}
-          subtitle="Awaiting payout"
-        />
-      </div>
+          <FeatureCard
+            title="Clicks"
+            value={stats.clicks.toLocaleString()}
+            icon={MousePointerClick}
+            subtitle="Last 30 days"
+            sparklineData={chartData?.clicksByDay}
+          />
+          <FeatureCard
+            title="Leads"
+            value={stats.leads.toLocaleString()}
+            icon={Users}
+            subtitle="All affiliates"
+            sparklineData={chartData?.leadsByWeek}
+            sparklineColor="#22c55e"
+          />
+          <FeatureCard
+            title="Customers"
+            value={stats.customers.toLocaleString()}
+            icon={UserCheck}
+            subtitle={`${chartData?.customerStates.active ?? 0} active · ${chartData?.customerStates.trialing ?? 0} trialing · ${chartData?.customerStates.churned ?? 0} churned`}
+            ringValue={chartData?.conversionRate ?? 0}
+            ringLabel={`${chartData?.conversionRate ?? 0}%`}
+          />
+          <FeatureCard
+            title="Total Commissions"
+            value={formatCurrency(stats.earned)}
+            icon={DollarSign}
+            subtitle="All time"
+            sparklineData={chartData?.commissionsByMonth}
+            sparklineColor="#eab308"
+          />
+          <FeatureCard
+            title="Pending"
+            value={formatCurrency(stats.pending)}
+            icon={Clock}
+            subtitle="Awaiting payout"
+          />
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <FeatureCard
+            title="Clicks"
+            value={stats.clicks.toLocaleString()}
+            icon={MousePointerClick}
+            subtitle="Last 30 days"
+            sparklineData={chartData?.clicksByDay}
+          />
+          <FeatureCard
+            title="Leads"
+            value={stats.leads.toLocaleString()}
+            icon={Users}
+            subtitle="All time"
+            ringValue={chartData?.conversionRate ?? 0}
+            ringLabel={`${chartData?.conversionRate ?? 0}%`}
+          />
+          <FeatureCard
+            title="Customers"
+            value={stats.customers.toLocaleString()}
+            icon={UserCheck}
+            subtitle="Converted"
+          />
+          <FeatureCard
+            title="Earned"
+            value={formatCurrency(stats.earned)}
+            icon={DollarSign}
+            subtitle="Paid out"
+            sparklineData={chartData?.commissionsByMonth}
+            sparklineColor="#22c55e"
+          />
+          <FeatureCard
+            title="Pending"
+            value={formatCurrency(stats.pending)}
+            icon={Clock}
+            subtitle="Awaiting payout"
+          />
+        </div>
+      )}
 
       {/* Admin: Recent Affiliates */}
       {isAdmin && adminData && adminData.recentAffiliates.length > 0 && (

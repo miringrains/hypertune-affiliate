@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { CustomersStats } from "./customers-stats";
+import { PLAN_PRICES } from "@/lib/constants";
 
 export default async function CustomersPage() {
   const supabase = await createClient();
@@ -47,9 +49,33 @@ export default async function CustomersPage() {
   }
 
   const { data: customers } = await query;
-  const rows = (customers ?? []).filter(
-    (c) => isTier1 ? (c.affiliate_id === affiliate.id || subIdMap[c.affiliate_id]) : true
+  const rows = (customers ?? []).filter((c) =>
+    isTier1
+      ? c.affiliate_id === affiliate.id || subIdMap[c.affiliate_id]
+      : true,
   );
+
+  const activeCount = rows.filter(
+    (c) =>
+      c.current_state === "active_monthly" ||
+      c.current_state === "active_annual",
+  ).length;
+  const trialingCount = rows.filter(
+    (c) => c.current_state === "trialing",
+  ).length;
+  const churnedCount = rows.filter(
+    (c) => c.current_state === "canceled" || c.current_state === "dormant",
+  ).length;
+
+  const monthlyActive = rows.filter(
+    (c) => c.current_state === "active_monthly",
+  ).length;
+  const annualActive = rows.filter(
+    (c) => c.current_state === "active_annual",
+  ).length;
+  const estimatedMRR =
+    monthlyActive * PLAN_PRICES.monthly +
+    annualActive * (PLAN_PRICES.annual / 12);
 
   return (
     <div>
@@ -59,6 +85,14 @@ export default async function CustomersPage() {
           ? "Customers from your referrals and your sub-affiliates."
           : "Leads that converted into paying customers."}
       </p>
+
+      <CustomersStats
+        active={activeCount}
+        trialing={trialingCount}
+        churned={churnedCount}
+        mrr={estimatedMRR}
+        total={rows.length}
+      />
 
       <Card className="mt-6">
         <div className="overflow-x-auto">
@@ -122,7 +156,7 @@ export default async function CustomersPage() {
                     <td className="px-5 py-3 text-[12px] text-muted-foreground">
                       {customer.first_payment_at
                         ? new Date(
-                            customer.first_payment_at
+                            customer.first_payment_at,
                           ).toLocaleDateString()
                         : "—"}
                     </td>

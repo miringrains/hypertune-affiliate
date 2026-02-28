@@ -169,7 +169,11 @@ async function handleCheckoutCompleted(
   if (!amId) return;
 
   const affiliate = await resolveAffiliateBySlug(supabase, amId);
-  if (!affiliate) return;
+
+  if (!affiliate) {
+    await handleCampaignCheckout(supabase, session, amId);
+    return;
+  }
 
   const email = session.customer_details?.email;
   if (!email) return;
@@ -280,7 +284,10 @@ async function handlePaymentSucceeded(supabase: ServiceClient, invoice: Stripe.I
     }
   }
 
-  if (!lead) return;
+  if (!lead) {
+    await handleCampaignPayment(supabase, invoice, stripeCustomerId);
+    return;
+  }
 
   const subscriptionId = getStringId(
     (invoice as unknown as Record<string, unknown>).subscription as string | { id: string } | null,
@@ -500,6 +507,94 @@ async function handleDisputeCreated(supabase: ServiceClient, dispute: Stripe.Dis
   );
   if (!invoiceId) return;
   await voidCommissionsForInvoice(supabase, invoiceId);
+}
+
+// ---------------------------------------------------------------------------
+// Campaign tracking helpers (0% commission, admin marketing links)
+// ---------------------------------------------------------------------------
+
+async function resolveCampaignBySlug(supabase: ServiceClient, slug: string) {
+  const { data } = await (supabase as any)
+    .from("campaigns")
+    .select("id")
+    .eq("slug", slug)
+    .single() as { data: { id: string } | null; error: any };
+  return data;
+}
+
+async function recordCampaignEvent(
+  supabase: ServiceClient,
+  campaignId: string,
+  eventType: string,
+  email: string | null,
+  metadata: Record<string, unknown> = {},
+) {
+  await (supabase as any).from("campaign_events").insert({
+    campaign_id: campaignId,
+    event_type: eventType,
+    email,
+    metadata,
+  });
+}
+
+async function handleCampaignCheckout(
+  supabase: ServiceClient,
+  session: Stripe.Checkout.Session,
+  amId: string,
+) {
+  const campaign = await resolveCampaignBySlug(supabase, amId);
+  if (!campaign) return;
+
+  const email = session.customer_details?.email ?? null;
+  const stripeSubscriptionId = getStringId(
+    (session as unknown as Record<string, unknown>).subscription as string | { id: string } | null,
+  );
+
+  let eventType = "customer";
+
+  if (stripeSubscriptionId) {
+    try {
+      const sub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+      if (sub.status === "trialing") {
+        eventType = "trial";
+      }
+    } catch {
+      // Default to customer if we can't fetch subscription
+    }
+  }
+
+  await recordCampaignEvent(supabase, campaign.id, eventType, email, {
+    checkout_session_id: session.id,
+    stripe_customer_id: getStringId(session.customer),
+    stripe_subscription_id: stripeSubscriptionId,
+  });
+}
+
+async function handleCampaignPayment(
+  supabase: ServiceClient,
+  invoice: Stripe.Invoice,
+  stripeCustomerId: string,
+) {
+  // Look up the customer's checkout sessions to find the original am_id
+  const sessions = await stripe.checkout.sessions.list({
+    customer: stripeCustomerId,
+    limit: 5,
+  });
+
+  const amId = sessions.data
+    .map((s) => s.metadata?.am_id)
+    .find((id) => !!id);
+
+  if (!amId) return;
+
+  const campaign = await resolveCampaignBySlug(supabase, amId);
+  if (!campaign) return;
+
+  await recordCampaignEvent(supabase, campaign.id, "customer", invoice.customer_email ?? null, {
+    invoice_id: invoice.id,
+    amount: (invoice.amount_paid ?? 0) / 100,
+    stripe_customer_id: stripeCustomerId,
+  });
 }
 
 // ---------------------------------------------------------------------------

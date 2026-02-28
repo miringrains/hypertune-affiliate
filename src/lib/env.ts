@@ -13,6 +13,7 @@ const runtimeOnly = [
   "PAYPAL_CLIENT_ID",
   "PAYPAL_CLIENT_SECRET",
   "PAYPAL_MODE",
+  "LEAD_WEBHOOK_SECRET",
 ] as const;
 
 if (process.env.NODE_ENV === "production") {

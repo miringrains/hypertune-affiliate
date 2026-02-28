@@ -342,75 +342,6 @@ function OnboardingBanner({ slug }: { slug: string }) {
   );
 }
 
-function EmbedCodeSection({ slug }: { slug: string }) {
-  const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<"script" | "pixel">("script");
-  const [copied, setCopied] = useState(false);
-
-  const appUrl = typeof window !== "undefined" ? window.location.origin : "";
-  const scriptCode = `<script src="${appUrl}/tracking-snippet.js" data-api="${appUrl}"></script>`;
-  const pixelCode = `<img src="${appUrl}/api/track/click?am_id=${slug}&redirect=none" width="1" height="1" style="display:none" alt="">`;
-  const code = tab === "script" ? scriptCode : pixelCode;
-
-  async function copyCode() {
-    await navigator.clipboard.writeText(code);
-    setCopied(true);
-    toast.success("Embed code copied!");
-    setTimeout(() => setCopied(false), 2000);
-  }
-
-  if (!open) {
-    return (
-      <button
-        onClick={() => setOpen(true)}
-        className="text-[11px] text-zinc-600 hover:text-zinc-400 transition-colors"
-      >
-        Need embed code for your site? →
-      </button>
-    );
-  }
-
-  return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-[12px] font-medium text-zinc-300">Embed Code</h3>
-        <button onClick={() => setOpen(false)} className="text-[11px] text-zinc-600 hover:text-zinc-400 transition-colors">Hide</button>
-      </div>
-      <div className="flex gap-2 mb-3">
-        <button
-          onClick={() => setTab("script")}
-          className={`px-2.5 py-1 rounded text-[11px] font-medium border transition-colors ${tab === "script" ? "border-zinc-600 bg-zinc-800 text-zinc-200" : "border-zinc-800 text-zinc-500"}`}
-        >
-          Script Tag
-        </button>
-        <button
-          onClick={() => setTab("pixel")}
-          className={`px-2.5 py-1 rounded text-[11px] font-medium border transition-colors ${tab === "pixel" ? "border-zinc-600 bg-zinc-800 text-zinc-200" : "border-zinc-800 text-zinc-500"}`}
-        >
-          Tracking Pixel
-        </button>
-      </div>
-      <div className="relative">
-        <pre className="p-3 rounded-lg bg-black border border-zinc-800 text-[11px] font-mono text-zinc-400 overflow-x-auto whitespace-pre-wrap break-all">
-          {code}
-        </pre>
-        <Button
-          size="xs"
-          onClick={copyCode}
-          className="absolute top-2 right-2 bg-zinc-800 hover:bg-zinc-700 text-white border-0"
-        >
-          {copied ? <Check size={12} /> : <Copy size={12} />}
-        </Button>
-      </div>
-      <p className="text-[10px] text-zinc-600 mt-2">
-        {tab === "script"
-          ? "Add this tag to your site's <head> or before </body>. It automatically tracks visitors with your affiliate ID."
-          : "Add this invisible pixel to any HTML page. It fires a tracking event when loaded."}
-      </p>
-    </div>
-  );
-}
-
 function FunnelStrip({ stats }: { stats: DashboardStats }) {
   const clickToLead =
     stats.clicks > 0 ? ((stats.leads / stats.clicks) * 100).toFixed(1) : "0";
@@ -681,7 +612,6 @@ export function DashboardClient({
         <OnboardingBanner slug={affiliate.slug} />
       )}
 
-      <EmbedCodeSection slug={affiliate.slug} />
       <FunnelStrip stats={stats} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

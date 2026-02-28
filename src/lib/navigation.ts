@@ -9,6 +9,7 @@ import {
   Link2,
   Activity,
   Wallet,
+  Megaphone,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -50,6 +51,7 @@ export const adminNav: NavGroup[] = [
       { label: "Overview", href: "/dashboard", icon: Activity },
       { label: "Affiliates", href: "/admin", icon: Shield },
       { label: "Invite Links", href: "/admin/links", icon: Link2 },
+      { label: "Campaigns", href: "/admin/campaigns", icon: Megaphone },
     ],
   },
   {

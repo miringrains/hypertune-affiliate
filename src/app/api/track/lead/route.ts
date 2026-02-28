@@ -3,6 +3,8 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { COOKIE_NAME } from "@/lib/constants";
 import { trackLeadLimiter } from "@/lib/rate-limit";
 
+const CAMPAIGN_COOKIE = "ht_campaign";
+
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204 });
 }
@@ -21,6 +23,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
+    const supabase = await createServiceClient();
+
+    // Check for campaign attribution first
+    const campaignSlug = request.cookies.get(CAMPAIGN_COOKIE)?.value;
+    if (campaignSlug && !am_id) {
+      const { data: campaign } = await (supabase as any)
+        .from("campaigns")
+        .select("id")
+        .eq("slug", campaignSlug)
+        .single() as { data: { id: string } | null; error: any };
+
+      if (campaign) {
+        await (supabase as any).from("campaign_events").insert({
+          campaign_id: campaign.id,
+          event_type: "lead",
+          email,
+          metadata: { stripe_customer_id: stripe_customer_id || null },
+        });
+        return NextResponse.json({ lead_id: null, existing: false, campaign: true });
+      }
+    }
+
+    // Standard affiliate attribution
     const affiliateSlug =
       am_id || request.cookies.get(COOKIE_NAME)?.value;
 
@@ -30,8 +55,6 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-
-    const supabase = await createServiceClient();
 
     const { data: affiliate } = await supabase
       .from("affiliates")

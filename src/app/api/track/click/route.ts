@@ -9,6 +9,8 @@ const TRANSPARENT_GIF = Buffer.from(
   "base64",
 );
 
+const CAMPAIGN_COOKIE = "ht_campaign";
+
 export async function GET(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   if (!trackClickLimiter(ip)) {
@@ -30,7 +32,54 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = await createServiceClient();
+  const ipHash = createHash("sha256").update(ip).digest("hex").slice(0, 16);
+  const userAgent = request.headers.get("user-agent") || null;
 
+  // Check if this is a campaign slug first
+  const { data: campaign } = await (supabase as any)
+    .from("campaigns")
+    .select("id")
+    .eq("slug", amId)
+    .single() as { data: { id: string } | null; error: any };
+
+  if (campaign) {
+    await (supabase as any).from("campaign_events").insert({
+      campaign_id: campaign.id,
+      event_type: "click",
+      ip_hash: ipHash,
+      metadata: { referrer_url: ref, landing_page: page, user_agent: userAgent },
+    });
+
+    const cookieOpts = getTrackingCookieOptions();
+
+    if (isPixel) {
+      const response = pixelResponse();
+      response.cookies.set(CAMPAIGN_COOKIE, amId, {
+        maxAge: cookieOpts.maxAge,
+        httpOnly: cookieOpts.httpOnly,
+        secure: cookieOpts.secure,
+        sameSite: cookieOpts.sameSite,
+        path: cookieOpts.path,
+      });
+      return response;
+    }
+
+    const targetUrl = new URL(redirectUrl!);
+    if (!targetUrl.searchParams.has("am_id")) {
+      targetUrl.searchParams.set("am_id", amId);
+    }
+    const response = NextResponse.redirect(targetUrl.toString());
+    response.cookies.set(CAMPAIGN_COOKIE, amId, {
+      maxAge: cookieOpts.maxAge,
+      httpOnly: cookieOpts.httpOnly,
+      secure: cookieOpts.secure,
+      sameSite: cookieOpts.sameSite,
+      path: cookieOpts.path,
+    });
+    return response;
+  }
+
+  // Otherwise look up affiliate
   const { data: affiliate } = await supabase
     .from("affiliates")
     .select("id")
@@ -42,9 +91,6 @@ export async function GET(request: NextRequest) {
     if (isPixel) return pixelResponse();
     return NextResponse.redirect(redirectUrl!);
   }
-
-  const ipHash = createHash("sha256").update(ip).digest("hex").slice(0, 16);
-  const userAgent = request.headers.get("user-agent") || null;
 
   await supabase.from("clicks").insert({
     affiliate_id: affiliate.id,

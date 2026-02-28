@@ -15,13 +15,17 @@ export default function ResetPasswordPage() {
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
+  const [error, setError] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY") {
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
         setReady(true);
+      } else {
+        setError(true);
       }
     });
   }, []);
@@ -52,6 +56,23 @@ export default function ResetPasswordPage() {
     toast.success("Password updated successfully");
     router.push("/dashboard");
     router.refresh();
+  }
+
+  if (error) {
+    return (
+      <div className="text-center space-y-4">
+        <h2 className="text-heading-2">Reset link expired</h2>
+        <p className="text-body-sm text-muted-foreground">
+          This password reset link is no longer valid. Please request a new one.
+        </p>
+        <a
+          href="/login"
+          className="inline-block text-sm underline underline-offset-4 hover:text-foreground transition-colors text-muted-foreground"
+        >
+          Back to login
+        </a>
+      </div>
+    );
   }
 
   if (!ready) {

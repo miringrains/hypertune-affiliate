@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
 
   const { searchParams, origin } = request.nextUrl;
   const code = searchParams.get("code");
+  const next = searchParams.get("next");
   const inviteCode = searchParams.get("invite_code");
   const name = searchParams.get("name");
   const slug = searchParams.get("slug");
@@ -19,7 +20,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`);
   }
 
-  const response = NextResponse.redirect(`${origin}/dashboard`);
+  const redirectTo = next?.startsWith("/") ? `${origin}${next}` : `${origin}/dashboard`;
+  const response = NextResponse.redirect(redirectTo);
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

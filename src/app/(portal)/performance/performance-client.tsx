@@ -152,7 +152,7 @@ export function PerformanceClient({
               {i < 2 && (
                 <>
                   <div className="hidden sm:flex flex-col items-center justify-center px-3 shrink-0">
-                    <ArrowRight size={16} className="text-zinc-700" />
+                    <ArrowRight size={16} className="text-zinc-400" />
                     <span className="text-[12px] font-bold text-emerald-400 mt-1">
                       {i === 0 ? clickToLead : leadToCustomer}%
                     </span>

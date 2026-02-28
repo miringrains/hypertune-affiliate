@@ -376,7 +376,7 @@ function FunnelStrip({ stats }: { stats: DashboardStats }) {
 
           {i < steps.length - 1 && (
             <div className="hidden sm:flex flex-col items-center justify-center px-2 shrink-0">
-              <ArrowRight size={14} className="text-zinc-700" />
+              <ArrowRight size={14} className="text-zinc-400" />
               <span className="text-[10px] font-semibold text-emerald-400 mt-0.5">
                 {rates[i]}%
               </span>

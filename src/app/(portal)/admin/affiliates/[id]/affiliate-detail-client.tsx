@@ -327,7 +327,7 @@ function AdminPayoutMethods({ affiliateId }: { affiliateId: string }) {
             <button
               onClick={addMethod}
               disabled={adding || !paypalEmail}
-              className="px-3 py-1.5 rounded-md bg-white text-black text-[12px] font-medium hover:bg-zinc-200 disabled:opacity-40"
+              className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-[12px] font-medium hover:bg-primary/80 disabled:opacity-40"
             >
               {adding ? "Linking..." : "Link PayPal"}
             </button>

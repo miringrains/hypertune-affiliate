@@ -1,6 +1,7 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { DashboardClient } from "./dashboard-client";
+import { PLAN_PRICES } from "@/lib/constants";
 
 function buildDailySparkline(
   rows: { clicked_at: string }[],
@@ -72,14 +73,18 @@ export default async function DashboardPage() {
       customersRes,
       customerStatesRes,
       commissionsRes,
+      allCommissionsRes,
+      payoutsRes,
       recentAffiliatesRes,
     ] = await Promise.all([
       service.from("affiliates").select("id", { count: "exact", head: true }).neq("role", "admin"),
       service.from("clicks").select("clicked_at").gte("clicked_at", thirtyDaysAgo),
       service.from("leads").select("id", { count: "exact", head: true }),
       service.from("customers").select("id", { count: "exact", head: true }),
-      service.from("customers").select("current_state"),
+      service.from("customers").select("current_state, plan_type"),
       service.from("commissions").select("amount, status, created_at").gte("created_at", sixMonthsAgo),
+      service.from("commissions").select("amount, status"),
+      service.from("payouts").select("amount, status"),
       service
         .from("affiliates")
         .select("id, name, slug, tier_level, commission_rate, created_at")
@@ -100,10 +105,23 @@ export default async function DashboardPage() {
     const activeCount = stateRows.filter(
       (c) => c.current_state === "active_monthly" || c.current_state === "active_annual",
     ).length;
+    const monthlyActive = stateRows.filter((c) => c.current_state === "active_monthly").length;
+    const annualActive = stateRows.filter((c) => c.current_state === "active_annual").length;
     const trialingCount = stateRows.filter((c) => c.current_state === "trialing").length;
     const churned = stateRows.filter(
       (c) => c.current_state === "canceled" || c.current_state === "dormant",
     ).length;
+
+    const estimatedMRR = monthlyActive * PLAN_PRICES.monthly + annualActive * (PLAN_PRICES.annual / 12);
+
+    const allComms = allCommissionsRes.data ?? [];
+    const commissionLiability = allComms
+      .filter((c) => c.status === "pending" || c.status === "approved")
+      .reduce((s, c) => s + Number(c.amount), 0);
+
+    const totalPaidOut = (payoutsRes.data ?? [])
+      .filter((p) => p.status === "completed")
+      .reduce((s, p) => s + Number(p.amount), 0);
 
     return (
       <DashboardClient
@@ -125,6 +143,9 @@ export default async function DashboardPage() {
         adminData={{
           totalAffiliates: affiliatesRes.count ?? 0,
           recentAffiliates: recentAffiliatesRes.data ?? [],
+          estimatedMRR,
+          commissionLiability,
+          totalPaidOut,
         }}
       />
     );

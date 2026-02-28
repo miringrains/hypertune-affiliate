@@ -266,7 +266,7 @@ export function EarningsClient({
       </div>
 
       {/* ── Payout Methods ── */}
-      {payoutMethods.length > 0 && (
+      {payoutMethods.length > 0 ? (
         <div className="flex items-center gap-3 text-[13px]">
           <span className="text-zinc-500">Payout method:</span>
           {payoutMethods.map((m) => (
@@ -277,6 +277,13 @@ export function EarningsClient({
               )}
             </span>
           ))}
+        </div>
+      ) : (
+        <div className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-950 px-4 py-3">
+          <span className="text-[13px] text-zinc-500">No payout method configured.</span>
+          <a href="/settings" className="text-[13px] font-medium text-zinc-300 hover:text-white transition-colors underline underline-offset-4">
+            Add one in Settings →
+          </a>
         </div>
       )}
 

@@ -194,7 +194,7 @@ export default function AdminLinksPage() {
                         </span>
                       )}
                       {link.is_reusable ? (
-                        <span className="text-[11px] text-emerald-600 px-2 py-0.5 rounded-full border border-emerald-200 bg-emerald-50">
+                        <span className="text-[11px] text-zinc-300 px-2 py-0.5 rounded-full border border-zinc-700 bg-zinc-900">
                           Reusable
                         </span>
                       ) : (
@@ -202,7 +202,7 @@ export default function AdminLinksPage() {
                           className={`text-[11px] px-2 py-0.5 rounded-full border ${
                             link.used_by_affiliate_id
                               ? "text-muted-foreground border-border"
-                              : "text-blue-600 border-blue-200 bg-blue-50"
+                              : "text-zinc-300 border-zinc-700 bg-zinc-900"
                           }`}
                         >
                           {link.used_by_affiliate_id ? "Used" : "Available"}

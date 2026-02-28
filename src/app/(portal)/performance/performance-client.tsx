@@ -127,7 +127,7 @@ export function PerformanceClient({
       </div>
 
       {/* ── Funnel Visualization ── */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 sm:p-8">
+      <div className="rounded-2xl border border-zinc-700 bg-zinc-950 p-6 sm:p-8">
         <div className="flex items-center gap-2 mb-6">
           <Activity size={16} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-500" />
           <h2 className="text-[13px] font-medium text-zinc-400">Conversion Funnel</h2>
@@ -141,7 +141,7 @@ export function PerformanceClient({
             { icon: UserCheck, label: "Customers", value: funnel.customers },
           ].map((stage, i) => (
             <div key={stage.label} className="flex items-stretch flex-1 min-w-0">
-              <div className="flex-1 text-center p-4 sm:p-5 rounded-xl border border-zinc-800 bg-black">
+              <div className="flex-1 text-center p-4 sm:p-5 rounded-xl border border-zinc-700 bg-black">
                 <stage.icon size={22} strokeWidth={ICON_STROKE_WIDTH} className="mx-auto mb-2 text-zinc-400" />
                 <p className="text-[28px] sm:text-[34px] font-semibold tracking-tight leading-none text-white">
                   {stage.value.toLocaleString()}
@@ -168,7 +168,7 @@ export function PerformanceClient({
           ))}
         </div>
 
-        <div className="flex flex-wrap items-center gap-6 mt-6 pt-5 border-t border-zinc-800">
+        <div className="flex flex-wrap items-center gap-6 mt-6 pt-5 border-t border-zinc-700">
           <div className="flex items-center gap-3">
             <ConversionRing
               value={Number(overallConversion)}
@@ -203,7 +203,7 @@ export function PerformanceClient({
       </div>
 
       {/* ── Weekly Trend Chart ── */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-5">
+      <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[13px] font-medium text-zinc-300">Weekly Trend</h3>
           <span className="text-[11px] text-zinc-600">Last 12 weeks</span>
@@ -241,7 +241,7 @@ export function PerformanceClient({
 
       {/* ── Source Breakdown (Tier 1) ── */}
       {isTier1 && sourceBreakdown.length > 0 && (
-        <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-5">
+        <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
           <h3 className="text-[13px] font-medium text-zinc-300 mb-4">Source Breakdown</h3>
           <div className="space-y-3">
             {sourceBreakdown.map((src) => {
@@ -250,7 +250,7 @@ export function PerformanceClient({
               return (
                 <div key={src.name} className="flex items-center gap-3">
                   <span className="text-[13px] text-zinc-300 w-24 truncate shrink-0">{src.name}</span>
-                  <div className="flex-1 h-6 rounded-md overflow-hidden bg-black border border-zinc-800/50">
+                  <div className="flex-1 h-6 rounded-md overflow-hidden bg-black border border-zinc-700/50">
                     <div
                       className="h-full rounded-md flex items-center px-2"
                       style={{
@@ -284,7 +284,7 @@ export function PerformanceClient({
         {showTable && (
           <div className="mt-4 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="flex gap-1 p-0.5 rounded-lg border border-zinc-800 bg-black">
+              <div className="flex gap-1 p-0.5 rounded-lg border border-zinc-700 bg-black">
                 <button
                   onClick={() => setTableView("leads")}
                   className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-colors ${
@@ -308,17 +308,17 @@ export function PerformanceClient({
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search email..."
-                  className="pl-9 h-8 text-[12px] bg-black border-zinc-800"
+                  className="pl-9 h-8 text-[12px] bg-black border-zinc-700"
                 />
               </div>
             </div>
 
-            <Card className="border-zinc-800 bg-zinc-950">
+            <Card className="border-zinc-700 bg-zinc-950">
               <div className="overflow-x-auto">
                 {tableView === "leads" ? (
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-zinc-800">
+                      <tr className="border-b border-zinc-700">
                         <th className="text-left text-[11px] font-medium text-zinc-500 uppercase tracking-wider px-5 py-3">Email</th>
                         {isTier1 && <th className="text-left text-[11px] font-medium text-zinc-500 uppercase tracking-wider px-5 py-3">Source</th>}
                         <th className="text-left text-[11px] font-medium text-zinc-500 uppercase tracking-wider px-5 py-3">Status</th>
@@ -327,7 +327,7 @@ export function PerformanceClient({
                     </thead>
                     <tbody>
                       {filteredLeads.slice(0, 50).map((l) => (
-                        <tr key={l.id} className="border-b border-zinc-800/50 last:border-0">
+                        <tr key={l.id} className="border-b border-zinc-700/50 last:border-0">
                           <td className="px-5 py-3 text-[13px] text-zinc-100">{l.email}</td>
                           {isTier1 && <td className="px-5 py-3 text-[12px] text-zinc-500">{l.source}</td>}
                           <td className="px-5 py-3"><StatusBadge status={l.converted ? "active" : "pending"} /></td>
@@ -342,7 +342,7 @@ export function PerformanceClient({
                 ) : (
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-zinc-800">
+                      <tr className="border-b border-zinc-700">
                         <th className="text-left text-[11px] font-medium text-zinc-500 uppercase tracking-wider px-5 py-3">Email</th>
                         {isTier1 && <th className="text-left text-[11px] font-medium text-zinc-500 uppercase tracking-wider px-5 py-3">Source</th>}
                         <th className="text-left text-[11px] font-medium text-zinc-500 uppercase tracking-wider px-5 py-3">Status</th>
@@ -352,7 +352,7 @@ export function PerformanceClient({
                     </thead>
                     <tbody>
                       {filteredCustomers.slice(0, 50).map((c) => (
-                        <tr key={c.id} className="border-b border-zinc-800/50 last:border-0">
+                        <tr key={c.id} className="border-b border-zinc-700/50 last:border-0">
                           <td className="px-5 py-3 text-[13px] text-zinc-100">{c.email}</td>
                           {isTier1 && <td className="px-5 py-3 text-[12px] text-zinc-500">{c.source}</td>}
                           <td className="px-5 py-3"><StatusBadge status={c.state} /></td>

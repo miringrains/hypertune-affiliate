@@ -141,14 +141,14 @@ function LoginContent() {
   return (
     <div className="space-y-8">
       {errorParam === "no_account" && (
-        <div className="rounded-lg border border-zinc-800 bg-zinc-950 px-4 py-3 text-center">
+        <div className="rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-3 text-center">
           <p className="text-sm text-zinc-400">
             No affiliate account found for your email. Contact your administrator or use an invite link to get started.
           </p>
         </div>
       )}
       {errorParam === "auth_failed" && (
-        <div className="rounded-lg border border-zinc-800 bg-zinc-950 px-4 py-3 text-center">
+        <div className="rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-3 text-center">
           <p className="text-sm text-zinc-400">
             Authentication failed. The link may have expired. Please try again.
           </p>

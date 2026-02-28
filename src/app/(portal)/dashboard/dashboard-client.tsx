@@ -125,7 +125,7 @@ function HeroEarnings({ stats }: { stats: DashboardStats }) {
   const isUp = pctChange >= 0;
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 sm:p-8">
+    <div className="rounded-2xl border border-zinc-700 bg-zinc-950 p-6 sm:p-8">
       <p className="text-[12px] font-medium text-zinc-400 uppercase tracking-wider">
         This Month&apos;s Earnings
       </p>
@@ -211,11 +211,11 @@ function ReferralLinkBar({ affiliate }: { affiliate: Tables<"affiliates"> }) {
   }
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 sm:px-5">
+    <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border border-zinc-700 bg-zinc-950 px-4 py-3 sm:px-5">
       <div className="flex items-center gap-2 shrink-0">
         <div className="flex items-center gap-1.5 text-[12px]">
           <span className="font-medium text-zinc-300">Your link</span>
-          <span className="px-1.5 py-0.5 rounded border border-zinc-800 text-[10px] font-medium text-zinc-500">
+          <span className="px-1.5 py-0.5 rounded border border-zinc-700 text-[10px] font-medium text-zinc-500">
             {affiliate.commission_rate}% · {affiliate.commission_duration_months}mo
           </span>
         </div>
@@ -226,7 +226,7 @@ function ReferralLinkBar({ affiliate }: { affiliate: Tables<"affiliates"> }) {
           <Input
             value={referralLink}
             readOnly
-            className="pr-9 font-mono text-[11px] sm:text-[12px] bg-black border-zinc-800 text-zinc-400 h-9"
+            className="pr-9 font-mono text-[11px] sm:text-[12px] bg-black border-zinc-700 text-zinc-400 h-9"
           />
           <a
             href={referralLink}
@@ -251,7 +251,7 @@ function ReferralLinkBar({ affiliate }: { affiliate: Tables<"affiliates"> }) {
         </Button>
       </div>
 
-      <div className="flex items-center gap-2 sm:border-l sm:border-zinc-800 sm:pl-4">
+      <div className="flex items-center gap-2 sm:border-l sm:border-zinc-700 sm:pl-4">
         <span className="text-[11px] text-zinc-500">Tag:</span>
         {editingSlug ? (
           <div className="flex items-center gap-1.5">
@@ -260,7 +260,7 @@ function ReferralLinkBar({ affiliate }: { affiliate: Tables<"affiliates"> }) {
               onChange={(e) =>
                 setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))
               }
-              className="h-7 w-28 font-mono text-[11px] bg-black border-zinc-800 text-zinc-300"
+              className="h-7 w-28 font-mono text-[11px] bg-black border-zinc-700 text-zinc-300"
               autoFocus
             />
             <Button
@@ -317,7 +317,7 @@ function OnboardingBanner({ slug }: { slug: string }) {
   ];
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-5 sm:p-6">
+    <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5 sm:p-6">
       <div className="flex items-start justify-between mb-4">
         <div>
           <h3 className="text-[14px] font-medium text-white">Get started</h3>
@@ -360,9 +360,9 @@ function FunnelStrip({ stats }: { stats: DashboardStats }) {
     <div className="flex flex-col sm:flex-row items-stretch gap-0">
       {steps.map((step, i) => (
         <div key={step.label} className="flex items-stretch flex-1 min-w-0">
-          <div className="flex-1 rounded-xl border border-zinc-800 bg-zinc-950">
+          <div className="flex-1 rounded-xl border border-zinc-700 bg-zinc-950">
             <div className="p-4 sm:p-5 flex items-center gap-3">
-              <div className="shrink-0 flex items-center justify-center w-10 h-10 rounded-lg border border-zinc-800 bg-black">
+              <div className="shrink-0 flex items-center justify-center w-10 h-10 rounded-lg border border-zinc-700 bg-black">
                 <step.icon size={18} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-400" />
               </div>
               <div className="min-w-0">
@@ -398,7 +398,7 @@ function FunnelStrip({ stats }: { stats: DashboardStats }) {
 
 function EarningsTrend({ data }: { data: { month: string; amount: number }[] }) {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-5">
+    <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-[13px] font-medium text-zinc-300">Earnings Trend</h3>
         <span className="text-[11px] text-zinc-600">Last 6 months</span>
@@ -439,7 +439,7 @@ function EarningsTrend({ data }: { data: { month: string; amount: number }[] }) 
 function ActivityFeed({ items }: { items: ActivityItem[] }) {
   if (items.length === 0) {
     return (
-      <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-5">
+      <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
         <h3 className="text-[13px] font-medium text-zinc-300 mb-4">Recent Activity</h3>
         <p className="text-[13px] text-zinc-600 text-center py-6">
           No activity yet. Share your link to start earning!
@@ -449,7 +449,7 @@ function ActivityFeed({ items }: { items: ActivityItem[] }) {
   }
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-5">
+    <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-[13px] font-medium text-zinc-300">Recent Activity</h3>
         <a
@@ -463,10 +463,10 @@ function ActivityFeed({ items }: { items: ActivityItem[] }) {
         {items.map((item) => (
           <div
             key={item.id}
-            className="flex items-center justify-between py-2.5 border-b border-zinc-800/50 last:border-0"
+            className="flex items-center justify-between py-2.5 border-b border-zinc-700/50 last:border-0"
           >
             <div className="flex items-center gap-3 min-w-0">
-              <div className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center border border-zinc-800 bg-black">
+              <div className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center border border-zinc-700 bg-black">
                 <DollarSign size={13} strokeWidth={2} className="text-zinc-400" />
               </div>
               <div className="min-w-0">
@@ -526,17 +526,17 @@ export function DashboardClient({
         {/* Financial Overview */}
         {adminData && (adminData.estimatedMRR !== undefined) && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-5">
+            <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
               <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Estimated MRR</p>
               <p className="text-[28px] font-semibold tracking-tight text-white mt-1">{fmtCurrency(adminData.estimatedMRR ?? 0)}</p>
               <p className="text-[11px] text-zinc-600 mt-1">Based on active subscriptions</p>
             </div>
-            <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-5">
+            <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
               <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Commission Liability</p>
               <p className="text-[28px] font-semibold tracking-tight text-amber-400 mt-1">{fmtCurrency(adminData.commissionLiability ?? 0)}</p>
               <p className="text-[11px] text-zinc-600 mt-1">Pending + approved commissions</p>
             </div>
-            <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-5">
+            <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
               <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Total Paid Out</p>
               <p className="text-[28px] font-semibold tracking-tight text-white mt-1">{fmtCurrency(adminData.totalPaidOut ?? 0)}</p>
               <p className="text-[11px] text-zinc-600 mt-1">Completed payouts all time</p>
@@ -597,7 +597,7 @@ export function DashboardClient({
           <p className="text-[14px] text-muted-foreground mt-1">Welcome back, {affiliate.name}</p>
         </div>
         {isTier1 && subAffiliateCount !== undefined && (
-          <a href="/team" className="flex items-center gap-2 text-[12px] font-medium text-zinc-500 hover:text-zinc-300 transition-colors px-3 py-1.5 rounded-lg border border-zinc-800 bg-zinc-950">
+          <a href="/team" className="flex items-center gap-2 text-[12px] font-medium text-zinc-500 hover:text-zinc-300 transition-colors px-3 py-1.5 rounded-lg border border-zinc-700 bg-zinc-950">
             <Users size={14} strokeWidth={ICON_STROKE_WIDTH} />
             {subAffiliateCount} sub-affiliate{subAffiliateCount !== 1 ? "s" : ""}
             <ArrowRight size={12} />

@@ -24,15 +24,15 @@ const statusMap: Record<string, StatusVariant> = {
 
 const variantStyles: Record<StatusVariant, string> = {
   success:
-    "bg-transparent text-emerald-400 border-zinc-800 hover:border-zinc-700",
+    "bg-transparent text-emerald-400 border-zinc-700 hover:border-zinc-600",
   warning:
-    "bg-transparent text-amber-400 border-zinc-800 hover:border-zinc-700",
+    "bg-transparent text-amber-400 border-zinc-700 hover:border-zinc-600",
   destructive:
-    "bg-transparent text-rose-500 border-zinc-800 hover:border-zinc-700",
+    "bg-transparent text-rose-500 border-zinc-700 hover:border-zinc-600",
   default:
-    "bg-transparent text-zinc-300 border-zinc-800 hover:border-zinc-700",
+    "bg-transparent text-zinc-300 border-zinc-700 hover:border-zinc-600",
   muted:
-    "bg-transparent text-zinc-500 border-zinc-800 hover:border-zinc-700",
+    "bg-transparent text-zinc-500 border-zinc-700 hover:border-zinc-600",
 };
 
 interface StatusBadgeProps {

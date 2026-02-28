@@ -369,7 +369,7 @@ export function SettingsClient({ affiliate, userEmail, payoutMethods: initialMet
           </div>
 
           {methods.length === 0 && !showAddForm && (
-            <div className="rounded-lg border border-zinc-800 bg-black p-4">
+            <div className="rounded-lg border border-zinc-700 bg-black p-4">
               <p className="text-[13px] text-zinc-400">
                 Link your PayPal account to receive payouts. You&apos;ll be paid directly to your PayPal email.
               </p>
@@ -387,7 +387,7 @@ export function SettingsClient({ affiliate, userEmail, payoutMethods: initialMet
           {methods.length > 0 && (
             <div className="space-y-3">
               {methods.map((m) => (
-                <div key={m.id} className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-black px-4 py-3">
+                <div key={m.id} className="flex items-center justify-between gap-3 rounded-lg border border-zinc-700 bg-black px-4 py-3">
                   <div className="flex items-center gap-3">
                     <Image
                       src="/paypal-logo.png"

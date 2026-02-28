@@ -127,7 +127,7 @@ export function CommissionsClient({
     <div className="space-y-6">
       {/* Filter tabs + bulk actions */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex gap-1 rounded-lg border border-zinc-800 bg-zinc-950 p-1">
+        <div className="flex gap-1 rounded-lg border border-zinc-700 bg-zinc-950 p-1">
           {TABS.map((tab) => {
             const count =
               tab.value === "all" ? commissions.length : (counts[tab.value] ?? 0);
@@ -158,7 +158,7 @@ export function CommissionsClient({
             <button
               onClick={() => handleAction("approve")}
               disabled={acting}
-              className="inline-flex items-center gap-1.5 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50"
             >
               {acting && (
                 <Loader2
@@ -172,7 +172,7 @@ export function CommissionsClient({
             <button
               onClick={() => handleAction("void")}
               disabled={acting}
-              className="inline-flex items-center gap-1.5 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-[12px] font-medium text-zinc-400 transition-colors hover:bg-zinc-800 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-[12px] font-medium text-zinc-400 transition-colors hover:bg-zinc-800 disabled:opacity-50"
             >
               Void Selected
             </button>
@@ -181,10 +181,10 @@ export function CommissionsClient({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-zinc-800">
+      <div className="overflow-x-auto rounded-lg border border-zinc-700">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-zinc-800">
+            <tr className="border-b border-zinc-700">
               {hasPendingInView && (
                 <th className="w-10 px-4 py-3">
                   <input
@@ -225,7 +225,7 @@ export function CommissionsClient({
             {filtered.map((c) => (
               <tr
                 key={c.id}
-                className="border-b border-zinc-800/50 last:border-0"
+                className="border-b border-zinc-700/50 last:border-0"
               >
                 {hasPendingInView && (
                   <td className="w-10 px-4 py-3">

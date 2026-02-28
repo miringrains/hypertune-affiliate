@@ -40,7 +40,7 @@ export function FeatureCard({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 p-5 flex flex-col h-full",
+        "relative overflow-hidden rounded-xl border border-zinc-700 bg-zinc-950 p-5 flex flex-col h-full",
         className,
       )}
     >

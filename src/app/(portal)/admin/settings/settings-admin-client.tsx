@@ -69,7 +69,7 @@ function SettingRow({ setting }: { setting: Setting }) {
   }
 
   return (
-    <div className="flex flex-col gap-1.5 border-b border-zinc-800 pb-4 last:border-0 last:pb-0">
+    <div className="flex flex-col gap-1.5 border-b border-zinc-700 pb-4 last:border-0 last:pb-0">
       <div className="flex items-center gap-4">
         <div className="flex-1 min-w-0">
           <span className="text-[13px] font-medium text-white">
@@ -80,7 +80,7 @@ function SettingRow({ setting }: { setting: Setting }) {
           type={isNumeric ? "number" : "text"}
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="h-8 w-40 text-[13px] bg-zinc-900 border-zinc-800 text-white"
+          className="h-8 w-40 text-[13px] bg-zinc-900 border-zinc-700 text-white"
           step={isNumeric ? "any" : undefined}
         />
         <Button
@@ -189,7 +189,7 @@ function PayPalConfig({ isConnected, mode }: { isConnected: boolean; mode: strin
         </p>
 
         {isConnected && (
-          <div className="rounded-lg border border-zinc-800 bg-black px-4 py-3">
+          <div className="rounded-lg border border-zinc-700 bg-black px-4 py-3">
             <p className="text-[12px] text-zinc-500">
               PayPal is connected and ready to process payouts. To update credentials, enter new ones below.
             </p>
@@ -204,7 +204,7 @@ function PayPalConfig({ isConnected, mode }: { isConnected: boolean; mode: strin
               className={`px-3 py-1.5 rounded-md text-[12px] font-medium border transition-colors ${
                 paypalMode === "sandbox"
                   ? "border-zinc-600 bg-zinc-800 text-zinc-100"
-                  : "border-zinc-800 text-zinc-500 hover:text-zinc-300"
+                  : "border-zinc-700 text-zinc-500 hover:text-zinc-300"
               }`}
             >
               Sandbox (testing)
@@ -215,7 +215,7 @@ function PayPalConfig({ isConnected, mode }: { isConnected: boolean; mode: strin
               className={`px-3 py-1.5 rounded-md text-[12px] font-medium border transition-colors ${
                 paypalMode === "live"
                   ? "border-zinc-600 bg-zinc-800 text-zinc-100"
-                  : "border-zinc-800 text-zinc-500 hover:text-zinc-300"
+                  : "border-zinc-700 text-zinc-500 hover:text-zinc-300"
               }`}
             >
               Live (production)

@@ -144,7 +144,7 @@ export function TeamClient({ affiliate, summary, members }: Props) {
           { icon: DollarSign, label: "Their Revenue", value: fmtCurrency(summary.combinedRevenue), sub: "combined" },
           { icon: ArrowUpRight, label: "Your Earnings", value: fmtCurrency(summary.teamEarnings), sub: "from team" },
         ].map((item) => (
-          <div key={item.label} className="rounded-xl border border-zinc-800 bg-zinc-950 p-4">
+          <div key={item.label} className="rounded-xl border border-zinc-700 bg-zinc-950 p-4">
             <item.icon size={14} strokeWidth={ICON_STROKE_WIDTH} className="mb-2 text-zinc-500" />
             <p className="text-[20px] sm:text-[22px] font-semibold tracking-tight leading-none text-white">
               {item.value}
@@ -156,7 +156,7 @@ export function TeamClient({ affiliate, summary, members }: Props) {
 
       {/* ── Leaderboard ── */}
       {top3.length > 0 && (
-        <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-5">
+        <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
           <div className="flex items-center gap-2 mb-5">
             <Trophy size={15} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-500" />
             <h3 className="text-[13px] font-medium text-zinc-300">Top Performers</h3>
@@ -165,10 +165,10 @@ export function TeamClient({ affiliate, summary, members }: Props) {
             {top3.map((m, i) => (
               <div
                 key={m.id}
-                className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-black p-3"
+                className="flex items-center gap-3 rounded-lg border border-zinc-700 bg-black p-3"
               >
                 <div
-                  className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-[14px] font-bold border border-zinc-800 bg-zinc-950 text-zinc-400"
+                  className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-[14px] font-bold border border-zinc-700 bg-zinc-950 text-zinc-400"
                 >
                   {i === 0 ? <Crown size={16} className="text-amber-400" /> : `#${i + 1}`}
                 </div>
@@ -193,7 +193,7 @@ export function TeamClient({ affiliate, summary, members }: Props) {
             <select
               value={selectedRate}
               onChange={(e) => setSelectedRate(Number(e.target.value))}
-              className="flex h-9 rounded-md border border-zinc-800 bg-black px-3 py-1 text-sm text-zinc-300 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+              className="flex h-9 rounded-md border border-zinc-700 bg-black px-3 py-1 text-sm text-zinc-300 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
             >
               {COMMISSION_RATES.map((rate) => (
                 <option key={rate} value={rate}>{rate}%</option>
@@ -211,7 +211,7 @@ export function TeamClient({ affiliate, summary, members }: Props) {
             <Loader2 size={20} strokeWidth={ICON_STROKE_WIDTH} className="animate-spin text-zinc-500" />
           </div>
         ) : links.length === 0 ? (
-          <Card className="border-zinc-800 bg-zinc-950">
+          <Card className="border-zinc-700 bg-zinc-950">
             <CardContent className="py-8 text-center">
               <Link2 size={28} strokeWidth={ICON_STROKE_WIDTH} className="mx-auto mb-2 text-zinc-600" />
               <p className="text-[13px] text-zinc-500">Create a recruit link to start building your team.</p>
@@ -220,7 +220,7 @@ export function TeamClient({ affiliate, summary, members }: Props) {
         ) : (
           <div className="space-y-2">
             {links.map((link) => (
-              <Card key={link.id} className="border-zinc-800 bg-zinc-950">
+              <Card key={link.id} className="border-zinc-700 bg-zinc-950">
                 <CardContent className="py-3 px-5">
                   <div className="flex items-center justify-between gap-4">
                     <div className="min-w-0 flex-1">
@@ -255,18 +255,18 @@ export function TeamClient({ affiliate, summary, members }: Props) {
         </div>
 
         {members.length === 0 ? (
-          <Card className="border-zinc-800 bg-zinc-950">
+          <Card className="border-zinc-700 bg-zinc-950">
             <CardContent className="py-8 text-center">
               <Users size={28} strokeWidth={ICON_STROKE_WIDTH} className="mx-auto mb-2 text-zinc-600" />
               <p className="text-[13px] text-zinc-500">No sub-affiliates yet. Share your recruit links to build your team.</p>
             </CardContent>
           </Card>
         ) : (
-          <Card className="border-zinc-800 bg-zinc-950">
+          <Card className="border-zinc-700 bg-zinc-950">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-zinc-800">
+                  <tr className="border-b border-zinc-700">
                     {["Name", "Tag", "Rate", "Leads", "Customers", "Earned", "Status", "Joined"].map((h) => (
                       <th key={h} className="text-left text-[11px] font-medium text-zinc-500 uppercase tracking-wider px-5 py-3">{h}</th>
                     ))}
@@ -274,7 +274,7 @@ export function TeamClient({ affiliate, summary, members }: Props) {
                 </thead>
                 <tbody>
                   {members.map((m) => (
-                    <tr key={m.id} className="border-b border-zinc-800/50 last:border-0">
+                    <tr key={m.id} className="border-b border-zinc-700/50 last:border-0">
                       <td className="px-5 py-3">
                         <div>
                           <p className="text-[13px] font-medium text-white">{m.name}</p>

@@ -45,7 +45,7 @@ export default async function PortalLayout({
           style={{
             borderRadius: "16px",
             backgroundColor: "#0e0e0e",
-            boxShadow: "0 0 0 1px rgba(255,255,255,0.06), 0 16px 48px -8px rgba(0,0,0,0.4)",
+            boxShadow: "0 0 0 1px rgba(255,255,255,0.12), 0 16px 48px -8px rgba(0,0,0,0.4)",
           }}
         >
           <div className="h-full overflow-y-auto overflow-x-hidden">

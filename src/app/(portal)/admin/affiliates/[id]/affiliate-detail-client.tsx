@@ -95,7 +95,7 @@ export function AffiliateDetailClient({
         {statCards.map((card) => (
           <div
             key={card.label}
-            className="rounded-lg border border-zinc-800 bg-zinc-950 p-5"
+            className="rounded-lg border border-zinc-700 bg-zinc-950 p-5"
           >
             <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
               {card.label}
@@ -110,7 +110,7 @@ export function AffiliateDetailClient({
       {/* Info & Editable Fields */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Read-only info */}
-        <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-6 space-y-4">
+        <div className="rounded-lg border border-zinc-700 bg-zinc-950 p-6 space-y-4">
           <h2 className="text-[15px] font-medium text-white">
             Affiliate Info
           </h2>
@@ -134,7 +134,7 @@ export function AffiliateDetailClient({
         </div>
 
         {/* Editable fields */}
-        <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-6 space-y-5">
+        <div className="rounded-lg border border-zinc-700 bg-zinc-950 p-6 space-y-5">
           <h2 className="text-[15px] font-medium text-white">Settings</h2>
 
           {/* Status */}
@@ -142,7 +142,7 @@ export function AffiliateDetailClient({
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as "active" | "inactive")}
-              className="flex-1 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-[13px] text-white outline-none focus:border-zinc-600"
+              className="flex-1 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-[13px] text-white outline-none focus:border-zinc-600"
             >
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
@@ -159,7 +159,7 @@ export function AffiliateDetailClient({
             <select
               value={commissionRate}
               onChange={(e) => setCommissionRate(Number(e.target.value))}
-              className="flex-1 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-[13px] text-white outline-none focus:border-zinc-600"
+              className="flex-1 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-[13px] text-white outline-none focus:border-zinc-600"
             >
               {COMMISSION_RATES.map((rate) => (
                 <option key={rate} value={rate}>
@@ -185,7 +185,7 @@ export function AffiliateDetailClient({
               max={36}
               value={durationMonths}
               onChange={(e) => setDurationMonths(Number(e.target.value))}
-              className="flex-1 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-[13px] text-white outline-none focus:border-zinc-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className="flex-1 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-[13px] text-white outline-none focus:border-zinc-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
             <SaveButton
               disabled={
@@ -210,7 +210,7 @@ export function AffiliateDetailClient({
                 max={50}
                 value={subAffiliateRate}
                 onChange={(e) => setSubAffiliateRate(Number(e.target.value))}
-                className="flex-1 rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-[13px] text-white outline-none focus:border-zinc-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="flex-1 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-[13px] text-white outline-none focus:border-zinc-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               <SaveButton
                 disabled={subAffiliateRate === affiliate.sub_affiliate_rate}
@@ -277,7 +277,7 @@ function AdminPayoutMethods({ affiliateId }: { affiliateId: string }) {
   }
 
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-6 space-y-4">
+    <div className="rounded-lg border border-zinc-700 bg-zinc-950 p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h2 className="text-[15px] font-medium text-white">PayPal Payouts</h2>
@@ -299,7 +299,7 @@ function AdminPayoutMethods({ affiliateId }: { affiliateId: string }) {
       ) : (
         <div className="space-y-2">
           {methods.map((m) => (
-            <div key={m.id} className="flex items-center justify-between py-2 border-b border-zinc-800 last:border-0">
+            <div key={m.id} className="flex items-center justify-between py-2 border-b border-zinc-700 last:border-0">
               <div className="flex items-center gap-2">
                 <Wallet className="w-4 h-4 text-zinc-500" />
                 <span className="text-[13px] text-white">PayPal</span>
@@ -315,13 +315,13 @@ function AdminPayoutMethods({ affiliateId }: { affiliateId: string }) {
       )}
 
       {showAdd && (
-        <div className="space-y-3 border-t border-zinc-800 pt-4">
+        <div className="space-y-3 border-t border-zinc-700 pt-4">
           <input
             type="email"
             placeholder="PayPal email address"
             value={paypalEmail}
             onChange={(e) => setPaypalEmail(e.target.value)}
-            className="w-full rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-[13px] text-white outline-none focus:border-zinc-600"
+            className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-[13px] text-white outline-none focus:border-zinc-600"
           />
           <div className="flex gap-2">
             <button
@@ -333,7 +333,7 @@ function AdminPayoutMethods({ affiliateId }: { affiliateId: string }) {
             </button>
             <button
               onClick={() => setShowAdd(false)}
-              className="px-3 py-1.5 rounded-md border border-zinc-800 text-[12px] text-zinc-400 hover:text-white transition-colors"
+              className="px-3 py-1.5 rounded-md border border-zinc-700 text-[12px] text-zinc-400 hover:text-white transition-colors"
             >
               Cancel
             </button>
@@ -397,7 +397,7 @@ function SaveButton({
     <button
       onClick={onClick}
       disabled={disabled || loading}
-      className="flex items-center justify-center rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed"
+      className="flex items-center justify-center rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-[12px] font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed"
     >
       {loading ? (
         <Loader2 className="w-3.5 h-3.5 animate-spin" />

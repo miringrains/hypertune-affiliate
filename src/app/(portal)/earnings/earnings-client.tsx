@@ -136,8 +136,8 @@ export function EarningsClient({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5 sm:p-6">
           <div className="flex items-center gap-2 mb-3">
-            <DollarSign size={14} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-500" />
-            <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Lifetime Earned</span>
+            <DollarSign size={14} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-400" />
+            <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">Lifetime Earned</span>
           </div>
           <p className="text-[28px] sm:text-[32px] font-semibold tracking-tight leading-none text-white">
             {fmtCurrency(hero.lifetimeEarned)}
@@ -146,8 +146,8 @@ export function EarningsClient({
 
         <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5 sm:p-6">
           <div className="flex items-center gap-2 mb-3">
-            <Clock size={14} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-500" />
-            <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Pending Payout</span>
+            <Clock size={14} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-400" />
+            <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">Pending Payout</span>
           </div>
           <p className="text-[28px] sm:text-[32px] font-semibold tracking-tight leading-none text-amber-400">
             {fmtCurrency(hero.pending)}
@@ -156,20 +156,20 @@ export function EarningsClient({
 
         <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5 sm:p-6">
           <div className="flex items-center gap-2 mb-3">
-            <Wallet size={14} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-500" />
-            <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Last Payout</span>
+            <Wallet size={14} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-400" />
+            <span className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">Last Payout</span>
           </div>
           {hero.lastPayout ? (
             <>
               <p className="text-[28px] sm:text-[32px] font-semibold tracking-tight leading-none text-white">
                 {fmtCurrency(hero.lastPayout.amount)}
               </p>
-              <p className="text-[11px] text-zinc-600 mt-1">
+              <p className="text-[11px] text-zinc-400 mt-1">
                 {new Date(hero.lastPayout.date).toLocaleDateString()}
               </p>
             </>
           ) : (
-            <p className="text-[20px] font-medium text-zinc-600 mt-1">No payouts yet</p>
+            <p className="text-[20px] font-medium text-zinc-400 mt-1">No payouts yet</p>
           )}
         </div>
       </div>
@@ -203,7 +203,7 @@ export function EarningsClient({
             {pipelineSegments.map((seg) => (
               <div key={seg.label} className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-zinc-600" />
-                <span className="text-[11px] text-zinc-500">{seg.label}</span>
+                <span className="text-[11px] text-zinc-400">{seg.label}</span>
                 <span className={`text-[11px] font-medium ${seg.textColor}`}>{fmtCurrencyShort(seg.amount)}</span>
               </div>
             ))}
@@ -215,7 +215,7 @@ export function EarningsClient({
       <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[13px] font-medium text-zinc-300">Monthly Earnings</h3>
-          <span className="text-[11px] text-zinc-600">Last 6 months</span>
+          <span className="text-[11px] text-zinc-400">Last 6 months</span>
         </div>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={monthlyEarnings} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
@@ -268,7 +268,7 @@ export function EarningsClient({
       {/* ── Payout Methods ── */}
       {payoutMethods.length > 0 ? (
         <div className="flex items-center gap-3 text-[13px]">
-          <span className="text-zinc-500">Payout method:</span>
+          <span className="text-zinc-400">Payout method:</span>
           {payoutMethods.map((m) => (
             <span key={m.id} className="flex items-center gap-1.5">
               <span className="capitalize font-medium text-zinc-300">{m.type.replace(/_/g, " ")}</span>
@@ -280,7 +280,7 @@ export function EarningsClient({
         </div>
       ) : (
         <div className="flex items-center gap-3 rounded-lg border border-zinc-700 bg-zinc-950 px-4 py-3">
-          <span className="text-[13px] text-zinc-500">No payout method configured.</span>
+          <span className="text-[13px] text-zinc-400">No payout method configured.</span>
           <a href="/settings" className="text-[13px] font-medium text-zinc-300 hover:text-white transition-colors underline underline-offset-4">
             Add one in Settings →
           </a>
@@ -294,7 +294,7 @@ export function EarningsClient({
             <button
               onClick={() => setTableView("commissions")}
               className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-colors ${
-                tableView === "commissions" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"
+                tableView === "commissions" ? "bg-zinc-800 text-white" : "text-zinc-400 hover:text-zinc-300"
               }`}
             >
               Commissions ({commissions.length})
@@ -302,7 +302,7 @@ export function EarningsClient({
             <button
               onClick={() => setTableView("payouts")}
               className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-colors ${
-                tableView === "payouts" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"
+                tableView === "payouts" ? "bg-zinc-800 text-white" : "text-zinc-400 hover:text-zinc-300"
               }`}
             >
               Payouts ({payouts.length})
@@ -323,7 +323,7 @@ export function EarningsClient({
                 <option value="voided">Voided</option>
               </select>
               <div className="relative flex-1 max-w-xs">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -342,7 +342,7 @@ export function EarningsClient({
                 <thead>
                   <tr className="border-b border-zinc-700">
                     {["Customer", "Amount", "Rate", "Type", "Status", "Date"].map((h) => (
-                      <th key={h} className="text-left text-[11px] font-medium text-zinc-500 uppercase tracking-wider px-5 py-3">{h}</th>
+                      <th key={h} className="text-left text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-5 py-3">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -351,7 +351,7 @@ export function EarningsClient({
                     <tr key={c.id} className="border-b border-zinc-700/50 last:border-0">
                       <td className="px-5 py-3 text-[13px] text-zinc-100">{c.email}</td>
                       <td className="px-5 py-3 text-[13px] font-medium text-white tabular-nums">{fmtCurrency(c.amount)}</td>
-                      <td className="px-5 py-3 text-[12px] text-zinc-500">{c.rate}%</td>
+                      <td className="px-5 py-3 text-[12px] text-zinc-400">{c.rate}%</td>
                       <td className="px-5 py-3">
                         <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${
                           c.tier_type === "direct"
@@ -362,11 +362,11 @@ export function EarningsClient({
                         </span>
                       </td>
                       <td className="px-5 py-3"><StatusBadge status={c.status} /></td>
-                      <td className="px-5 py-3 text-[12px] text-zinc-500">{new Date(c.created_at).toLocaleDateString()}</td>
+                      <td className="px-5 py-3 text-[12px] text-zinc-400">{new Date(c.created_at).toLocaleDateString()}</td>
                     </tr>
                   ))}
                   {filteredCommissions.length === 0 && (
-                    <tr><td colSpan={6} className="px-5 py-8 text-center text-[13px] text-zinc-600">No commissions found</td></tr>
+                    <tr><td colSpan={6} className="px-5 py-8 text-center text-[13px] text-zinc-400">No commissions found</td></tr>
                   )}
                 </tbody>
               </table>
@@ -375,7 +375,7 @@ export function EarningsClient({
                 <thead>
                   <tr className="border-b border-zinc-700">
                     {["Amount", "Status", "Method", "Completed", "Created"].map((h) => (
-                      <th key={h} className="text-left text-[11px] font-medium text-zinc-500 uppercase tracking-wider px-5 py-3">{h}</th>
+                      <th key={h} className="text-left text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-5 py-3">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -384,13 +384,13 @@ export function EarningsClient({
                     <tr key={p.id} className="border-b border-zinc-700/50 last:border-0">
                       <td className="px-5 py-3 text-[13px] font-medium text-white tabular-nums">{fmtCurrency(p.amount)}</td>
                       <td className="px-5 py-3"><StatusBadge status={p.status} /></td>
-                      <td className="px-5 py-3 text-[12px] text-zinc-500 capitalize">{p.method?.replace(/_/g, " ") ?? "—"}</td>
-                      <td className="px-5 py-3 text-[12px] text-zinc-500">{p.completed_at ? new Date(p.completed_at).toLocaleDateString() : "—"}</td>
-                      <td className="px-5 py-3 text-[12px] text-zinc-500">{new Date(p.created_at).toLocaleDateString()}</td>
+                      <td className="px-5 py-3 text-[12px] text-zinc-400 capitalize">{p.method?.replace(/_/g, " ") ?? "—"}</td>
+                      <td className="px-5 py-3 text-[12px] text-zinc-400">{p.completed_at ? new Date(p.completed_at).toLocaleDateString() : "—"}</td>
+                      <td className="px-5 py-3 text-[12px] text-zinc-400">{new Date(p.created_at).toLocaleDateString()}</td>
                     </tr>
                   ))}
                   {payouts.length === 0 && (
-                    <tr><td colSpan={5} className="px-5 py-8 text-center text-[13px] text-zinc-600">No payouts yet</td></tr>
+                    <tr><td colSpan={5} className="px-5 py-8 text-center text-[13px] text-zinc-400">No payouts yet</td></tr>
                   )}
                 </tbody>
               </table>

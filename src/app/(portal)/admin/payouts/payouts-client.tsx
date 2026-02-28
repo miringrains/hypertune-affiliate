@@ -139,7 +139,7 @@ export function PayoutsClient({ payouts }: { payouts: Payout[] }) {
               }`}
             >
               {tab.label}
-              <span className="ml-1.5 text-[11px] text-zinc-500">
+              <span className="ml-1.5 text-[11px] text-zinc-400">
                 {counts[tab.key]}
               </span>
             </button>
@@ -291,7 +291,7 @@ export function PayoutsClient({ payouts }: { payouts: Payout[] }) {
                     <div className="text-[13px] font-medium">
                       {p.affiliateName}
                     </div>
-                    <div className="text-[11px] text-zinc-500">
+                    <div className="text-[11px] text-zinc-400">
                       {p.affiliateEmail}
                     </div>
                   </td>
@@ -304,11 +304,11 @@ export function PayoutsClient({ payouts }: { payouts: Payout[] }) {
                   <td className="px-5 py-3 text-[13px] capitalize text-zinc-400">
                     {p.method?.replace(/_/g, " ") ?? "—"}
                   </td>
-                  <td className="px-5 py-3 text-[12px] text-zinc-500">
+                  <td className="px-5 py-3 text-[12px] text-zinc-400">
                     {new Date(p.createdAt).toLocaleDateString()}
                   </td>
                   {showCompleted && (
-                    <td className="px-5 py-3 text-[12px] text-zinc-500">
+                    <td className="px-5 py-3 text-[12px] text-zinc-400">
                       {p.completedAt
                         ? new Date(p.completedAt).toLocaleDateString()
                         : "—"}

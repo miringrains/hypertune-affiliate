@@ -52,7 +52,7 @@ export function FeatureCard({
           <Icon
             size={14}
             strokeWidth={ICON_STROKE_WIDTH}
-            className="text-zinc-500 shrink-0 ml-2"
+            className="text-zinc-400 shrink-0 ml-2"
           />
         )}
       </div>
@@ -79,7 +79,7 @@ export function FeatureCard({
       </div>
 
       {subtitle && (
-        <p className="text-[11px] text-zinc-500 mt-1">{subtitle}</p>
+        <p className="text-[11px] text-zinc-400 mt-1">{subtitle}</p>
       )}
 
       {hasChart && !hasRing && (

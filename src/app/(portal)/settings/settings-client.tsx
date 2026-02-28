@@ -398,14 +398,14 @@ export function SettingsClient({ affiliate, userEmail, payoutMethods: initialMet
                     />
                     <span className="text-[13px] text-zinc-300">{m.details?.email}</span>
                     {m.isPrimary && (
-                      <span className="flex items-center gap-1 text-[11px] text-zinc-500">
+                      <span className="flex items-center gap-1 text-[11px] text-zinc-400">
                         <CheckCircle2 size={11} />
                         Active
                       </span>
                     )}
                   </div>
                   <Button size="xs" variant="ghost" onClick={() => deleteMethod(m.id)} title="Remove">
-                    <Trash2 size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-500 hover:text-red-400" />
+                    <Trash2 size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-400 hover:text-red-400" />
                   </Button>
                 </div>
               ))}
@@ -413,7 +413,7 @@ export function SettingsClient({ affiliate, userEmail, payoutMethods: initialMet
               {!showAddForm && (
                 <button
                   onClick={() => setShowAddForm(true)}
-                  className="text-[11px] text-zinc-600 hover:text-zinc-400 transition-colors"
+                  className="text-[11px] text-zinc-400 hover:text-zinc-400 transition-colors"
                 >
                   + Add another PayPal account
                 </button>
@@ -425,7 +425,7 @@ export function SettingsClient({ affiliate, userEmail, payoutMethods: initialMet
             <div className="space-y-4 border-t border-border pt-4">
               <div className="space-y-2">
                 <Label htmlFor="paypal-email" className="text-[12px]">PayPal email address</Label>
-                <p className="text-[11px] text-zinc-500">
+                <p className="text-[11px] text-zinc-400">
                   Enter the email associated with your PayPal account. Payouts will be sent here.
                 </p>
                 <Input

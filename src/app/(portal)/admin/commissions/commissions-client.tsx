@@ -138,11 +138,11 @@ export function CommissionsClient({
                 className={`rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors ${
                   filter === tab.value
                     ? "bg-zinc-800 text-white"
-                    : "text-zinc-500 hover:text-zinc-300"
+                    : "text-zinc-400 hover:text-zinc-300"
                 }`}
               >
                 {tab.label}
-                <span className="ml-1.5 text-[11px] text-zinc-600">
+                <span className="ml-1.5 text-[11px] text-zinc-400">
                   {count}
                 </span>
               </button>
@@ -152,7 +152,7 @@ export function CommissionsClient({
 
         {selectedPending.length > 0 && (
           <div className="flex items-center gap-2">
-            <span className="text-[12px] text-zinc-500">
+            <span className="text-[12px] text-zinc-400">
               {selectedPending.length} selected
             </span>
             <button
@@ -195,28 +195,28 @@ export function CommissionsClient({
                   />
                 </th>
               )}
-              <th className="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-zinc-500">
+              <th className="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-zinc-400">
                 Affiliate
               </th>
-              <th className="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-zinc-500">
+              <th className="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-zinc-400">
                 Customer
               </th>
-              <th className="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-zinc-500">
+              <th className="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-zinc-400">
                 Amount
               </th>
-              <th className="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-zinc-500">
+              <th className="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-zinc-400">
                 Rate
               </th>
-              <th className="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-zinc-500">
+              <th className="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-zinc-400">
                 Type
               </th>
-              <th className="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-zinc-500">
+              <th className="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-zinc-400">
                 Payment #
               </th>
-              <th className="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-zinc-500">
+              <th className="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-zinc-400">
                 Status
               </th>
-              <th className="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-zinc-500">
+              <th className="px-5 py-3 text-left text-[11px] font-medium uppercase tracking-wider text-zinc-400">
                 Date
               </th>
             </tr>
@@ -260,7 +260,7 @@ export function CommissionsClient({
                 <td className="px-5 py-3">
                   <StatusBadge status={c.status} />
                 </td>
-                <td className="px-5 py-3 text-[12px] text-zinc-500">
+                <td className="px-5 py-3 text-[12px] text-zinc-400">
                   {new Date(c.createdAt).toLocaleDateString()}
                 </td>
               </tr>
@@ -269,7 +269,7 @@ export function CommissionsClient({
         </table>
         {filtered.length === 0 && (
           <div className="py-12 text-center">
-            <p className="text-[14px] text-zinc-500">
+            <p className="text-[14px] text-zinc-400">
               No commissions found.
             </p>
           </div>

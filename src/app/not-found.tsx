@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function NotFound() {
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center text-center px-4">
-      <p className="text-[13px] font-medium text-zinc-500 uppercase tracking-wider">
+      <p className="text-[13px] font-medium text-zinc-400 uppercase tracking-wider">
         404
       </p>
       <h1 className="text-[2rem] font-semibold tracking-tight text-white mt-2">

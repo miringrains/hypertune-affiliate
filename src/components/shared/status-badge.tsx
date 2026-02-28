@@ -32,7 +32,7 @@ const variantStyles: Record<StatusVariant, string> = {
   default:
     "bg-transparent text-zinc-300 border-zinc-700 hover:border-zinc-600",
   muted:
-    "bg-transparent text-zinc-500 border-zinc-700 hover:border-zinc-600",
+    "bg-transparent text-zinc-400 border-zinc-700 hover:border-zinc-600",
 };
 
 interface StatusBadgeProps {

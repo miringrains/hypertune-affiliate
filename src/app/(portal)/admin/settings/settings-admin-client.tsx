@@ -92,7 +92,7 @@ function SettingRow({ setting }: { setting: Setting }) {
           {saving ? "Saving…" : "Save"}
         </Button>
       </div>
-      <span className="text-[11px] text-zinc-500">
+      <span className="text-[11px] text-zinc-400">
         Last updated: {new Date(setting.updated_at).toLocaleDateString("en-US", {
           month: "short",
           day: "numeric",
@@ -190,7 +190,7 @@ function PayPalConfig({ isConnected, mode }: { isConnected: boolean; mode: strin
 
         {isConnected && (
           <div className="rounded-lg border border-zinc-700 bg-black px-4 py-3">
-            <p className="text-[12px] text-zinc-500">
+            <p className="text-[12px] text-zinc-400">
               PayPal is connected and ready to process payouts. To update credentials, enter new ones below.
             </p>
           </div>
@@ -204,7 +204,7 @@ function PayPalConfig({ isConnected, mode }: { isConnected: boolean; mode: strin
               className={`px-3 py-1.5 rounded-md text-[12px] font-medium border transition-colors ${
                 paypalMode === "sandbox"
                   ? "border-zinc-600 bg-zinc-800 text-zinc-100"
-                  : "border-zinc-700 text-zinc-500 hover:text-zinc-300"
+                  : "border-zinc-700 text-zinc-400 hover:text-zinc-300"
               }`}
             >
               Sandbox (testing)
@@ -215,7 +215,7 @@ function PayPalConfig({ isConnected, mode }: { isConnected: boolean; mode: strin
               className={`px-3 py-1.5 rounded-md text-[12px] font-medium border transition-colors ${
                 paypalMode === "live"
                   ? "border-zinc-600 bg-zinc-800 text-zinc-100"
-                  : "border-zinc-700 text-zinc-500 hover:text-zinc-300"
+                  : "border-zinc-700 text-zinc-400 hover:text-zinc-300"
               }`}
             >
               Live (production)
@@ -248,7 +248,7 @@ function PayPalConfig({ isConnected, mode }: { isConnected: boolean; mode: strin
               <button
                 type="button"
                 onClick={() => setShowSecret(!showSecret)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-300"
               >
                 {showSecret ? <EyeOff size={14} /> : <Eye size={14} />}
               </button>

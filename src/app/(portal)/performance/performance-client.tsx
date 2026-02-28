@@ -129,9 +129,9 @@ export function PerformanceClient({
       {/* ── Funnel Visualization ── */}
       <div className="rounded-2xl border border-zinc-700 bg-zinc-950 p-6 sm:p-8">
         <div className="flex items-center gap-2 mb-6">
-          <Activity size={16} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-500" />
+          <Activity size={16} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-400" />
           <h2 className="text-[13px] font-medium text-zinc-400">Conversion Funnel</h2>
-          <span className="ml-auto text-[11px] text-zinc-600">Last 30 days (clicks) · All time (leads/customers)</span>
+          <span className="ml-auto text-[11px] text-zinc-400">Last 30 days (clicks) · All time (leads/customers)</span>
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch gap-0">
@@ -146,7 +146,7 @@ export function PerformanceClient({
                 <p className="text-[28px] sm:text-[34px] font-semibold tracking-tight leading-none text-white">
                   {stage.value.toLocaleString()}
                 </p>
-                <p className="text-[12px] text-zinc-500 mt-1.5">{stage.label}</p>
+                <p className="text-[12px] text-zinc-400 mt-1.5">{stage.label}</p>
               </div>
 
               {i < 2 && (
@@ -178,26 +178,26 @@ export function PerformanceClient({
             />
             <div>
               <p className="text-[18px] font-semibold text-white">{overallConversion}%</p>
-              <p className="text-[11px] text-zinc-500">Overall conversion</p>
+              <p className="text-[11px] text-zinc-400">Overall conversion</p>
             </div>
           </div>
           <div className="flex gap-5 text-[13px]">
             <div>
               <span className="text-emerald-400 font-semibold">{customerStates.active}</span>
-              <span className="text-zinc-500 ml-1">active</span>
+              <span className="text-zinc-400 ml-1">active</span>
             </div>
             <div>
               <span className="text-amber-400 font-semibold">{customerStates.trialing}</span>
-              <span className="text-zinc-500 ml-1">trialing</span>
+              <span className="text-zinc-400 ml-1">trialing</span>
             </div>
             <div>
               <span className="text-rose-500 font-semibold">{customerStates.churned}</span>
-              <span className="text-zinc-500 ml-1">churned</span>
+              <span className="text-zinc-400 ml-1">churned</span>
             </div>
           </div>
           <div className="ml-auto text-right">
             <p className="text-[18px] font-semibold text-white">{fmtCurrency(customerStates.mrr)}</p>
-            <p className="text-[11px] text-zinc-500">Est. MRR</p>
+            <p className="text-[11px] text-zinc-400">Est. MRR</p>
           </div>
         </div>
       </div>
@@ -206,7 +206,7 @@ export function PerformanceClient({
       <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[13px] font-medium text-zinc-300">Weekly Trend</h3>
-          <span className="text-[11px] text-zinc-600">Last 12 weeks</span>
+          <span className="text-[11px] text-zinc-400">Last 12 weeks</span>
         </div>
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={weeklyTrend} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
@@ -263,7 +263,7 @@ export function PerformanceClient({
                       </span>
                     </div>
                   </div>
-                  <span className="text-[11px] text-zinc-500 shrink-0 w-10 text-right">{pct}%</span>
+                  <span className="text-[11px] text-zinc-400 shrink-0 w-10 text-right">{pct}%</span>
                 </div>
               );
             })}
@@ -275,7 +275,7 @@ export function PerformanceClient({
       <div>
         <button
           onClick={() => setShowTable(!showTable)}
-          className="flex items-center gap-2 text-[13px] font-medium text-zinc-500 hover:text-zinc-300 transition-colors"
+          className="flex items-center gap-2 text-[13px] font-medium text-zinc-400 hover:text-zinc-300 transition-colors"
         >
           {showTable ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           {showTable ? "Hide" : "Show"} detail tables
@@ -288,7 +288,7 @@ export function PerformanceClient({
                 <button
                   onClick={() => setTableView("leads")}
                   className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-colors ${
-                    tableView === "leads" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"
+                    tableView === "leads" ? "bg-zinc-800 text-white" : "text-zinc-400 hover:text-zinc-300"
                   }`}
                 >
                   Leads ({leads.length})
@@ -296,14 +296,14 @@ export function PerformanceClient({
                 <button
                   onClick={() => setTableView("customers")}
                   className={`px-3 py-1.5 rounded-md text-[12px] font-medium transition-colors ${
-                    tableView === "customers" ? "bg-zinc-800 text-white" : "text-zinc-500 hover:text-zinc-300"
+                    tableView === "customers" ? "bg-zinc-800 text-white" : "text-zinc-400 hover:text-zinc-300"
                   }`}
                 >
                   Customers ({customers.length})
                 </button>
               </div>
               <div className="relative flex-1 max-w-xs">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -319,23 +319,23 @@ export function PerformanceClient({
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-zinc-700">
-                        <th className="text-left text-[11px] font-medium text-zinc-500 uppercase tracking-wider px-5 py-3">Email</th>
-                        {isTier1 && <th className="text-left text-[11px] font-medium text-zinc-500 uppercase tracking-wider px-5 py-3">Source</th>}
-                        <th className="text-left text-[11px] font-medium text-zinc-500 uppercase tracking-wider px-5 py-3">Status</th>
-                        <th className="text-left text-[11px] font-medium text-zinc-500 uppercase tracking-wider px-5 py-3">Date</th>
+                        <th className="text-left text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-5 py-3">Email</th>
+                        {isTier1 && <th className="text-left text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-5 py-3">Source</th>}
+                        <th className="text-left text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-5 py-3">Status</th>
+                        <th className="text-left text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-5 py-3">Date</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredLeads.slice(0, 50).map((l) => (
                         <tr key={l.id} className="border-b border-zinc-700/50 last:border-0">
                           <td className="px-5 py-3 text-[13px] text-zinc-100">{l.email}</td>
-                          {isTier1 && <td className="px-5 py-3 text-[12px] text-zinc-500">{l.source}</td>}
+                          {isTier1 && <td className="px-5 py-3 text-[12px] text-zinc-400">{l.source}</td>}
                           <td className="px-5 py-3"><StatusBadge status={l.converted ? "active" : "pending"} /></td>
-                          <td className="px-5 py-3 text-[12px] text-zinc-500">{new Date(l.created_at).toLocaleDateString()}</td>
+                          <td className="px-5 py-3 text-[12px] text-zinc-400">{new Date(l.created_at).toLocaleDateString()}</td>
                         </tr>
                       ))}
                       {filteredLeads.length === 0 && (
-                        <tr><td colSpan={isTier1 ? 4 : 3} className="px-5 py-8 text-center text-[13px] text-zinc-600">No leads found</td></tr>
+                        <tr><td colSpan={isTier1 ? 4 : 3} className="px-5 py-8 text-center text-[13px] text-zinc-400">No leads found</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -343,25 +343,25 @@ export function PerformanceClient({
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-zinc-700">
-                        <th className="text-left text-[11px] font-medium text-zinc-500 uppercase tracking-wider px-5 py-3">Email</th>
-                        {isTier1 && <th className="text-left text-[11px] font-medium text-zinc-500 uppercase tracking-wider px-5 py-3">Source</th>}
-                        <th className="text-left text-[11px] font-medium text-zinc-500 uppercase tracking-wider px-5 py-3">Status</th>
-                        <th className="text-left text-[11px] font-medium text-zinc-500 uppercase tracking-wider px-5 py-3">Plan</th>
-                        <th className="text-left text-[11px] font-medium text-zinc-500 uppercase tracking-wider px-5 py-3">Since</th>
+                        <th className="text-left text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-5 py-3">Email</th>
+                        {isTier1 && <th className="text-left text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-5 py-3">Source</th>}
+                        <th className="text-left text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-5 py-3">Status</th>
+                        <th className="text-left text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-5 py-3">Plan</th>
+                        <th className="text-left text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-5 py-3">Since</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredCustomers.slice(0, 50).map((c) => (
                         <tr key={c.id} className="border-b border-zinc-700/50 last:border-0">
                           <td className="px-5 py-3 text-[13px] text-zinc-100">{c.email}</td>
-                          {isTier1 && <td className="px-5 py-3 text-[12px] text-zinc-500">{c.source}</td>}
+                          {isTier1 && <td className="px-5 py-3 text-[12px] text-zinc-400">{c.source}</td>}
                           <td className="px-5 py-3"><StatusBadge status={c.state} /></td>
-                          <td className="px-5 py-3 text-[12px] text-zinc-500 capitalize">{c.plan ?? "—"}</td>
-                          <td className="px-5 py-3 text-[12px] text-zinc-500">{new Date(c.created_at).toLocaleDateString()}</td>
+                          <td className="px-5 py-3 text-[12px] text-zinc-400 capitalize">{c.plan ?? "—"}</td>
+                          <td className="px-5 py-3 text-[12px] text-zinc-400">{new Date(c.created_at).toLocaleDateString()}</td>
                         </tr>
                       ))}
                       {filteredCustomers.length === 0 && (
-                        <tr><td colSpan={isTier1 ? 5 : 4} className="px-5 py-8 text-center text-[13px] text-zinc-600">No customers found</td></tr>
+                        <tr><td colSpan={isTier1 ? 5 : 4} className="px-5 py-8 text-center text-[13px] text-zinc-400">No customers found</td></tr>
                       )}
                     </tbody>
                   </table>

@@ -146,7 +146,7 @@ function HeroEarnings({ stats }: { stats: DashboardStats }) {
           </span>
         )}
       </div>
-      <div className="flex items-center gap-6 mt-4 text-[13px] text-zinc-500">
+      <div className="flex items-center gap-6 mt-4 text-[13px] text-zinc-400">
         <span>
           Lifetime earned:{" "}
           <span className="text-zinc-300 font-medium">{fmtCurrencyShort(stats.earned)}</span>
@@ -215,7 +215,7 @@ function ReferralLinkBar({ affiliate }: { affiliate: Tables<"affiliates"> }) {
       <div className="flex items-center gap-2 shrink-0">
         <div className="flex items-center gap-1.5 text-[12px]">
           <span className="font-medium text-zinc-300">Your link</span>
-          <span className="px-1.5 py-0.5 rounded border border-zinc-700 text-[10px] font-medium text-zinc-500">
+          <span className="px-1.5 py-0.5 rounded border border-zinc-700 text-[10px] font-medium text-zinc-400">
             {affiliate.commission_rate}% · {affiliate.commission_duration_months}mo
           </span>
         </div>
@@ -232,7 +232,7 @@ function ReferralLinkBar({ affiliate }: { affiliate: Tables<"affiliates"> }) {
             href={referralLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-400 transition-colors"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-400 transition-colors"
           >
             <ExternalLink size={13} strokeWidth={ICON_STROKE_WIDTH} />
           </a>
@@ -252,7 +252,7 @@ function ReferralLinkBar({ affiliate }: { affiliate: Tables<"affiliates"> }) {
       </div>
 
       <div className="flex items-center gap-2 sm:border-l sm:border-zinc-700 sm:pl-4">
-        <span className="text-[11px] text-zinc-500">Tag:</span>
+        <span className="text-[11px] text-zinc-400">Tag:</span>
         {editingSlug ? (
           <div className="flex items-center gap-1.5">
             <Input
@@ -278,7 +278,7 @@ function ReferralLinkBar({ affiliate }: { affiliate: Tables<"affiliates"> }) {
                 setSlug(affiliate.slug);
                 setEditingSlug(false);
               }}
-              className="text-zinc-500 hover:text-zinc-300 text-[11px]"
+              className="text-zinc-400 hover:text-zinc-300 text-[11px]"
             >
               Cancel
             </Button>
@@ -286,7 +286,7 @@ function ReferralLinkBar({ affiliate }: { affiliate: Tables<"affiliates"> }) {
         ) : (
           <button
             onClick={() => setEditingSlug(true)}
-            className="flex items-center gap-1 text-[11px] font-mono text-zinc-500 hover:text-zinc-300 transition-colors"
+            className="flex items-center gap-1 text-[11px] font-mono text-zinc-400 hover:text-zinc-300 transition-colors"
           >
             {affiliate.slug}
             <Pencil size={10} strokeWidth={ICON_STROKE_WIDTH} />
@@ -321,9 +321,9 @@ function OnboardingBanner({ slug }: { slug: string }) {
       <div className="flex items-start justify-between mb-4">
         <div>
           <h3 className="text-[14px] font-medium text-white">Get started</h3>
-          <p className="text-[12px] text-zinc-500 mt-0.5">Here&apos;s how to start referring customers</p>
+          <p className="text-[12px] text-zinc-400 mt-0.5">Here&apos;s how to start referring customers</p>
         </div>
-        <button onClick={dismiss} className="text-[11px] text-zinc-600 hover:text-zinc-400 transition-colors">Dismiss</button>
+        <button onClick={dismiss} className="text-[11px] text-zinc-400 hover:text-zinc-400 transition-colors">Dismiss</button>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {steps.map((s) => (
@@ -333,7 +333,7 @@ function OnboardingBanner({ slug }: { slug: string }) {
             </div>
             <div>
               <p className="text-[13px] font-medium text-zinc-200">{s.title}</p>
-              <p className="text-[11px] text-zinc-500 mt-0.5">{s.desc}</p>
+              <p className="text-[11px] text-zinc-400 mt-0.5">{s.desc}</p>
             </div>
           </div>
         ))}
@@ -369,7 +369,7 @@ function FunnelStrip({ stats }: { stats: DashboardStats }) {
                 <p className="text-[22px] sm:text-[26px] font-semibold tracking-tight leading-none text-white">
                   {step.value.toLocaleString()}
                 </p>
-                <p className="text-[11px] text-zinc-500 mt-0.5">{step.label}</p>
+                <p className="text-[11px] text-zinc-400 mt-0.5">{step.label}</p>
               </div>
             </div>
           </div>
@@ -401,7 +401,7 @@ function EarningsTrend({ data }: { data: { month: string; amount: number }[] }) 
     <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-[13px] font-medium text-zinc-300">Earnings Trend</h3>
-        <span className="text-[11px] text-zinc-600">Last 6 months</span>
+        <span className="text-[11px] text-zinc-400">Last 6 months</span>
       </div>
       <ResponsiveContainer width="100%" height={180}>
         <BarChart data={data} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
@@ -441,7 +441,7 @@ function ActivityFeed({ items }: { items: ActivityItem[] }) {
     return (
       <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
         <h3 className="text-[13px] font-medium text-zinc-300 mb-4">Recent Activity</h3>
-        <p className="text-[13px] text-zinc-600 text-center py-6">
+        <p className="text-[13px] text-zinc-400 text-center py-6">
           No activity yet. Share your link to start earning!
         </p>
       </div>
@@ -454,7 +454,7 @@ function ActivityFeed({ items }: { items: ActivityItem[] }) {
         <h3 className="text-[13px] font-medium text-zinc-300">Recent Activity</h3>
         <a
           href="/earnings"
-          className="text-[11px] font-medium text-zinc-600 hover:text-zinc-400 transition-colors"
+          className="text-[11px] font-medium text-zinc-400 hover:text-zinc-400 transition-colors"
         >
           View all →
         </a>
@@ -473,11 +473,11 @@ function ActivityFeed({ items }: { items: ActivityItem[] }) {
                 <p className="text-[13px] text-zinc-100 truncate">
                   {fmtCurrency(item.amount)} commission
                   {item.tier_type !== "direct" && (
-                    <span className="text-zinc-600 ml-1">· {item.tier_type}</span>
+                    <span className="text-zinc-400 ml-1">· {item.tier_type}</span>
                   )}
                 </p>
                 {item.email && (
-                  <p className="text-[11px] text-zinc-600 truncate">{item.email}</p>
+                  <p className="text-[11px] text-zinc-400 truncate">{item.email}</p>
                 )}
               </div>
             </div>
@@ -493,7 +493,7 @@ function ActivityFeed({ items }: { items: ActivityItem[] }) {
               >
                 {item.status}
               </span>
-              <span className="text-[11px] text-zinc-600">{timeAgo(item.created_at)}</span>
+              <span className="text-[11px] text-zinc-400">{timeAgo(item.created_at)}</span>
             </div>
           </div>
         ))}
@@ -527,19 +527,19 @@ export function DashboardClient({
         {adminData && (adminData.estimatedMRR !== undefined) && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
-              <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Estimated MRR</p>
+              <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">Estimated MRR</p>
               <p className="text-[28px] font-semibold tracking-tight text-white mt-1">{fmtCurrency(adminData.estimatedMRR ?? 0)}</p>
-              <p className="text-[11px] text-zinc-600 mt-1">Based on active subscriptions</p>
+              <p className="text-[11px] text-zinc-400 mt-1">Based on active subscriptions</p>
             </div>
             <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
-              <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Commission Liability</p>
+              <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">Commission Liability</p>
               <p className="text-[28px] font-semibold tracking-tight text-amber-400 mt-1">{fmtCurrency(adminData.commissionLiability ?? 0)}</p>
-              <p className="text-[11px] text-zinc-600 mt-1">Pending + approved commissions</p>
+              <p className="text-[11px] text-zinc-400 mt-1">Pending + approved commissions</p>
             </div>
             <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
-              <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">Total Paid Out</p>
+              <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">Total Paid Out</p>
               <p className="text-[28px] font-semibold tracking-tight text-white mt-1">{fmtCurrency(adminData.totalPaidOut ?? 0)}</p>
-              <p className="text-[11px] text-zinc-600 mt-1">Completed payouts all time</p>
+              <p className="text-[11px] text-zinc-400 mt-1">Completed payouts all time</p>
             </div>
           </div>
         )}
@@ -597,7 +597,7 @@ export function DashboardClient({
           <p className="text-[14px] text-muted-foreground mt-1">Welcome back, {affiliate.name}</p>
         </div>
         {isTier1 && subAffiliateCount !== undefined && (
-          <a href="/team" className="flex items-center gap-2 text-[12px] font-medium text-zinc-500 hover:text-zinc-300 transition-colors px-3 py-1.5 rounded-lg border border-zinc-700 bg-zinc-950">
+          <a href="/team" className="flex items-center gap-2 text-[12px] font-medium text-zinc-400 hover:text-zinc-300 transition-colors px-3 py-1.5 rounded-lg border border-zinc-700 bg-zinc-950">
             <Users size={14} strokeWidth={ICON_STROKE_WIDTH} />
             {subAffiliateCount} sub-affiliate{subAffiliateCount !== 1 ? "s" : ""}
             <ArrowRight size={12} />

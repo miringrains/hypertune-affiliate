@@ -97,7 +97,7 @@ export function AffiliateDetailClient({
             key={card.label}
             className="rounded-lg border border-zinc-700 bg-zinc-950 p-5"
           >
-            <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
+            <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">
               {card.label}
             </p>
             <p className="text-[22px] font-semibold text-white mt-1">
@@ -119,7 +119,7 @@ export function AffiliateDetailClient({
             <InfoRow label="Tier Level" value={`Tier ${affiliate.tier_level}`} />
             <InfoRow label="Role" value={affiliate.role} capitalize />
             <div className="flex items-center justify-between py-1.5">
-              <span className="text-[13px] text-zinc-500">Status</span>
+              <span className="text-[13px] text-zinc-400">Status</span>
               <StatusBadge status={affiliate.status} />
             </div>
             <InfoRow
@@ -293,20 +293,20 @@ function AdminPayoutMethods({ affiliateId }: { affiliateId: string }) {
       </div>
 
       {loading ? (
-        <p className="text-[13px] text-zinc-500">Loading...</p>
+        <p className="text-[13px] text-zinc-400">Loading...</p>
       ) : methods.length === 0 && !showAdd ? (
-        <p className="text-[13px] text-zinc-500">No PayPal account linked for this affiliate.</p>
+        <p className="text-[13px] text-zinc-400">No PayPal account linked for this affiliate.</p>
       ) : (
         <div className="space-y-2">
           {methods.map((m) => (
             <div key={m.id} className="flex items-center justify-between py-2 border-b border-zinc-700 last:border-0">
               <div className="flex items-center gap-2">
-                <Wallet className="w-4 h-4 text-zinc-500" />
+                <Wallet className="w-4 h-4 text-zinc-400" />
                 <span className="text-[13px] text-white">PayPal</span>
-                {m.details?.email && <span className="text-[12px] text-zinc-500">{m.details.email}</span>}
+                {m.details?.email && <span className="text-[12px] text-zinc-400">{m.details.email}</span>}
                 {m.is_primary && <span className="text-[10px] text-zinc-400 border border-zinc-700 rounded px-1.5 py-0.5">Active</span>}
               </div>
-              <button onClick={() => deleteMethod(m.id)} className="text-zinc-600 hover:text-red-400 transition-colors">
+              <button onClick={() => deleteMethod(m.id)} className="text-zinc-400 hover:text-red-400 transition-colors">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -357,7 +357,7 @@ function InfoRow({
 }) {
   return (
     <div className="flex items-center justify-between py-1.5">
-      <span className="text-[13px] text-zinc-500">{label}</span>
+      <span className="text-[13px] text-zinc-400">{label}</span>
       <span
         className={`text-[13px] text-white ${mono ? "font-mono text-zinc-400" : ""} ${cap ? "capitalize" : ""}`}
       >
@@ -378,7 +378,7 @@ function EditField({
 }) {
   return (
     <div className={saving ? "opacity-60 pointer-events-none" : ""}>
-      <label className="block text-[12px] text-zinc-500 mb-1.5">{label}</label>
+      <label className="block text-[12px] text-zinc-400 mb-1.5">{label}</label>
       <div className="flex items-center gap-2">{children}</div>
     </div>
   );

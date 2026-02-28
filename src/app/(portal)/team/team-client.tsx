@@ -145,11 +145,11 @@ export function TeamClient({ affiliate, summary, members }: Props) {
           { icon: ArrowUpRight, label: "Your Earnings", value: fmtCurrency(summary.teamEarnings), sub: "from team" },
         ].map((item) => (
           <div key={item.label} className="rounded-xl border border-zinc-700 bg-zinc-950 p-4">
-            <item.icon size={14} strokeWidth={ICON_STROKE_WIDTH} className="mb-2 text-zinc-500" />
+            <item.icon size={14} strokeWidth={ICON_STROKE_WIDTH} className="mb-2 text-zinc-400" />
             <p className="text-[20px] sm:text-[22px] font-semibold tracking-tight leading-none text-white">
               {item.value}
             </p>
-            <p className="text-[11px] text-zinc-500 mt-1">{item.sub}</p>
+            <p className="text-[11px] text-zinc-400 mt-1">{item.sub}</p>
           </div>
         ))}
       </div>
@@ -158,7 +158,7 @@ export function TeamClient({ affiliate, summary, members }: Props) {
       {top3.length > 0 && (
         <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
           <div className="flex items-center gap-2 mb-5">
-            <Trophy size={15} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-500" />
+            <Trophy size={15} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-400" />
             <h3 className="text-[13px] font-medium text-zinc-300">Top Performers</h3>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -174,7 +174,7 @@ export function TeamClient({ affiliate, summary, members }: Props) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-[13px] font-medium text-white truncate">{m.name}</p>
-                  <div className="flex items-center gap-3 text-[11px] text-zinc-500 mt-0.5">
+                  <div className="flex items-center gap-3 text-[11px] text-zinc-400 mt-0.5">
                     <span>{m.customers} customers</span>
                     <span className="font-medium text-zinc-300">{fmtCurrency(m.earned)}</span>
                   </div>
@@ -208,13 +208,13 @@ export function TeamClient({ affiliate, summary, members }: Props) {
 
         {loadingLinks ? (
           <div className="flex justify-center py-6">
-            <Loader2 size={20} strokeWidth={ICON_STROKE_WIDTH} className="animate-spin text-zinc-500" />
+            <Loader2 size={20} strokeWidth={ICON_STROKE_WIDTH} className="animate-spin text-zinc-400" />
           </div>
         ) : links.length === 0 ? (
           <Card className="border-zinc-700 bg-zinc-950">
             <CardContent className="py-8 text-center">
-              <Link2 size={28} strokeWidth={ICON_STROKE_WIDTH} className="mx-auto mb-2 text-zinc-600" />
-              <p className="text-[13px] text-zinc-500">Create a recruit link to start building your team.</p>
+              <Link2 size={28} strokeWidth={ICON_STROKE_WIDTH} className="mx-auto mb-2 text-zinc-400" />
+              <p className="text-[13px] text-zinc-400">Create a recruit link to start building your team.</p>
             </CardContent>
           </Card>
         ) : (
@@ -226,9 +226,9 @@ export function TeamClient({ affiliate, summary, members }: Props) {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="text-[13px] font-semibold text-white">{link.commission_rate}% Commission</span>
-                        {link.label && <span className="text-[11px] text-zinc-500">{link.label}</span>}
+                        {link.label && <span className="text-[11px] text-zinc-400">{link.label}</span>}
                       </div>
-                      <p className="text-[12px] font-mono text-zinc-500 truncate">{appUrl}/accept-invite/{link.code}</p>
+                      <p className="text-[12px] font-mono text-zinc-400 truncate">{appUrl}/accept-invite/{link.code}</p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Button size="sm" variant="outline" onClick={() => copyLink(link)}>
@@ -251,14 +251,14 @@ export function TeamClient({ affiliate, summary, members }: Props) {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-heading-3">All Members</h2>
-          <span className="text-[12px] text-zinc-500">{members.length} total</span>
+          <span className="text-[12px] text-zinc-400">{members.length} total</span>
         </div>
 
         {members.length === 0 ? (
           <Card className="border-zinc-700 bg-zinc-950">
             <CardContent className="py-8 text-center">
-              <Users size={28} strokeWidth={ICON_STROKE_WIDTH} className="mx-auto mb-2 text-zinc-600" />
-              <p className="text-[13px] text-zinc-500">No sub-affiliates yet. Share your recruit links to build your team.</p>
+              <Users size={28} strokeWidth={ICON_STROKE_WIDTH} className="mx-auto mb-2 text-zinc-400" />
+              <p className="text-[13px] text-zinc-400">No sub-affiliates yet. Share your recruit links to build your team.</p>
             </CardContent>
           </Card>
         ) : (
@@ -268,7 +268,7 @@ export function TeamClient({ affiliate, summary, members }: Props) {
                 <thead>
                   <tr className="border-b border-zinc-700">
                     {["Name", "Tag", "Rate", "Leads", "Customers", "Earned", "Status", "Joined"].map((h) => (
-                      <th key={h} className="text-left text-[11px] font-medium text-zinc-500 uppercase tracking-wider px-5 py-3">{h}</th>
+                      <th key={h} className="text-left text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-5 py-3">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -278,16 +278,16 @@ export function TeamClient({ affiliate, summary, members }: Props) {
                       <td className="px-5 py-3">
                         <div>
                           <p className="text-[13px] font-medium text-white">{m.name}</p>
-                          <p className="text-[11px] text-zinc-500">{m.email}</p>
+                          <p className="text-[11px] text-zinc-400">{m.email}</p>
                         </div>
                       </td>
-                      <td className="px-5 py-3 text-[12px] font-mono text-zinc-500">{m.slug}</td>
+                      <td className="px-5 py-3 text-[12px] font-mono text-zinc-400">{m.slug}</td>
                       <td className="px-5 py-3 text-[13px] text-zinc-300">{m.commission_rate}%</td>
                       <td className="px-5 py-3 text-[13px] text-zinc-300 tabular-nums">{m.leads}</td>
                       <td className="px-5 py-3 text-[13px] text-zinc-300 tabular-nums">{m.customers}</td>
                       <td className="px-5 py-3 text-[13px] font-medium text-white tabular-nums">{fmtCurrency(m.earned)}</td>
                       <td className="px-5 py-3"><StatusBadge status={m.status} /></td>
-                      <td className="px-5 py-3 text-[12px] text-zinc-500">{new Date(m.created_at).toLocaleDateString()}</td>
+                      <td className="px-5 py-3 text-[12px] text-zinc-400">{new Date(m.created_at).toLocaleDateString()}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -42,11 +42,17 @@ export async function GET(
       .eq("campaign_id", id)
       .order("created_at", { ascending: false }) as { data: CampaignEventRow[] | null; error: any };
 
+    const typeToKey: Record<string, keyof typeof stats> = {
+      click: "clicks",
+      lead: "leads",
+      customer: "customers",
+      trial: "trials",
+    };
+
     const stats = { clicks: 0, leads: 0, customers: 0, trials: 0 };
     for (const evt of events ?? []) {
-      if (evt.event_type in stats) {
-        stats[evt.event_type as keyof typeof stats]++;
-      }
+      const key = typeToKey[evt.event_type];
+      if (key) stats[key]++;
     }
 
     const dailyMap = new Map<string, { clicks: number; leads: number; customers: number; trials: number }>();
@@ -56,9 +62,8 @@ export async function GET(
         dailyMap.set(day, { clicks: 0, leads: 0, customers: 0, trials: 0 });
       }
       const d = dailyMap.get(day)!;
-      if (evt.event_type in d) {
-        d[evt.event_type as keyof typeof d]++;
-      }
+      const key = typeToKey[evt.event_type];
+      if (key) d[key]++;
     }
 
     const daily = Array.from(dailyMap.entries())

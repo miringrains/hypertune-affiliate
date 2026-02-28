@@ -16,6 +16,7 @@ const statusMap: Record<string, StatusVariant> = {
   canceled: "destructive",
   inactive: "destructive",
   voided: "destructive",
+  denied: "destructive",
   paid: "success",
   approved: "success",
   completed: "success",

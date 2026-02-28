@@ -17,8 +17,28 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
   const [mode, setMode] = useState<LoginMode>("password");
   const router = useRouter();
+
+  async function handleForgotPassword() {
+    if (!email) {
+      toast.error("Enter your email address first");
+      return;
+    }
+    setLoading(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+    if (error) {
+      toast.error("Failed to send reset link", { description: error.message });
+      return;
+    }
+    setResetSent(true);
+    toast.success("Reset link sent!", { description: "Check your email." });
+  }
 
   async function handlePasswordLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -66,6 +86,23 @@ export default function LoginPage() {
     toast.success("Magic link sent!", {
       description: "Check your email for the login link.",
     });
+  }
+
+  if (resetSent) {
+    return (
+      <div className="text-center space-y-4">
+        <div className="mx-auto w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
+          <Mail size={24} strokeWidth={ICON_STROKE_WIDTH} className="text-muted-foreground" />
+        </div>
+        <h2 className="text-heading-2">Check your email</h2>
+        <p className="text-body-sm text-muted-foreground">
+          We sent a password reset link to <strong>{email}</strong>.
+        </p>
+        <Button variant="ghost" size="sm" onClick={() => setResetSent(false)} className="mt-4">
+          Back to login
+        </Button>
+      </div>
+    );
   }
 
   if (sent) {
@@ -116,7 +153,16 @@ export default function LoginPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                className="text-[12px] text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Forgot password?
+              </button>
+            </div>
             <Input
               id="password"
               type="password"

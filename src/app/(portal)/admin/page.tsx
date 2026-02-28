@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
@@ -66,7 +67,14 @@ export default async function AdminAffiliatesPage() {
             <tbody>
               {affiliates?.map((a) => (
                 <tr key={a.id} className="border-b border-border">
-                  <td className="px-5 py-3 text-[13px]">{a.name}</td>
+                  <td className="px-5 py-3 text-[13px]">
+                    <Link
+                      href={`/admin/affiliates/${a.id}`}
+                      className="text-white hover:text-zinc-300 underline underline-offset-4 decoration-zinc-700 hover:decoration-zinc-500 transition-colors"
+                    >
+                      {a.name}
+                    </Link>
+                  </td>
                   <td className="px-5 py-3 text-[13px]">{a.email}</td>
                   <td className="px-5 py-3 text-[12px] text-muted-foreground font-mono">
                     {a.slug}

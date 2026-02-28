@@ -1,7 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { authCallbackLimiter } from "@/lib/rate-limit";
 
 export async function GET(request: NextRequest) {
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  if (!authCallbackLimiter(ip)) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const { searchParams, origin } = request.nextUrl;
   const code = searchParams.get("code");
   const inviteCode = searchParams.get("invite_code");
@@ -49,57 +55,66 @@ export async function GET(request: NextRequest) {
         process.env.SUPABASE_SERVICE_ROLE_KEY!,
       );
 
-      // Find invite by code — reusable links won't have used_by_affiliate_id = null
-      const { data: inviteRows } = await serviceClient
-        .from("invite_links")
-        .select("*")
-        .eq("code", inviteCode);
+      const { data: existingAffiliate } = await serviceClient
+        .from("affiliates")
+        .select("id")
+        .eq("user_id", user.id)
+        .single();
 
-      // Pick the reusable link or the unused one-time link
-      const invite =
-        inviteRows?.find((i) => i.is_reusable) ??
-        inviteRows?.find((i) => !i.used_by_affiliate_id) ??
-        null;
+      if (!existingAffiliate) {
+        const { data: inviteRows } = await serviceClient
+          .from("invite_links")
+          .select("*")
+          .eq("code", inviteCode);
 
-      if (invite) {
-        const parentId = invite.parent_affiliate_id;
-        let tierLevel = 1;
+        const invite =
+          inviteRows?.find((i) => i.is_reusable) ??
+          inviteRows?.find((i) => !i.used_by_affiliate_id) ??
+          null;
 
-        if (parentId) {
-          const { data: parent } = await serviceClient
+        if (invite) {
+          const parentId = invite.parent_affiliate_id;
+          let tierLevel = 1;
+
+          if (parentId) {
+            const { data: parent } = await serviceClient
+              .from("affiliates")
+              .select("tier_level")
+              .eq("id", parentId)
+              .single();
+
+            if (parent) {
+              tierLevel = Math.min(parent.tier_level + 1, 3);
+            }
+          }
+
+          const commissionRate = tierLevel === 1 ? 70 : invite.commission_rate;
+
+          const { data: newAffiliate, error: insertError } = await serviceClient
             .from("affiliates")
-            .select("tier_level")
-            .eq("id", parentId)
+            .insert({
+              user_id: user.id,
+              name: decodeURIComponent(name),
+              email: user.email!,
+              slug: decodeURIComponent(slug),
+              parent_id: parentId,
+              tier_level: tierLevel,
+              commission_rate: commissionRate,
+              status: "active",
+            })
+            .select("id")
             .single();
 
-          if (parent) {
-            tierLevel = Math.min(parent.tier_level + 1, 3);
+          if (insertError) {
+            console.error("Failed to create affiliate:", insertError.message);
           }
-        }
 
-        const commissionRate = tierLevel === 1 ? 70 : invite.commission_rate;
-
-        const { data: newAffiliate } = await serviceClient
-          .from("affiliates")
-          .insert({
-            user_id: user.id,
-            name: decodeURIComponent(name),
-            email: user.email!,
-            slug: decodeURIComponent(slug),
-            parent_id: parentId,
-            tier_level: tierLevel,
-            commission_rate: commissionRate,
-            status: "active",
-          })
-          .select("id")
-          .single();
-
-        // Only mark one-time links as used; reusable links stay active
-        if (newAffiliate && !invite.is_reusable) {
-          await serviceClient
-            .from("invite_links")
-            .update({ used_by_affiliate_id: newAffiliate.id })
-            .eq("id", invite.id);
+          if (newAffiliate && !invite.is_reusable) {
+            await serviceClient
+              .from("invite_links")
+              .update({ used_by_affiliate_id: newAffiliate.id })
+              .eq("id", invite.id);
+          }
         }
       }
     }

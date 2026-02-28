@@ -1,8 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { Card } from "@/components/ui/card";
-import { StatusBadge } from "@/components/shared/status-badge";
-import { formatCurrency } from "@/lib/utils";
+import { PayoutsClient } from "./payouts-client";
 
 export default async function AdminPayoutsPage() {
   const supabase = await createClient();
@@ -24,6 +22,20 @@ export default async function AdminPayoutsPage() {
     .select("*, affiliates(name, email)")
     .order("created_at", { ascending: false });
 
+  const mapped = (payouts ?? []).map((p) => {
+    const aff = p.affiliates as { name: string; email: string } | null;
+    return {
+      id: p.id,
+      affiliateName: aff?.name ?? "—",
+      affiliateEmail: aff?.email ?? "—",
+      amount: Number(p.amount),
+      status: p.status,
+      method: p.method ?? null,
+      createdAt: p.created_at,
+      completedAt: p.completed_at ?? null,
+    };
+  });
+
   return (
     <div className="space-y-8">
       <div>
@@ -33,73 +45,7 @@ export default async function AdminPayoutsPage() {
         </p>
       </div>
 
-      <Card>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                  Affiliate Name
-                </th>
-                <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                  Amount
-                </th>
-                <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                  Method
-                </th>
-                <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                  Created
-                </th>
-                <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                  Completed
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {payouts?.map((p) => {
-                const affiliateName =
-                  (p.affiliates as { name: string; email: string } | null)
-                    ?.name ?? "—";
-
-                return (
-                  <tr key={p.id} className="border-b border-border">
-                    <td className="px-5 py-3 text-[13px]">
-                      {affiliateName}
-                    </td>
-                    <td className="px-5 py-3 text-[13px] font-medium">
-                      {formatCurrency(p.amount)}
-                    </td>
-                    <td className="px-5 py-3">
-                      <StatusBadge status={p.status} />
-                    </td>
-                    <td className="px-5 py-3 text-[13px] capitalize">
-                      {p.method?.replace(/_/g, " ") ?? "—"}
-                    </td>
-                    <td className="px-5 py-3 text-[12px] text-muted-foreground">
-                      {new Date(p.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-5 py-3 text-[12px] text-muted-foreground">
-                      {p.completed_at
-                        ? new Date(p.completed_at).toLocaleDateString()
-                        : "—"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {(!payouts || payouts.length === 0) && (
-            <div className="py-12 text-center">
-              <p className="text-[14px] text-muted-foreground">
-                No payouts to process.
-              </p>
-            </div>
-          )}
-        </div>
-      </Card>
+      <PayoutsClient payouts={mapped} />
     </div>
   );
 }

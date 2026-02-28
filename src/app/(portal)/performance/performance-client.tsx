@@ -121,7 +121,7 @@ export function PerformanceClient({
     <div className="space-y-8">
       <div>
         <h1 className="text-display-sm">Performance</h1>
-        <p className="text-[14px] text-zinc-400 mt-1">
+        <p className="text-[14px] text-muted-foreground mt-1">
           Your full conversion funnel — from clicks to paying customers.
         </p>
       </div>
@@ -275,7 +275,7 @@ export function PerformanceClient({
       <div>
         <button
           onClick={() => setShowTable(!showTable)}
-          className="flex items-center gap-2 text-[13px] font-medium text-zinc-400 hover:text-zinc-300 transition-colors"
+          className="flex items-center gap-2 text-[13px] font-medium text-muted-foreground hover:text-foreground transition-colors"
         >
           {showTable ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           {showTable ? "Hide" : "Show"} detail tables

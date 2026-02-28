@@ -161,13 +161,13 @@
    Light Panel — overrides dark tokens for content area
    ─────────────────────────────────────────────── */
 .light-panel {
-  --background: #fafafa;
+  --background: #ffffff;
   --foreground: #111;
   color: var(--foreground);
   background-color: var(--background);
 
-  --card: #fff;
-  --card-foreground: #111;
+  --card: #000000;
+  --card-foreground: #ececec;
 
   --popover: #fff;
   --popover-foreground: #111;
@@ -175,21 +175,38 @@
   --primary: #171717;
   --primary-foreground: #fafafa;
 
-  --secondary: #f5f5f5;
+  --secondary: #f0f0f0;
   --secondary-foreground: #171717;
 
   --muted: #f5f5f5;
-  --muted-foreground: #737373;
+  --muted-foreground: #666;
 
-  --accent: #f5f5f5;
+  --accent: #f0f0f0;
   --accent-foreground: #171717;
 
-  --border: #e5e5e5;
-  --input: #e5e5e5;
+  --border: #e0e0e0;
+  --input: #e0e0e0;
 
   --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.04);
   --shadow-md: 0 2px 8px 0 rgba(0,0,0,0.06);
   --shadow-lg: 0 8px 24px 0 rgba(0,0,0,0.08);
+}
+
+/* Dark tokens restored inside Cards on a light panel */
+.light-panel [data-slot="card"] {
+  --foreground: #ececec;
+  --muted-foreground: #a1a1a1;
+  --border: #333;
+  --input: #333;
+  --accent: #1f1f1f;
+  --accent-foreground: #e8e8e8;
+  --secondary: #1c1c1c;
+  --secondary-foreground: #e8e8e8;
+  --primary: #e8e8e8;
+  --primary-foreground: #111;
+  --destructive: #dc2626;
+  --destructive-foreground: #fafafa;
+  color: var(--card-foreground);
 }
 
 /* ───────────────────────────────────────────────

@@ -78,7 +78,7 @@ export function AffiliateDetailClient({
       <div className="flex items-center gap-4">
         <Link
           href="/admin"
-          className="flex items-center gap-1 text-[13px] text-zinc-400 hover:text-white transition-colors"
+          className="flex items-center gap-1 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back
@@ -87,7 +87,7 @@ export function AffiliateDetailClient({
 
       <div>
         <h1 className="text-display-sm">{affiliate.name}</h1>
-        <p className="text-[14px] text-zinc-400 mt-1">{affiliate.email}</p>
+        <p className="text-[14px] text-muted-foreground mt-1">{affiliate.email}</p>
       </div>
 
       {/* Stats */}

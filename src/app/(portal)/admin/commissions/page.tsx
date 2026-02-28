@@ -46,7 +46,7 @@ export default async function AdminCommissionsPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-display-sm">All Commissions</h1>
-        <p className="text-[14px] text-zinc-400 mt-1">
+        <p className="text-[14px] text-muted-foreground mt-1">
           View and manage commissions across all affiliates
         </p>
       </div>

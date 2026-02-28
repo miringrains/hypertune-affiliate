@@ -157,7 +157,7 @@ export function PayoutsClient({ payouts }: { payouts: Payout[] }) {
       {/* Bulk actions */}
       {activeTab === "pending" && selected.size > 0 && (
         <div className="flex items-center gap-2">
-          <span className="text-[13px] text-zinc-400">
+          <span className="text-[13px] text-muted-foreground">
             {selected.size} selected
           </span>
           <Button
@@ -180,7 +180,7 @@ export function PayoutsClient({ payouts }: { payouts: Payout[] }) {
 
       {activeTab === "approved" && selected.size > 0 && (
         <div className="flex items-center gap-2">
-          <span className="text-[13px] text-zinc-400">
+          <span className="text-[13px] text-muted-foreground">
             {selected.size} selected
           </span>
           <Button

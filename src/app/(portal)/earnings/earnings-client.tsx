@@ -127,7 +127,7 @@ export function EarningsClient({
     <div className="space-y-8">
       <div>
         <h1 className="text-display-sm">Earnings</h1>
-        <p className="text-[14px] text-zinc-400 mt-1">
+        <p className="text-[14px] text-muted-foreground mt-1">
           Your commissions, payouts, and payment history.
         </p>
       </div>

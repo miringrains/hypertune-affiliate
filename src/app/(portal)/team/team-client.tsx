@@ -131,7 +131,7 @@ export function TeamClient({ affiliate, summary, members }: Props) {
     <div className="space-y-8">
       <div>
         <h1 className="text-display-sm">Team</h1>
-        <p className="text-[14px] text-zinc-400 mt-1">
+        <p className="text-[14px] text-muted-foreground mt-1">
           Recruit sub-affiliates and track your team&apos;s performance.
         </p>
       </div>
@@ -208,7 +208,7 @@ export function TeamClient({ affiliate, summary, members }: Props) {
 
         {loadingLinks ? (
           <div className="flex justify-center py-6">
-            <Loader2 size={20} strokeWidth={ICON_STROKE_WIDTH} className="animate-spin text-zinc-400" />
+            <Loader2 size={20} strokeWidth={ICON_STROKE_WIDTH} className="animate-spin text-muted-foreground" />
           </div>
         ) : links.length === 0 ? (
           <Card className="border-zinc-700 bg-zinc-950">
@@ -251,7 +251,7 @@ export function TeamClient({ affiliate, summary, members }: Props) {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-heading-3">All Members</h2>
-          <span className="text-[12px] text-zinc-400">{members.length} total</span>
+          <span className="text-[12px] text-muted-foreground">{members.length} total</span>
         </div>
 
         {members.length === 0 ? (

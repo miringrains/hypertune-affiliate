@@ -41,14 +41,13 @@ export default async function PortalLayout({
 
       <div className="relative z-[1] flex flex-col lg:pl-[var(--sidebar-width)] h-screen p-2 lg:p-3">
         <div
-          className="flex-1 min-h-0 overflow-hidden"
+          className="light-panel flex-1 min-h-0 overflow-hidden"
           style={{
             borderRadius: "16px",
-            backgroundColor: "#272727",
             boxShadow: "0 0 0 1px rgba(255,255,255,0.12), 0 16px 48px -8px rgba(0,0,0,0.4)",
           }}
         >
-          <div className="h-full overflow-y-auto overflow-x-hidden">
+          <div className="h-full overflow-y-auto overflow-x-hidden light-scroll">
             <TopBar
               isAdmin={isAdmin}
               tierLevel={tierLevel}

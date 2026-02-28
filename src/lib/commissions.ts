@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "./supabase/types";
+import { sendCommissionEarnedEmail } from "./email";
 
 type ServiceClient = SupabaseClient<Database>;
 type CommissionTierType = Database["public"]["Enums"]["commission_tier_type"];
@@ -77,6 +78,34 @@ export async function calculateAndInsertCommissions(
 
   if (commissions.length > 0) {
     await supabase.from("commissions").insert(commissions);
+
+    // Look up the customer email for notification context
+    const { data: customer } = await supabase
+      .from("customers")
+      .select("leads(email)")
+      .eq("id", customerId)
+      .single();
+    const custEmail = (customer?.leads as unknown as { email: string } | null)?.email ?? "a customer";
+
+    // Notify each affiliate who earned a commission (fire-and-forget)
+    const notifiedIds = new Set<string>();
+    for (const c of commissions) {
+      if (notifiedIds.has(c.affiliate_id)) continue;
+      notifiedIds.add(c.affiliate_id);
+
+      const { data: aff } = await supabase
+        .from("affiliates")
+        .select("email, name")
+        .eq("id", c.affiliate_id)
+        .single();
+
+      if (aff) {
+        const totalForAffiliate = commissions
+          .filter((x) => x.affiliate_id === c.affiliate_id)
+          .reduce((s, x) => s + Number(x.amount), 0);
+        sendCommissionEarnedEmail(aff.email, aff.name, totalForAffiliate, custEmail).catch(() => {});
+      }
+    }
   }
 
   return commissions;

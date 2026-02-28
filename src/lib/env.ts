@@ -6,10 +6,24 @@ const required = [
   "STRIPE_WEBHOOK_SECRET",
 ] as const;
 
-const missing = required.filter((key) => !process.env[key]);
+const runtimeOnly = [
+  "MAILGUN_API_KEY",
+  "MAILGUN_DOMAIN",
+  "MAILGUN_FROM",
+] as const;
 
-if (missing.length > 0 && process.env.NODE_ENV === "production") {
-  throw new Error(
-    `Missing required environment variables: ${missing.join(", ")}`,
-  );
+if (process.env.NODE_ENV === "production") {
+  const missing = required.filter((key) => !process.env[key]);
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required environment variables: ${missing.join(", ")}`,
+    );
+  }
+
+  const missingRuntime = runtimeOnly.filter((key) => !process.env[key]);
+  if (missingRuntime.length > 0) {
+    console.warn(
+      `[env] Missing runtime environment variables (emails will not send): ${missingRuntime.join(", ")}`,
+    );
+  }
 }

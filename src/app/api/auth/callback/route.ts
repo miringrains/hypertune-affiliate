@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { authCallbackLimiter } from "@/lib/rate-limit";
+import { sendWelcomeEmail, sendNewAffiliateNotification } from "@/lib/email";
 
 export async function GET(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
@@ -109,11 +110,27 @@ export async function GET(request: NextRequest) {
             console.error("Failed to create affiliate:", insertError.message);
           }
 
-          if (newAffiliate && !invite.is_reusable) {
-            await serviceClient
-              .from("invite_links")
-              .update({ used_by_affiliate_id: newAffiliate.id })
-              .eq("id", invite.id);
+          if (newAffiliate) {
+            const decodedName = decodeURIComponent(name);
+
+            // Welcome email to new affiliate (fire-and-forget)
+            sendWelcomeEmail(user.email!, decodedName).catch(() => {});
+
+            // Notify admins
+            const { data: admins } = await serviceClient
+              .from("affiliates")
+              .select("email")
+              .eq("role", "admin");
+            for (const admin of admins ?? []) {
+              sendNewAffiliateNotification(admin.email, decodedName, user.email!).catch(() => {});
+            }
+
+            if (!invite.is_reusable) {
+              await serviceClient
+                .from("invite_links")
+                .update({ used_by_affiliate_id: newAffiliate.id })
+                .eq("id", invite.id);
+            }
           }
         }
       }

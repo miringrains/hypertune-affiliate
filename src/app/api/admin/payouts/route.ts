@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { requireAdmin, handleApiError, ApiError } from "@/lib/auth";
+import { sendPayoutProcessedEmail } from "@/lib/email";
 
 // The generated types only know "processing" | "completed" — the migration
 // adds "pending", "approved", "denied". Cast until types are regenerated.
@@ -109,6 +110,24 @@ export async function PATCH(request: NextRequest) {
           .update({ status: "paid", paid_at: now })
           .in("payout_id", ids);
         if (commErr) throw new ApiError(500, commErr.message);
+
+        // Notify each affiliate their payout was processed
+        const { data: paidPayouts } = await supabase
+          .from("payouts")
+          .select("affiliate_id, amount")
+          .in("id", ids)
+          .eq("status", "completed");
+
+        for (const p of paidPayouts ?? []) {
+          const { data: aff } = await supabase
+            .from("affiliates")
+            .select("email, name")
+            .eq("id", p.affiliate_id)
+            .single();
+          if (aff) {
+            sendPayoutProcessedEmail(aff.email, aff.name, Number(p.amount)).catch(() => {});
+          }
+        }
       }
     } else if (action === "revert") {
       const { count: c1, error: e1 } = await supabase

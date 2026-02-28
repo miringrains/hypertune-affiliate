@@ -4,6 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 export async function POST(request: NextRequest) {
   const response = NextResponse.redirect(
     new URL("/login", request.nextUrl.origin),
+    303,
   );
 
   const supabase = createServerClient(

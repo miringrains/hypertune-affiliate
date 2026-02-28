@@ -24,8 +24,12 @@ export default async function PortalLayout({
     .eq("user_id", user.id)
     .single();
 
-  const isAdmin = affiliate?.role === "admin";
-  const tierLevel = affiliate?.tier_level ?? 2;
+  if (!affiliate) {
+    redirect("/login?error=no_account");
+  }
+
+  const isAdmin = affiliate.role === "admin";
+  const tierLevel = affiliate.tier_level ?? 2;
 
   return (
     <div className="h-screen overflow-hidden" style={{ backgroundColor: "#0a0a0a" }}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,11 +8,21 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Mail, Lock } from "lucide-react";
 import { ICON_STROKE_WIDTH } from "@/lib/constants";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type LoginMode = "password" | "magic-link";
 
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
+  );
+}
+
+function LoginContent() {
+  const searchParams = useSearchParams();
+  const errorParam = searchParams.get("error");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -130,6 +140,21 @@ export default function LoginPage() {
 
   return (
     <div className="space-y-8">
+      {errorParam === "no_account" && (
+        <div className="rounded-lg border border-zinc-800 bg-zinc-950 px-4 py-3 text-center">
+          <p className="text-sm text-zinc-400">
+            No affiliate account found for your email. Contact your administrator or use an invite link to get started.
+          </p>
+        </div>
+      )}
+      {errorParam === "auth_failed" && (
+        <div className="rounded-lg border border-zinc-800 bg-zinc-950 px-4 py-3 text-center">
+          <p className="text-sm text-zinc-400">
+            Authentication failed. The link may have expired. Please try again.
+          </p>
+        </div>
+      )}
+
       <div className="text-center space-y-2">
         <h2 style={{ fontSize: "2.45rem", letterSpacing: "-0.05em", fontWeight: 600, lineHeight: 1.1 }}>
           Welcome back

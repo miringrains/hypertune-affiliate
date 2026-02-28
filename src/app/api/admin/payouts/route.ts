@@ -2,9 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { requireAdmin, handleApiError, ApiError } from "@/lib/auth";
 import { sendPayoutProcessedEmail } from "@/lib/email";
+import { sendPaypalPayout, type PayoutItem } from "@/lib/paypal";
 
-// The generated types only know "processing" | "completed" — the migration
-// adds "pending", "approved", "denied". Cast until types are regenerated.
 type PayoutStatus = "pending" | "approved" | "denied" | "processing" | "completed";
 const asStatus = (s: PayoutStatus) => s as "processing" | "completed";
 
@@ -63,6 +62,26 @@ export async function POST() {
 const VALID_ACTIONS = ["approve", "deny", "pay", "revert"] as const;
 type Action = (typeof VALID_ACTIONS)[number];
 
+async function loadPaypalCredentials(supabase: Awaited<ReturnType<typeof createServiceClient>>) {
+  const { data } = await supabase
+    .from("settings")
+    .select("key, value")
+    .in("key", ["paypal_client_id", "paypal_client_secret", "paypal_mode"]);
+
+  const map = new Map((data ?? []).map((s) => [s.key, String(s.value)]));
+  const clientId = map.get("paypal_client_id");
+  const clientSecret = map.get("paypal_client_secret");
+  const mode = map.get("paypal_mode") ?? "sandbox";
+
+  if (!clientId || !clientSecret) return null;
+
+  process.env.PAYPAL_CLIENT_ID = clientId;
+  process.env.PAYPAL_CLIENT_SECRET = clientSecret;
+  process.env.PAYPAL_MODE = mode;
+
+  return { clientId, clientSecret, mode };
+}
+
 export async function PATCH(request: NextRequest) {
   try {
     await requireAdmin();
@@ -94,41 +113,97 @@ export async function PATCH(request: NextRequest) {
       if (error) throw new ApiError(500, error.message);
       updated = count ?? 0;
     } else if (action === "pay") {
-      const now = new Date().toISOString();
-
-      const { count, error } = await supabase
+      const { data: payoutRows } = await supabase
         .from("payouts")
-        .update({ status: "completed", completed_at: now })
+        .select("id, affiliate_id, amount")
         .in("id", ids)
         .eq("status", asStatus("approved"));
-      if (error) throw new ApiError(500, error.message);
-      updated = count ?? 0;
 
-      if (updated > 0) {
+      if (!payoutRows?.length) {
+        return NextResponse.json({ updated: 0, paypal: false });
+      }
+
+      const affiliateIds = [...new Set(payoutRows.map((p) => p.affiliate_id))];
+      const { data: affiliates } = await supabase
+        .from("affiliates")
+        .select("id, name, email")
+        .in("id", affiliateIds);
+      const affMap = new Map((affiliates ?? []).map((a) => [a.id, a]));
+
+      const { data: allMethods } = await supabase
+        .from("payout_methods")
+        .select("affiliate_id, details")
+        .in("affiliate_id", affiliateIds)
+        .eq("method_type", "paypal")
+        .eq("is_primary", true);
+      const methodMap = new Map((allMethods ?? []).map((m) => [m.affiliate_id, m]));
+
+      const creds = await loadPaypalCredentials(supabase);
+      const paypalItems: PayoutItem[] = [];
+      const manualIds: string[] = [];
+
+      for (const p of payoutRows) {
+        const method = methodMap.get(p.affiliate_id);
+        const aff = affMap.get(p.affiliate_id);
+        const email = (method?.details as Record<string, string> | null)?.email;
+
+        if (creds && email && aff) {
+          paypalItems.push({
+            recipientEmail: email,
+            amount: Number(p.amount),
+            payoutId: p.id,
+            affiliateName: aff.name,
+          });
+        } else {
+          manualIds.push(p.id);
+        }
+      }
+
+      let paypalResult = null;
+
+      if (paypalItems.length > 0) {
+        try {
+          paypalResult = await sendPaypalPayout(paypalItems);
+        } catch (e) {
+          throw new ApiError(
+            502,
+            `PayPal payout failed: ${e instanceof Error ? e.message : "Unknown error"}`,
+          );
+        }
+      }
+
+      const now = new Date().toISOString();
+      const paidIds = paypalItems.map((i) => i.payoutId);
+      const allPaidIds = [...paidIds, ...manualIds];
+
+      if (allPaidIds.length > 0) {
+        const { count, error } = await supabase
+          .from("payouts")
+          .update({ status: "completed", completed_at: now })
+          .in("id", allPaidIds);
+        if (error) throw new ApiError(500, error.message);
+        updated = count ?? 0;
+
         const { error: commErr } = await supabase
           .from("commissions")
           .update({ status: "paid", paid_at: now })
-          .in("payout_id", ids);
+          .in("payout_id", allPaidIds);
         if (commErr) throw new ApiError(500, commErr.message);
 
-        // Notify each affiliate their payout was processed
-        const { data: paidPayouts } = await supabase
-          .from("payouts")
-          .select("affiliate_id, amount")
-          .in("id", ids)
-          .eq("status", "completed");
-
-        for (const p of paidPayouts ?? []) {
-          const { data: aff } = await supabase
-            .from("affiliates")
-            .select("email, name")
-            .eq("id", p.affiliate_id)
-            .single();
+        for (const p of payoutRows.filter((r) => allPaidIds.includes(r.id))) {
+          const aff = affMap.get(p.affiliate_id);
           if (aff) {
             sendPayoutProcessedEmail(aff.email, aff.name, Number(p.amount)).catch(() => {});
           }
         }
       }
+
+      return NextResponse.json({
+        updated,
+        paypal: !!paypalResult,
+        paypalBatchId: paypalResult?.batchId ?? null,
+        manualCount: manualIds.length,
+      });
     } else if (action === "revert") {
       const { count: c1, error: e1 } = await supabase
         .from("payouts")

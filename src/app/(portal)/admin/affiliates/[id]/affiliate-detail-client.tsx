@@ -234,10 +234,7 @@ function AdminPayoutMethods({ affiliateId }: { affiliateId: string }) {
   const [methods, setMethods] = useState<PayoutMethodRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
-  const [methodType, setMethodType] = useState<"paypal" | "bank_transfer">("paypal");
   const [paypalEmail, setPaypalEmail] = useState("");
-  const [accountHolder, setAccountHolder] = useState("");
-  const [accountNumber, setAccountNumber] = useState("");
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
@@ -249,28 +246,21 @@ function AdminPayoutMethods({ affiliateId }: { affiliateId: string }) {
 
   async function addMethod() {
     setAdding(true);
-    const details =
-      methodType === "paypal"
-        ? { email: paypalEmail }
-        : { account_holder: accountHolder, account_number: accountNumber };
-
     const res = await fetch(`/api/admin/affiliates/${affiliateId}/payout-methods`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ method_type: methodType, details }),
+      body: JSON.stringify({ details: { email: paypalEmail } }),
     });
     setAdding(false);
     if (!res.ok) {
-      toast.error("Failed to add method");
+      toast.error("Failed to add PayPal");
       return;
     }
     const created = await res.json();
     setMethods((prev) => [...prev, created]);
     setShowAdd(false);
     setPaypalEmail("");
-    setAccountHolder("");
-    setAccountNumber("");
-    toast.success("Payout method added");
+    toast.success("PayPal account linked");
   }
 
   async function deleteMethod(methodId: string) {
@@ -283,13 +273,15 @@ function AdminPayoutMethods({ affiliateId }: { affiliateId: string }) {
       return;
     }
     setMethods((prev) => prev.filter((m) => m.id !== methodId));
-    toast.success("Payout method removed");
+    toast.success("PayPal account removed");
   }
 
   return (
     <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-[15px] font-medium text-white">Payout Methods</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-[15px] font-medium text-white">PayPal Payouts</h2>
+        </div>
         {!showAdd && (
           <button
             onClick={() => setShowAdd(true)}
@@ -303,17 +295,16 @@ function AdminPayoutMethods({ affiliateId }: { affiliateId: string }) {
       {loading ? (
         <p className="text-[13px] text-zinc-500">Loading...</p>
       ) : methods.length === 0 && !showAdd ? (
-        <p className="text-[13px] text-zinc-500">No payout methods configured for this affiliate.</p>
+        <p className="text-[13px] text-zinc-500">No PayPal account linked for this affiliate.</p>
       ) : (
         <div className="space-y-2">
           {methods.map((m) => (
             <div key={m.id} className="flex items-center justify-between py-2 border-b border-zinc-800 last:border-0">
               <div className="flex items-center gap-2">
                 <Wallet className="w-4 h-4 text-zinc-500" />
-                <span className="text-[13px] text-white capitalize">{m.method_type.replace(/_/g, " ")}</span>
+                <span className="text-[13px] text-white">PayPal</span>
                 {m.details?.email && <span className="text-[12px] text-zinc-500">{m.details.email}</span>}
-                {m.details?.account_holder && <span className="text-[12px] text-zinc-500">{m.details.account_holder}</span>}
-                {m.is_primary && <span className="text-[10px] text-zinc-400 border border-zinc-700 rounded px-1.5 py-0.5">Primary</span>}
+                {m.is_primary && <span className="text-[10px] text-zinc-400 border border-zinc-700 rounded px-1.5 py-0.5">Active</span>}
               </div>
               <button onClick={() => deleteMethod(m.id)} className="text-zinc-600 hover:text-red-400 transition-colors">
                 <Trash2 className="w-3.5 h-3.5" />
@@ -325,51 +316,20 @@ function AdminPayoutMethods({ affiliateId }: { affiliateId: string }) {
 
       {showAdd && (
         <div className="space-y-3 border-t border-zinc-800 pt-4">
-          <div className="flex gap-2">
-            <button
-              onClick={() => setMethodType("paypal")}
-              className={`px-3 py-1.5 rounded-md text-[12px] font-medium border transition-colors ${methodType === "paypal" ? "border-zinc-600 bg-zinc-800 text-white" : "border-zinc-800 text-zinc-500"}`}
-            >
-              PayPal
-            </button>
-            <button
-              onClick={() => setMethodType("bank_transfer")}
-              className={`px-3 py-1.5 rounded-md text-[12px] font-medium border transition-colors ${methodType === "bank_transfer" ? "border-zinc-600 bg-zinc-800 text-white" : "border-zinc-800 text-zinc-500"}`}
-            >
-              Bank Transfer
-            </button>
-          </div>
-          {methodType === "paypal" ? (
-            <input
-              type="email"
-              placeholder="PayPal email"
-              value={paypalEmail}
-              onChange={(e) => setPaypalEmail(e.target.value)}
-              className="w-full rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-[13px] text-white outline-none focus:border-zinc-600"
-            />
-          ) : (
-            <div className="space-y-2">
-              <input
-                placeholder="Account holder"
-                value={accountHolder}
-                onChange={(e) => setAccountHolder(e.target.value)}
-                className="w-full rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-[13px] text-white outline-none focus:border-zinc-600"
-              />
-              <input
-                placeholder="Account number"
-                value={accountNumber}
-                onChange={(e) => setAccountNumber(e.target.value)}
-                className="w-full rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-[13px] text-white outline-none focus:border-zinc-600"
-              />
-            </div>
-          )}
+          <input
+            type="email"
+            placeholder="PayPal email address"
+            value={paypalEmail}
+            onChange={(e) => setPaypalEmail(e.target.value)}
+            className="w-full rounded-md border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-[13px] text-white outline-none focus:border-zinc-600"
+          />
           <div className="flex gap-2">
             <button
               onClick={addMethod}
-              disabled={adding}
+              disabled={adding || !paypalEmail}
               className="px-3 py-1.5 rounded-md bg-white text-black text-[12px] font-medium hover:bg-zinc-200 disabled:opacity-40"
             >
-              {adding ? "Adding..." : "Save"}
+              {adding ? "Linking..." : "Link PayPal"}
             </button>
             <button
               onClick={() => setShowAdd(false)}

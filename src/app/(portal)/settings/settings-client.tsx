@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,12 +15,10 @@ import {
   Percent,
   Layers,
   Clock,
-  Wallet,
   CheckCircle2,
   Lock,
   Trash2,
   Plus,
-  Star,
   Users,
 } from "lucide-react";
 import { ICON_STROKE_WIDTH } from "@/lib/constants";
@@ -49,11 +48,7 @@ export function SettingsClient({ affiliate, userEmail, payoutMethods: initialMet
   // Payout methods
   const [methods, setMethods] = useState<PayoutMethod[]>(initialMethods);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newMethodType, setNewMethodType] = useState<"paypal" | "bank_transfer">("paypal");
   const [newPaypalEmail, setNewPaypalEmail] = useState("");
-  const [newAccountHolder, setNewAccountHolder] = useState("");
-  const [newAccountNumber, setNewAccountNumber] = useState("");
-  const [newRoutingNumber, setNewRoutingNumber] = useState("");
   const [addingMethod, setAddingMethod] = useState(false);
 
   // Change password
@@ -96,23 +91,23 @@ export function SettingsClient({ affiliate, userEmail, payoutMethods: initialMet
   }
 
   async function addPayoutMethod() {
+    if (!newPaypalEmail) {
+      toast.error("Please enter your PayPal email");
+      return;
+    }
     setAddingMethod(true);
-    const details =
-      newMethodType === "paypal"
-        ? { email: newPaypalEmail }
-        : { account_holder: newAccountHolder, account_number: newAccountNumber, routing_number: newRoutingNumber };
 
     const res = await fetch("/api/affiliates/payout-methods", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ method_type: newMethodType, details }),
+      body: JSON.stringify({ details: { email: newPaypalEmail } }),
     });
 
     setAddingMethod(false);
 
     if (!res.ok) {
       const { error } = await res.json();
-      toast.error("Failed to add payout method", { description: error });
+      toast.error("Failed to add PayPal", { description: error });
       return;
     }
 
@@ -123,10 +118,7 @@ export function SettingsClient({ affiliate, userEmail, payoutMethods: initialMet
     ]);
     setShowAddForm(false);
     setNewPaypalEmail("");
-    setNewAccountHolder("");
-    setNewAccountNumber("");
-    setNewRoutingNumber("");
-    toast.success("Payout method added");
+    toast.success("PayPal account linked");
   }
 
   async function deleteMethod(id: string) {
@@ -142,23 +134,7 @@ export function SettingsClient({ affiliate, userEmail, payoutMethods: initialMet
       }
       return remaining;
     });
-    toast.success("Payout method removed");
-  }
-
-  async function setPrimary(id: string) {
-    const res = await fetch("/api/affiliates/payout-methods", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    if (!res.ok) {
-      toast.error("Failed to update primary method");
-      return;
-    }
-    setMethods((prev) =>
-      prev.map((m) => ({ ...m, isPrimary: m.id === id })),
-    );
-    toast.success("Primary payout method updated");
+    toast.success("PayPal account removed");
   }
 
   async function handleChangePassword(e: React.FormEvent) {
@@ -370,144 +346,102 @@ export function SettingsClient({ affiliate, userEmail, payoutMethods: initialMet
         </CardContent>
       </Card>
 
-      {/* Payout Method */}
+      {/* Payout — PayPal Only */}
       <Card>
         <CardContent className="p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-heading-3">Payout Method</h2>
-            {!showAddForm && (
+            <div className="flex items-center gap-3">
+              <h2 className="text-heading-3">Payout Method</h2>
+              <Image
+                src="/paypal-logo.png"
+                alt="PayPal"
+                width={70}
+                height={18}
+                className="opacity-70"
+              />
+            </div>
+            {!showAddForm && methods.length === 0 && (
               <Button size="xs" variant="ghost" onClick={() => setShowAddForm(true)}>
                 <Plus size={14} strokeWidth={ICON_STROKE_WIDTH} />
-                Add
+                Connect PayPal
               </Button>
             )}
           </div>
 
           {methods.length === 0 && !showAddForm && (
-            <p className="text-[13px] text-muted-foreground">
-              No payout method configured. Add one to receive payouts.
-            </p>
+            <div className="rounded-lg border border-zinc-800 bg-black p-4">
+              <p className="text-[13px] text-zinc-400">
+                Link your PayPal account to receive payouts. You&apos;ll be paid directly to your PayPal email.
+              </p>
+              <Button
+                size="sm"
+                className="mt-3"
+                onClick={() => setShowAddForm(true)}
+              >
+                <Plus size={14} strokeWidth={ICON_STROKE_WIDTH} />
+                Add PayPal Email
+              </Button>
+            </div>
           )}
 
           {methods.length > 0 && (
             <div className="space-y-3">
               {methods.map((m) => (
-                <div key={m.id} className="flex items-center justify-between gap-3 py-2 border-b border-border last:border-0">
+                <div key={m.id} className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-black px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <Wallet size={15} strokeWidth={ICON_STROKE_WIDTH} className="text-muted-foreground shrink-0" />
-                    <div>
-                      <span className="text-[13px] font-medium capitalize">
-                        {m.type.replace(/_/g, " ")}
-                      </span>
-                      {m.type === "paypal" && m.details?.email && (
-                        <span className="text-[12px] text-muted-foreground ml-2">{m.details.email}</span>
-                      )}
-                      {m.type === "bank_transfer" && m.details?.account_holder && (
-                        <span className="text-[12px] text-muted-foreground ml-2">{m.details.account_holder}</span>
-                      )}
-                    </div>
+                    <Image
+                      src="/paypal-logo.png"
+                      alt="PayPal"
+                      width={50}
+                      height={13}
+                      className="opacity-60"
+                    />
+                    <span className="text-[13px] text-zinc-300">{m.details?.email}</span>
                     {m.isPrimary && (
-                      <span className="flex items-center gap-1 text-[11px] text-zinc-400">
-                        <CheckCircle2 size={12} />
-                        Primary
+                      <span className="flex items-center gap-1 text-[11px] text-zinc-500">
+                        <CheckCircle2 size={11} />
+                        Active
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-1">
-                    {!m.isPrimary && (
-                      <Button size="xs" variant="ghost" onClick={() => setPrimary(m.id)} title="Set as primary">
-                        <Star size={12} strokeWidth={ICON_STROKE_WIDTH} />
-                      </Button>
-                    )}
-                    <Button size="xs" variant="ghost" onClick={() => deleteMethod(m.id)} title="Remove">
-                      <Trash2 size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-500 hover:text-red-400" />
-                    </Button>
-                  </div>
+                  <Button size="xs" variant="ghost" onClick={() => deleteMethod(m.id)} title="Remove">
+                    <Trash2 size={12} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-500 hover:text-red-400" />
+                  </Button>
                 </div>
               ))}
+
+              {!showAddForm && (
+                <button
+                  onClick={() => setShowAddForm(true)}
+                  className="text-[11px] text-zinc-600 hover:text-zinc-400 transition-colors"
+                >
+                  + Add another PayPal account
+                </button>
+              )}
             </div>
           )}
 
           {showAddForm && (
             <div className="space-y-4 border-t border-border pt-4">
               <div className="space-y-2">
-                <Label className="text-[12px]">Method type</Label>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setNewMethodType("paypal")}
-                    className={`px-3 py-1.5 rounded-md text-[12px] font-medium border transition-colors ${
-                      newMethodType === "paypal"
-                        ? "border-zinc-600 bg-zinc-800 text-zinc-100"
-                        : "border-zinc-800 text-zinc-500 hover:text-zinc-300"
-                    }`}
-                  >
-                    PayPal
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNewMethodType("bank_transfer")}
-                    className={`px-3 py-1.5 rounded-md text-[12px] font-medium border transition-colors ${
-                      newMethodType === "bank_transfer"
-                        ? "border-zinc-600 bg-zinc-800 text-zinc-100"
-                        : "border-zinc-800 text-zinc-500 hover:text-zinc-300"
-                    }`}
-                  >
-                    Bank Transfer
-                  </button>
-                </div>
+                <Label htmlFor="paypal-email" className="text-[12px]">PayPal email address</Label>
+                <p className="text-[11px] text-zinc-500">
+                  Enter the email associated with your PayPal account. Payouts will be sent here.
+                </p>
+                <Input
+                  id="paypal-email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={newPaypalEmail}
+                  onChange={(e) => setNewPaypalEmail(e.target.value)}
+                  className="h-9 max-w-sm"
+                  autoFocus
+                />
               </div>
 
-              {newMethodType === "paypal" ? (
-                <div className="space-y-2">
-                  <Label htmlFor="paypal-email" className="text-[12px]">PayPal email</Label>
-                  <Input
-                    id="paypal-email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={newPaypalEmail}
-                    onChange={(e) => setNewPaypalEmail(e.target.value)}
-                    className="h-9 max-w-sm"
-                  />
-                </div>
-              ) : (
-                <div className="space-y-3 max-w-sm">
-                  <div className="space-y-2">
-                    <Label htmlFor="acct-holder" className="text-[12px]">Account holder name</Label>
-                    <Input
-                      id="acct-holder"
-                      placeholder="Full legal name"
-                      value={newAccountHolder}
-                      onChange={(e) => setNewAccountHolder(e.target.value)}
-                      className="h-9"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="acct-number" className="text-[12px]">Account number</Label>
-                    <Input
-                      id="acct-number"
-                      placeholder="Account number"
-                      value={newAccountNumber}
-                      onChange={(e) => setNewAccountNumber(e.target.value)}
-                      className="h-9"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="routing" className="text-[12px]">Routing number (optional)</Label>
-                    <Input
-                      id="routing"
-                      placeholder="Routing number"
-                      value={newRoutingNumber}
-                      onChange={(e) => setNewRoutingNumber(e.target.value)}
-                      className="h-9"
-                    />
-                  </div>
-                </div>
-              )}
-
               <div className="flex gap-2">
-                <Button size="sm" onClick={addPayoutMethod} disabled={addingMethod}>
-                  {addingMethod ? "Adding..." : "Save method"}
+                <Button size="sm" onClick={addPayoutMethod} disabled={addingMethod || !newPaypalEmail}>
+                  {addingMethod ? "Linking..." : "Link PayPal"}
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => setShowAddForm(false)}>
                   Cancel

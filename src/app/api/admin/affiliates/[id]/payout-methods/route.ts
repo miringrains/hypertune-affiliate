@@ -2,8 +2,6 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireAdmin, handleApiError, ApiError } from "@/lib/auth";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 
-const VALID_TYPES = ["paypal", "bank_transfer"] as const;
-
 function getService() {
   return createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -41,10 +39,10 @@ export async function POST(
     await requireAdmin();
     const { id: affiliateId } = await params;
     const body = await request.json();
-    const { method_type, details } = body;
+    const { details } = body;
 
-    if (!method_type || !VALID_TYPES.includes(method_type)) {
-      throw new ApiError(400, "Invalid method_type.");
+    if (!details?.email) {
+      throw new ApiError(400, "PayPal email is required.");
     }
 
     const service = getService();
@@ -58,8 +56,8 @@ export async function POST(
       .from("payout_methods")
       .insert({
         affiliate_id: affiliateId,
-        method_type,
-        details: details ?? {},
+        method_type: "paypal",
+        details: { email: details.email },
         is_primary: (count ?? 0) === 0,
       })
       .select()

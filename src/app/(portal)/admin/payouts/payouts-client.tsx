@@ -185,10 +185,37 @@ export function PayoutsClient({ payouts }: { payouts: Payout[] }) {
           </span>
           <Button
             size="sm"
-            onClick={() => batchAction("pay", "Marked as paid")}
+            onClick={async () => {
+              if (selected.size === 0) return;
+              setLoading(true);
+              try {
+                const res = await fetch("/api/admin/payouts", {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ ids: Array.from(selected), action: "pay" }),
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                if (data.paypal) {
+                  toast.success(`Paid ${data.updated} payout${data.updated !== 1 ? "s" : ""} via PayPal`);
+                } else {
+                  toast.success(`Completed ${data.updated} payout${data.updated !== 1 ? "s" : ""}`);
+                }
+                if (data.manualCount > 0) {
+                  toast.info(`${data.manualCount} payout${data.manualCount !== 1 ? "s" : ""} without PayPal were marked as paid manually`);
+                }
+                setSelected(new Set());
+                router.refresh();
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : "Failed to process payouts");
+              } finally {
+                setLoading(false);
+              }
+            }}
             disabled={loading}
           >
-            Mark as Paid
+            {loading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
+            Pay via PayPal
           </Button>
           <Button
             size="sm"

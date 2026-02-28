@@ -2,24 +2,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireAffiliate, handleApiError, ApiError } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
-const VALID_TYPES = ["paypal", "bank_transfer"] as const;
-
 export async function POST(request: NextRequest) {
   try {
     const affiliate = await requireAffiliate();
     const body = await request.json();
-    const { method_type, details } = body;
+    const { details } = body;
 
-    if (!method_type || !VALID_TYPES.includes(method_type)) {
-      throw new ApiError(400, "Invalid method_type. Must be 'paypal' or 'bank_transfer'.");
-    }
-
-    if (method_type === "paypal" && !details?.email) {
-      throw new ApiError(400, "PayPal method requires an email address.");
-    }
-
-    if (method_type === "bank_transfer" && (!details?.account_holder || !details?.account_number)) {
-      throw new ApiError(400, "Bank transfer requires account_holder and account_number.");
+    if (!details?.email) {
+      throw new ApiError(400, "PayPal email is required.");
     }
 
     const supabase = await createClient();
@@ -35,8 +25,8 @@ export async function POST(request: NextRequest) {
       .from("payout_methods")
       .insert({
         affiliate_id: affiliate.id,
-        method_type,
-        details: details ?? {},
+        method_type: "paypal",
+        details: { email: details.email },
         is_primary: isFirst,
       })
       .select()

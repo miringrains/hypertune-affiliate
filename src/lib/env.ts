@@ -10,6 +10,9 @@ const runtimeOnly = [
   "MAILGUN_API_KEY",
   "MAILGUN_DOMAIN",
   "MAILGUN_FROM",
+  "PAYPAL_CLIENT_ID",
+  "PAYPAL_CLIENT_SECRET",
+  "PAYPAL_MODE",
 ] as const;
 
 if (process.env.NODE_ENV === "production") {

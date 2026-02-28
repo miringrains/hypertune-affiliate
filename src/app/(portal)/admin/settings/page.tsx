@@ -21,16 +21,29 @@ export default async function AdminSettingsPage() {
     .from("settings")
     .select("key, value, updated_at");
 
+  const allSettings = settings ?? [];
+
+  const paypalClientId = allSettings.find((s) => s.key === "paypal_client_id");
+  const paypalMode = allSettings.find((s) => s.key === "paypal_mode");
+
+  const displaySettings = allSettings.filter(
+    (s) => !s.key.startsWith("paypal_"),
+  );
+
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-display-sm">Global Settings</h1>
         <p className="text-[14px] text-muted-foreground mt-1">
-          Configure system-wide defaults
+          Configure system-wide defaults and integrations
         </p>
       </div>
 
-      <SettingsAdminClient settings={settings ?? []} />
+      <SettingsAdminClient
+        settings={displaySettings}
+        paypalConnected={!!paypalClientId?.value}
+        paypalMode={String(paypalMode?.value ?? "sandbox")}
+      />
     </div>
   );
 }

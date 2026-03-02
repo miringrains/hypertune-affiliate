@@ -89,13 +89,22 @@ export default async function AdminAffiliateDetailPage({
   const stats = await computeStatsForIds(service, [id]);
 
   let subStats = null;
+  let subAffiliatesList: { id: string; name: string; slug: string }[] = [];
+
   if (affiliate.tier_level === 1) {
     const { data: subAffiliates } = await service
       .from("affiliates")
-      .select("id")
-      .eq("parent_id", id);
+      .select("id, name, slug")
+      .eq("parent_id", id)
+      .order("name");
 
-    const subIds = (subAffiliates ?? []).map((s) => s.id);
+    subAffiliatesList = (subAffiliates ?? []).map((s) => ({
+      id: s.id,
+      name: s.name,
+      slug: s.slug,
+    }));
+
+    const subIds = subAffiliatesList.map((s) => s.id);
     if (subIds.length > 0) {
       subStats = await computeStatsForIds(service, subIds);
     }
@@ -106,6 +115,7 @@ export default async function AdminAffiliateDetailPage({
       affiliate={affiliate}
       stats={stats}
       subStats={subStats}
+      subAffiliates={subAffiliatesList}
     />
   );
 }

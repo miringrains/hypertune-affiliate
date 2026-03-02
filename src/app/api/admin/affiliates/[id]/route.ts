@@ -96,17 +96,29 @@ export async function GET(
 
     const directStats = await computeStats(supabase, [id], from);
 
-    // For Tier 1 affiliates, also compute sub-affiliate stats
     let subStats = null;
+    let subAffiliatesList: { id: string; name: string; slug: string }[] = [];
+
     if (affiliate.tier_level === 1) {
       const { data: subAffiliates } = await supabase
         .from("affiliates")
-        .select("id")
-        .eq("parent_id", id);
+        .select("id, name, slug")
+        .eq("parent_id", id)
+        .order("name");
 
-      const subIds = (subAffiliates ?? []).map((s) => s.id);
-      if (subIds.length > 0) {
-        subStats = await computeStats(supabase, subIds, from);
+      subAffiliatesList = (subAffiliates ?? []).map((s) => ({
+        id: s.id,
+        name: s.name,
+        slug: s.slug,
+      }));
+
+      const subId = searchParams.get("subId");
+      const targetIds = subId
+        ? subAffiliatesList.filter((s) => s.id === subId).map((s) => s.id)
+        : subAffiliatesList.map((s) => s.id);
+
+      if (targetIds.length > 0) {
+        subStats = await computeStats(supabase, targetIds, from);
       }
     }
 
@@ -114,6 +126,7 @@ export async function GET(
       affiliate,
       stats: directStats,
       subStats,
+      subAffiliates: subAffiliatesList,
     });
   } catch (err) {
     return handleApiError(err);

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, Loader2, Check, Wallet, Trash2, Plus } from "lucide-react";
+import { ArrowLeft, Loader2, Check, Wallet, Trash2, Plus, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { formatCurrency } from "@/lib/utils";
@@ -38,20 +38,30 @@ const DATE_RANGES = [
   { label: "All", days: "all" },
 ] as const;
 
+interface SubAffiliateOption {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 interface AffiliateDetailClientProps {
   affiliate: Tables<"affiliates">;
   stats: FunnelStats;
   subStats?: FunnelStats | null;
+  subAffiliates?: SubAffiliateOption[];
 }
 
 export function AffiliateDetailClient({
   affiliate: initialAffiliate,
   stats: initialStats,
   subStats: initialSubStats,
+  subAffiliates: initialSubAffiliates = [],
 }: AffiliateDetailClientProps) {
   const [affiliate, setAffiliate] = useState(initialAffiliate);
   const [stats, setStats] = useState(initialStats);
   const [subStats, setSubStats] = useState<FunnelStats | null>(initialSubStats ?? null);
+  const [subAffiliates] = useState<SubAffiliateOption[]>(initialSubAffiliates);
+  const [selectedSubId, setSelectedSubId] = useState("all");
   const [selectedRange, setSelectedRange] = useState("all");
   const [loadingStats, setLoadingStats] = useState(false);
 
@@ -68,10 +78,12 @@ export function AffiliateDetailClient({
   );
   const [saving, setSaving] = useState<string | null>(null);
 
-  const fetchStats = useCallback(async (days: string) => {
+  const fetchStats = useCallback(async (days: string, subId: string) => {
     setLoadingStats(true);
     try {
-      const res = await fetch(`/api/admin/affiliates/${affiliate.id}?days=${days}`);
+      const params = new URLSearchParams({ days });
+      if (subId !== "all") params.set("subId", subId);
+      const res = await fetch(`/api/admin/affiliates/${affiliate.id}?${params}`);
       if (res.ok) {
         const data = await res.json();
         setStats(data.stats);
@@ -84,7 +96,12 @@ export function AffiliateDetailClient({
 
   function handleRangeChange(days: string) {
     setSelectedRange(days);
-    fetchStats(days);
+    fetchStats(days, selectedSubId);
+  }
+
+  function handleSubIdChange(subId: string) {
+    setSelectedSubId(subId);
+    fetchStats(selectedRange, subId);
   }
 
   async function saveField(field: string, value: string | number) {
@@ -153,7 +170,27 @@ export function AffiliateDetailClient({
         {isTier1 && subStats ? (
           <div className="space-y-3">
             <FunnelRow label="Direct Performance" stats={stats} />
-            <FunnelRow label="Sub-affiliate Performance" stats={subStats} muted />
+            <FunnelRow
+              label="Sub-affiliate Performance"
+              stats={subStats}
+              muted
+              dropdown={
+                subAffiliates.length > 1 ? (
+                  <select
+                    value={selectedSubId}
+                    onChange={(e) => handleSubIdChange(e.target.value)}
+                    className="rounded-md border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[11px] text-zinc-300 outline-none focus:border-zinc-600 cursor-pointer"
+                  >
+                    <option value="all">All Sub-affiliates ({subAffiliates.length})</option>
+                    {subAffiliates.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.slug})
+                      </option>
+                    ))}
+                  </select>
+                ) : undefined
+              }
+            />
           </div>
         ) : (
           <FunnelRow label="Full Funnel" stats={stats} />
@@ -313,10 +350,12 @@ function FunnelRow({
   label,
   stats,
   muted,
+  dropdown,
 }: {
   label: string;
   stats: FunnelStats;
   muted?: boolean;
+  dropdown?: React.ReactNode;
 }) {
   const steps = [
     { label: "Clicks", value: stats.clicks },
@@ -329,9 +368,12 @@ function FunnelRow({
 
   return (
     <div className={`rounded-lg border border-zinc-700 bg-zinc-950 p-5 ${muted ? "opacity-75" : ""}`}>
-      <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider mb-4">
-        {label}
-      </p>
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">
+          {label}
+        </p>
+        {dropdown}
+      </div>
       <div className="grid grid-cols-6 gap-2">
         {steps.map((step, i) => {
           const prev = i > 0 ? steps[i - 1].value : null;

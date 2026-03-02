@@ -104,6 +104,11 @@ export default function AcceptInvitePage() {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/api/auth/callback?invite_code=${code}&name=${encodeURIComponent(name)}&slug=${encodeURIComponent(slug)}`,
+        data: {
+          invite_code: code,
+          display_name: name,
+          affiliate_slug: slug,
+        },
       },
     });
 

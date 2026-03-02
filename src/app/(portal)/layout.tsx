@@ -1,8 +1,86 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { AuroraBackdrop } from "@/components/shared/aurora";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { TopBar } from "@/components/layout/top-bar";
+
+async function tryRecoverAffiliate(user: {
+  id: string;
+  email?: string;
+  user_metadata?: Record<string, string>;
+}) {
+  const meta = user.user_metadata ?? {};
+  const inviteCode = meta.invite_code;
+  const displayName = meta.display_name;
+  const affiliateSlug = meta.affiliate_slug;
+
+  if (!inviteCode || !displayName || !affiliateSlug) return null;
+
+  const service = await createServiceClient();
+
+  const { data: existing } = await service
+    .from("affiliates")
+    .select("name, email, role, tier_level")
+    .eq("user_id", user.id)
+    .single();
+
+  if (existing) return existing;
+
+  const { data: inviteRows } = await service
+    .from("invite_links")
+    .select("*")
+    .eq("code", inviteCode);
+
+  const invite =
+    inviteRows?.find((i: any) => i.is_reusable) ??
+    inviteRows?.find((i: any) => !i.used_by_affiliate_id) ??
+    null;
+
+  if (!invite) return null;
+
+  const parentId = invite.parent_affiliate_id;
+  let tierLevel = 1;
+
+  if (parentId) {
+    const { data: parent } = await service
+      .from("affiliates")
+      .select("tier_level")
+      .eq("id", parentId)
+      .single();
+    if (parent) tierLevel = Math.min(parent.tier_level + 1, 3);
+  }
+
+  const commissionRate = tierLevel === 1 ? 70 : invite.commission_rate;
+
+  const { data: created, error } = await service
+    .from("affiliates")
+    .insert({
+      user_id: user.id,
+      name: displayName,
+      email: user.email!,
+      slug: affiliateSlug,
+      parent_id: parentId,
+      tier_level: tierLevel,
+      commission_rate: commissionRate,
+      status: "active",
+    })
+    .select("name, email, role, tier_level")
+    .single();
+
+  if (error) {
+    console.error("[layout recovery] Failed to create affiliate:", error.message);
+    return null;
+  }
+
+  if (created && !invite.is_reusable) {
+    await service
+      .from("invite_links")
+      .update({ used_by_affiliate_id: user.id })
+      .eq("id", invite.id);
+  }
+
+  return created;
+}
 
 export default async function PortalLayout({
   children,
@@ -18,11 +96,15 @@ export default async function PortalLayout({
     redirect("/login");
   }
 
-  const { data: affiliate } = await supabase
+  let { data: affiliate } = await supabase
     .from("affiliates")
     .select("name, email, role, tier_level")
     .eq("user_id", user.id)
     .single();
+
+  if (!affiliate) {
+    affiliate = await tryRecoverAffiliate(user);
+  }
 
   if (!affiliate) {
     redirect("/login?error=no_account");

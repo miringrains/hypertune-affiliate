@@ -12,9 +12,6 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
   const code = searchParams.get("code");
   const next = searchParams.get("next");
-  const inviteCode = searchParams.get("invite_code");
-  const name = searchParams.get("name");
-  const slug = searchParams.get("slug");
 
   if (!code) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`);
@@ -32,8 +29,8 @@ export async function GET(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
+          cookiesToSet.forEach(({ name: n, value, options }) => {
+            response.cookies.set(n, value, options);
           });
         },
       },
@@ -45,99 +42,116 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=auth_failed`);
   }
 
-  // If this is an invite acceptance, create the affiliate record
-  if (inviteCode && name && slug) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    if (user) {
-      const { createClient } = await import("@supabase/supabase-js");
-      const serviceClient = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      );
-
-      const { data: existingAffiliate } = await serviceClient
-        .from("affiliates")
-        .select("id")
-        .eq("user_id", user.id)
-        .single();
-
-      if (!existingAffiliate) {
-        const { data: inviteRows } = await serviceClient
-          .from("invite_links")
-          .select("*")
-          .eq("code", inviteCode);
-
-        const invite =
-          inviteRows?.find((i) => i.is_reusable) ??
-          inviteRows?.find((i) => !i.used_by_affiliate_id) ??
-          null;
-
-        if (invite) {
-          const parentId = invite.parent_affiliate_id;
-          let tierLevel = 1;
-
-          if (parentId) {
-            const { data: parent } = await serviceClient
-              .from("affiliates")
-              .select("tier_level")
-              .eq("id", parentId)
-              .single();
-
-            if (parent) {
-              tierLevel = Math.min(parent.tier_level + 1, 3);
-            }
-          }
-
-          const commissionRate = tierLevel === 1 ? 70 : invite.commission_rate;
-
-          const { data: newAffiliate, error: insertError } = await serviceClient
-            .from("affiliates")
-            .insert({
-              user_id: user.id,
-              name: decodeURIComponent(name),
-              email: user.email!,
-              slug: decodeURIComponent(slug),
-              parent_id: parentId,
-              tier_level: tierLevel,
-              commission_rate: commissionRate,
-              status: "active",
-            })
-            .select("id")
-            .single();
-
-          if (insertError) {
-            console.error("Failed to create affiliate:", insertError.message);
-          }
-
-          if (newAffiliate) {
-            const decodedName = decodeURIComponent(name);
-
-            // Welcome email to new affiliate (fire-and-forget)
-            sendWelcomeEmail(user.email!, decodedName).catch(() => {});
-
-            // Notify admins
-            const { data: admins } = await serviceClient
-              .from("affiliates")
-              .select("email")
-              .eq("role", "admin");
-            for (const admin of admins ?? []) {
-              sendNewAffiliateNotification(admin.email, decodedName, user.email!).catch(() => {});
-            }
-
-            if (!invite.is_reusable) {
-              await serviceClient
-                .from("invite_links")
-                .update({ used_by_affiliate_id: newAffiliate.id })
-                .eq("id", invite.id);
-            }
-          }
-        }
-      }
-    }
+  if (user) {
+    await tryCreateAffiliate(user, searchParams);
   }
 
   return response;
+}
+
+async function tryCreateAffiliate(
+  user: { id: string; email?: string; user_metadata?: Record<string, string> },
+  searchParams: URLSearchParams,
+) {
+  const meta = user.user_metadata ?? {};
+
+  const inviteCode =
+    searchParams.get("invite_code") || meta.invite_code || null;
+  const affiliateName = searchParams.get("name")
+    ? decodeURIComponent(searchParams.get("name")!)
+    : meta.display_name || null;
+  const affiliateSlug = searchParams.get("slug")
+    ? decodeURIComponent(searchParams.get("slug")!)
+    : meta.affiliate_slug || null;
+
+  if (!inviteCode || !affiliateName || !affiliateSlug) return;
+
+  const { createClient } = await import("@supabase/supabase-js");
+  const serviceClient = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
+
+  const { data: existingAffiliate } = await serviceClient
+    .from("affiliates")
+    .select("id")
+    .eq("user_id", user.id)
+    .single();
+
+  if (existingAffiliate) return;
+
+  const { data: inviteRows } = await serviceClient
+    .from("invite_links")
+    .select("*")
+    .eq("code", inviteCode);
+
+  const invite =
+    inviteRows?.find((i) => i.is_reusable) ??
+    inviteRows?.find((i) => !i.used_by_affiliate_id) ??
+    null;
+
+  if (!invite) {
+    console.error("[callback] Invite not found for code:", inviteCode);
+    return;
+  }
+
+  const parentId = invite.parent_affiliate_id;
+  let tierLevel = 1;
+
+  if (parentId) {
+    const { data: parent } = await serviceClient
+      .from("affiliates")
+      .select("tier_level")
+      .eq("id", parentId)
+      .single();
+
+    if (parent) {
+      tierLevel = Math.min(parent.tier_level + 1, 3);
+    }
+  }
+
+  const commissionRate = tierLevel === 1 ? 70 : invite.commission_rate;
+
+  const { data: newAffiliate, error: insertError } = await serviceClient
+    .from("affiliates")
+    .insert({
+      user_id: user.id,
+      name: affiliateName,
+      email: user.email!,
+      slug: affiliateSlug,
+      parent_id: parentId,
+      tier_level: tierLevel,
+      commission_rate: commissionRate,
+      status: "active",
+    })
+    .select("id")
+    .single();
+
+  if (insertError) {
+    console.error("[callback] Failed to create affiliate:", insertError.message);
+    return;
+  }
+
+  if (newAffiliate) {
+    sendWelcomeEmail(user.email!, affiliateName).catch(() => {});
+
+    const { data: admins } = await serviceClient
+      .from("affiliates")
+      .select("email")
+      .eq("role", "admin");
+    for (const admin of admins ?? []) {
+      sendNewAffiliateNotification(admin.email, affiliateName, user.email!).catch(() => {});
+    }
+
+    if (!invite.is_reusable) {
+      await serviceClient
+        .from("invite_links")
+        .update({ used_by_affiliate_id: newAffiliate.id })
+        .eq("id", invite.id);
+    }
+  }
 }

@@ -21,6 +21,7 @@ import {
   Search,
   ChevronDown,
   ChevronUp,
+  Clock,
 } from "lucide-react";
 import { ICON_STROKE_WIDTH } from "@/lib/constants";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -29,6 +30,7 @@ import { ConversionRing } from "@/components/shared/conversion-ring";
 interface FunnelData {
   clicks: number;
   leads: number;
+  trials: number;
   customers: number;
 }
 
@@ -102,8 +104,8 @@ export function PerformanceClient({
   const [search, setSearch] = useState("");
 
   const clickToLead = funnel.clicks > 0 ? ((funnel.leads / funnel.clicks) * 100).toFixed(1) : "0";
-  const leadToCustomer =
-    funnel.leads > 0 ? ((funnel.customers / funnel.leads) * 100).toFixed(1) : "0";
+  const leadToTrial = funnel.leads > 0 ? ((funnel.trials / funnel.leads) * 100).toFixed(1) : "0";
+  const trialToCustomer = funnel.trials > 0 ? ((funnel.customers / funnel.trials) * 100).toFixed(1) : "0";
   const overallConversion =
     funnel.clicks > 0 ? ((funnel.customers / funnel.clicks) * 100).toFixed(1) : "0";
 
@@ -136,10 +138,11 @@ export function PerformanceClient({
 
         <div className="flex flex-col sm:flex-row items-stretch gap-0">
           {[
-            { icon: MousePointerClick, label: "Clicks", value: funnel.clicks },
-            { icon: Users, label: "Leads", value: funnel.leads },
-            { icon: UserCheck, label: "Customers", value: funnel.customers },
-          ].map((stage, i) => (
+            { icon: MousePointerClick, label: "Clicks", value: funnel.clicks, pct: clickToLead },
+            { icon: Users, label: "Leads", value: funnel.leads, pct: leadToTrial },
+            { icon: Clock, label: "Trialing", value: funnel.trials, pct: trialToCustomer },
+            { icon: UserCheck, label: "Customers", value: funnel.customers, pct: null },
+          ].map((stage, i, arr) => (
             <div key={stage.label} className="flex items-stretch flex-1 min-w-0">
               <div className="flex-1 text-center p-4 sm:p-5 rounded-xl border border-zinc-700 bg-black">
                 <stage.icon size={22} strokeWidth={ICON_STROKE_WIDTH} className="mx-auto mb-2 text-zinc-400" />
@@ -149,17 +152,17 @@ export function PerformanceClient({
                 <p className="text-[12px] text-zinc-400 mt-1.5">{stage.label}</p>
               </div>
 
-              {i < 2 && (
+              {i < arr.length - 1 && (
                 <>
                   <div className="hidden sm:flex flex-col items-center justify-center px-3 shrink-0">
                     <ArrowRight size={16} className="text-zinc-400" />
                     <span className="text-[12px] font-bold text-emerald-400 mt-1">
-                      {i === 0 ? clickToLead : leadToCustomer}%
+                      {stage.pct}%
                     </span>
                   </div>
                   <div className="flex sm:hidden items-center justify-center py-1.5">
                     <span className="text-[11px] font-bold text-emerald-400">
-                      ↓ {i === 0 ? clickToLead : leadToCustomer}%
+                      ↓ {stage.pct}%
                     </span>
                   </div>
                 </>

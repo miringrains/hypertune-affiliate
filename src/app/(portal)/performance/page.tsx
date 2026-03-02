@@ -127,7 +127,7 @@ export default async function PerformancePage() {
 
   return (
     <PerformanceClient
-      funnel={{ clicks: clicks30d, leads: allLeads.length, customers: allCustomers.length }}
+      funnel={{ clicks: clicks30d, leads: allLeads.length, trials: trialingCount, customers: allCustomers.length }}
       customerStates={{
         active: activeCustomers.length,
         trialing: trialingCount,

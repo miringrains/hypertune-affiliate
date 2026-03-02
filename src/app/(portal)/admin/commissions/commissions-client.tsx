@@ -181,10 +181,10 @@ export function CommissionsClient({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-zinc-700">
+      <div className="overflow-x-auto rounded-lg border border-zinc-700 bg-zinc-950">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-zinc-700">
+            <tr className="border-b border-zinc-700 bg-zinc-900/50">
               {hasPendingInView && (
                 <th className="w-10 px-4 py-3">
                   <input

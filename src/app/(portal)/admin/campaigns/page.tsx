@@ -17,6 +17,7 @@ import {
   ExternalLink,
   MousePointerClick,
   UserPlus,
+  FlaskConical,
   ShoppingCart,
 } from "lucide-react";
 import { ICON_STROKE_WIDTH } from "@/lib/constants";
@@ -123,6 +124,7 @@ export default function AdminCampaignsPage() {
 
   const totalClicks = campaigns.reduce((s, c) => s + c.stats.clicks, 0);
   const totalLeads = campaigns.reduce((s, c) => s + c.stats.leads, 0);
+  const totalTrials = campaigns.reduce((s, c) => s + c.stats.trials, 0);
   const totalCustomers = campaigns.reduce((s, c) => s + c.stats.customers, 0);
 
   if (loading) {
@@ -154,10 +156,11 @@ export default function AdminCampaignsPage() {
 
       {/* Aggregate stats */}
       {campaigns.length > 0 && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           <StatCard icon={MousePointerClick} label="Total Clicks" value={totalClicks} />
-          <StatCard icon={UserPlus} label="Total Leads" value={totalLeads} />
-          <StatCard icon={ShoppingCart} label="Total Conversions" value={totalCustomers} />
+          <StatCard icon={UserPlus} label="Total Leads" value={totalLeads} pct={pctOf(totalLeads, totalClicks)} />
+          <StatCard icon={FlaskConical} label="Total Trials" value={totalTrials} pct={pctOf(totalTrials, totalLeads)} />
+          <StatCard icon={ShoppingCart} label="Total Conversions" value={totalCustomers} pct={pctOf(totalCustomers, totalTrials)} />
         </div>
       )}
 
@@ -240,10 +243,6 @@ export default function AdminCampaignsPage() {
         <div className="space-y-3">
           {campaigns.map((c) => {
             const isCopied = copiedId === c.id;
-            const convRate =
-              c.stats.clicks > 0
-                ? ((c.stats.leads / c.stats.clicks) * 100).toFixed(1)
-                : "0.0";
 
             return (
               <Card key={c.id}>
@@ -304,9 +303,9 @@ export default function AdminCampaignsPage() {
                   </div>
                   <div className="grid grid-cols-4 gap-3">
                     <MiniStat label="Clicks" value={c.stats.clicks} />
-                    <MiniStat label="Leads" value={c.stats.leads} />
-                    <MiniStat label="Customers" value={c.stats.customers} />
-                    <MiniStat label="Conv. Rate" value={`${convRate}%`} />
+                    <MiniStat label="Leads" value={c.stats.leads} pct={pctOf(c.stats.leads, c.stats.clicks)} />
+                    <MiniStat label="Trials" value={c.stats.trials} pct={pctOf(c.stats.trials, c.stats.leads)} />
+                    <MiniStat label="Conversions" value={c.stats.customers} pct={pctOf(c.stats.customers, c.stats.trials)} />
                   </div>
                 </CardContent>
               </Card>
@@ -318,14 +317,21 @@ export default function AdminCampaignsPage() {
   );
 }
 
+function pctOf(current: number, previous: number): string | null {
+  if (previous === 0) return null;
+  return ((current / previous) * 100).toFixed(1);
+}
+
 function StatCard({
   icon: Icon,
   label,
   value,
+  pct,
 }: {
   icon: React.ElementType;
   label: string;
   value: number;
+  pct?: string | null;
 }) {
   return (
     <Card>
@@ -337,6 +343,11 @@ function StatCard({
         <p className="text-[22px] font-semibold tabular-nums">
           {value.toLocaleString()}
         </p>
+        {pct !== undefined && (
+          <p className="text-[11px] text-muted-foreground mt-1 tabular-nums">
+            {pct !== null ? `${pct}% of prev step` : "—"}
+          </p>
+        )}
       </CardContent>
     </Card>
   );
@@ -345,9 +356,11 @@ function StatCard({
 function MiniStat({
   label,
   value,
+  pct,
 }: {
   label: string;
   value: number | string;
+  pct?: string | null;
 }) {
   return (
     <div className="rounded-lg border border-border bg-muted/30 px-3 py-2">
@@ -355,6 +368,11 @@ function MiniStat({
       <p className="text-[15px] font-semibold tabular-nums">
         {typeof value === "number" ? value.toLocaleString() : value}
       </p>
+      {pct !== undefined && (
+        <p className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">
+          {pct !== null ? `${pct}%` : "—"}
+        </p>
+      )}
     </div>
   );
 }

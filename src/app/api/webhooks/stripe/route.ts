@@ -165,12 +165,23 @@ async function handleCheckoutCompleted(
   supabase: ServiceClient,
   session: Stripe.Checkout.Session,
 ) {
-  // Try session metadata first, then fall back to Stripe customer metadata
+  // Try session metadata, then subscription metadata, then customer metadata
   let amId = session.metadata?.am_id;
 
   if (!amId) {
     const stripeCustomerId = getStringId(session.customer);
-    if (stripeCustomerId) {
+    const stripeSubscriptionId = getStringId(
+      (session as unknown as Record<string, unknown>).subscription as string | { id: string } | null,
+    );
+
+    if (stripeSubscriptionId) {
+      try {
+        const sub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+        amId = sub.metadata?.am_id ?? null;
+      } catch { /* ignore */ }
+    }
+
+    if (!amId && stripeCustomerId) {
       try {
         const cust = await stripe.customers.retrieve(stripeCustomerId);
         if (!cust.deleted && "metadata" in cust) {
@@ -322,14 +333,31 @@ async function handlePaymentSucceeded(supabase: ServiceClient, invoice: Stripe.I
     }
   }
 
+  const subscriptionId = getStringId(
+    (invoice as unknown as Record<string, unknown>).subscription as string | { id: string } | null,
+  );
+
+  if (!lead) {
+    // Try resolving am_id from subscription/customer/session metadata
+    const amId = await resolveAmIdFromStripe(stripeCustomerId, subscriptionId);
+    if (amId) {
+      const affiliate = await resolveAffiliateBySlug(supabase, amId);
+      if (affiliate) {
+        const customerEmail = invoice.customer_email;
+        if (customerEmail) {
+          const newLead = await findOrCreateLead(supabase, affiliate.id, customerEmail, stripeCustomerId);
+          if (newLead) {
+            lead = newLead;
+          }
+        }
+      }
+    }
+  }
+
   if (!lead) {
     await handleCampaignPayment(supabase, invoice, stripeCustomerId);
     return;
   }
-
-  const subscriptionId = getStringId(
-    (invoice as unknown as Record<string, unknown>).subscription as string | { id: string } | null,
-  );
 
   const lineItem = invoice.lines?.data?.[0];
   const priceId = (lineItem as unknown as Record<string, unknown>)?.price as
@@ -439,6 +467,9 @@ async function handleSubscriptionCreated(supabase: ServiceClient, sub: Stripe.Su
   const stripeCustomerId = getStringId(sub.customer);
   if (!stripeCustomerId) return;
 
+  // Check subscription metadata for am_id (dev team puts it here)
+  const amId = sub.metadata?.am_id;
+
   const { data: customer } = await supabase
     .from("customers")
     .select("id")
@@ -447,26 +478,49 @@ async function handleSubscriptionCreated(supabase: ServiceClient, sub: Stripe.Su
 
   if (!customer) {
     if (sub.status === "trialing") {
-      // Try campaign attribution via customer metadata am_id first
-      let handled = false;
-      try {
-        const cust = await stripe.customers.retrieve(stripeCustomerId);
-        if (!cust.deleted && "metadata" in cust && cust.metadata?.am_id) {
-          const campaign = await resolveCampaignBySlug(supabase, cust.metadata.am_id);
-          if (campaign) {
-            await recordCampaignEvent(supabase, campaign.id, "trial", cust.email ?? null, {
-              stripe_customer_id: stripeCustomerId,
-              subscription_id: sub.id,
-              trial_end: sub.trial_end,
-            });
-            handled = true;
+      // Path 1: am_id on subscription metadata
+      if (amId) {
+        const affiliate = await resolveAffiliateBySlug(supabase, amId);
+        if (affiliate) {
+          const email = await getStripeCustomerEmail(stripeCustomerId);
+          const lead = email ? await findOrCreateLead(supabase, affiliate.id, email, stripeCustomerId) : null;
+          if (lead) {
+            const { data: newCustomer } = await supabase
+              .from("customers")
+              .insert({
+                affiliate_id: affiliate.id,
+                lead_id: lead.id,
+                stripe_customer_id: stripeCustomerId,
+                stripe_subscription_id: sub.id,
+                current_state: "trialing" as CustomerState,
+                payment_count: 0,
+              })
+              .select("id")
+              .single();
+            if (newCustomer) {
+              await logEvent(supabase, newCustomer.id, "trial_started", {
+                subscription_id: sub.id,
+                trial_end: sub.trial_end,
+              });
+            }
+            return;
           }
         }
-      } catch { /* ignore */ }
 
-      if (!handled) {
-        await tryRecordCampaignTrial(supabase, stripeCustomerId, sub.id, sub.trial_end ?? null);
+        const campaign = await resolveCampaignBySlug(supabase, amId);
+        if (campaign) {
+          const email = await getStripeCustomerEmail(stripeCustomerId);
+          await recordCampaignEvent(supabase, campaign.id, "trial", email, {
+            stripe_customer_id: stripeCustomerId,
+            subscription_id: sub.id,
+            trial_end: sub.trial_end,
+          });
+          return;
+        }
       }
+
+      // Path 2: fallback to customer metadata or email matching
+      await tryRecordCampaignTrial(supabase, stripeCustomerId, sub.id, sub.trial_end ?? null);
     }
     return;
   }
@@ -667,7 +721,23 @@ async function tryRecordCampaignTrial(
   });
 }
 
-async function resolveAmIdFromStripeCustomer(stripeCustomerId: string): Promise<string | null> {
+async function getStripeCustomerEmail(stripeCustomerId: string): Promise<string | null> {
+  try {
+    const cust = await stripe.customers.retrieve(stripeCustomerId);
+    if (!cust.deleted && "email" in cust) return cust.email;
+  } catch { /* ignore */ }
+  return null;
+}
+
+async function resolveAmIdFromStripe(stripeCustomerId: string, subscriptionId?: string | null): Promise<string | null> {
+  // Check subscription metadata (dev team puts am_id here)
+  if (subscriptionId) {
+    try {
+      const sub = await stripe.subscriptions.retrieve(subscriptionId);
+      if (sub.metadata?.am_id) return sub.metadata.am_id;
+    } catch { /* ignore */ }
+  }
+
   // Check checkout session metadata
   try {
     const sessions = await stripe.checkout.sessions.list({
@@ -697,9 +767,12 @@ async function handleCampaignPayment(
   stripeCustomerId: string,
 ) {
   const email = invoice.customer_email;
+  const subscriptionId = getStringId(
+    (invoice as unknown as Record<string, unknown>).subscription as string | { id: string } | null,
+  );
 
-  // Path 1: resolve am_id from session or customer metadata
-  const amId = await resolveAmIdFromStripeCustomer(stripeCustomerId);
+  // Path 1: resolve am_id from subscription/session/customer metadata
+  const amId = await resolveAmIdFromStripe(stripeCustomerId, subscriptionId);
 
   if (amId) {
     const campaign = await resolveCampaignBySlug(supabase, amId);

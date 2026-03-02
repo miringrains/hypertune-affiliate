@@ -73,7 +73,13 @@ export async function PATCH(
     const { id } = await params;
 
     const body = await request.json();
-    const { status, commission_rate, commission_duration_months, sub_affiliate_rate } = body;
+    const {
+      status,
+      commission_rate,
+      commission_duration_months,
+      sub_affiliate_rate,
+      sub_affiliate_duration_months,
+    } = body;
 
     const updates: Record<string, unknown> = {};
 
@@ -117,6 +123,20 @@ export async function PATCH(
         throw new ApiError(400, "Sub-affiliate rate must be between 0 and 50");
       }
       updates.sub_affiliate_rate = sub_affiliate_rate;
+    }
+
+    if (sub_affiliate_duration_months !== undefined) {
+      if (
+        !Number.isInteger(sub_affiliate_duration_months) ||
+        sub_affiliate_duration_months < 1 ||
+        sub_affiliate_duration_months > 36
+      ) {
+        throw new ApiError(
+          400,
+          "Sub-affiliate override duration must be an integer between 1 and 36",
+        );
+      }
+      updates.sub_affiliate_duration_months = sub_affiliate_duration_months;
     }
 
     if (Object.keys(updates).length === 0) {

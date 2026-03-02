@@ -10,11 +10,18 @@ import { COMMISSION_RATES } from "@/lib/constants";
 import type { Tables } from "@/lib/supabase/types";
 
 interface Stats {
+  clicks: number;
   leads: number;
   customers: number;
+  trialing: number;
+  activeSubs: number;
+  activeMonthly: number;
+  activeAnnual: number;
+  canceled: number;
   totalEarned: number;
   pendingAmount: number;
   paidAmount: number;
+  mrr: number;
 }
 
 interface PayoutMethodRow {
@@ -42,6 +49,9 @@ export function AffiliateDetailClient({
   const [subAffiliateRate, setSubAffiliateRate] = useState(
     affiliate.sub_affiliate_rate,
   );
+  const [subAffiliateDuration, setSubAffiliateDuration] = useState(
+    affiliate.sub_affiliate_duration_months,
+  );
   const [saving, setSaving] = useState<string | null>(null);
 
   async function saveField(
@@ -66,11 +76,20 @@ export function AffiliateDetailClient({
     }
   }
 
-  const statCards = [
-    { label: "Total Leads", value: stats.leads.toLocaleString() },
-    { label: "Total Customers", value: stats.customers.toLocaleString() },
+  const funnelSteps = [
+    { label: "Clicks", value: stats.clicks },
+    { label: "Signups", value: stats.leads },
+    { label: "Trials", value: stats.trialing },
+    { label: "Customers", value: stats.customers },
+    { label: "Active Subs", value: stats.activeSubs },
+    { label: "Canceled", value: stats.canceled },
+  ];
+
+  const financialCards = [
     { label: "Total Earned", value: formatCurrency(stats.totalEarned) },
     { label: "Pending", value: formatCurrency(stats.pendingAmount) },
+    { label: "Paid Out", value: formatCurrency(stats.paidAmount) },
+    { label: "MRR", value: formatCurrency(stats.mrr) },
   ];
 
   return (
@@ -90,9 +109,36 @@ export function AffiliateDetailClient({
         <p className="text-[14px] text-muted-foreground mt-1">{affiliate.email}</p>
       </div>
 
-      {/* Stats */}
+      {/* Funnel Stats */}
+      <div className="rounded-lg border border-zinc-700 bg-zinc-950 p-5">
+        <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider mb-4">
+          Full Funnel
+        </p>
+        <div className="flex items-center gap-0 overflow-x-auto">
+          {funnelSteps.map((step, i) => (
+            <div key={step.label} className="flex items-center">
+              <div className="text-center min-w-[90px]">
+                <p className="text-[22px] font-semibold text-white">
+                  {step.value.toLocaleString()}
+                </p>
+                <p className="text-[11px] text-zinc-400 mt-0.5">{step.label}</p>
+              </div>
+              {i < funnelSteps.length - 1 && (
+                <div className="text-zinc-600 mx-2 text-[16px] select-none">→</div>
+              )}
+            </div>
+          ))}
+        </div>
+        {(stats.activeMonthly > 0 || stats.activeAnnual > 0) && (
+          <p className="text-[11px] text-zinc-500 mt-3">
+            {stats.activeMonthly} monthly · {stats.activeAnnual} annual
+          </p>
+        )}
+      </div>
+
+      {/* Financial Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {statCards.map((card) => (
+        {financialCards.map((card) => (
           <div
             key={card.label}
             className="rounded-lg border border-zinc-700 bg-zinc-950 p-5"
@@ -200,26 +246,55 @@ export function AffiliateDetailClient({
 
           {/* Sub-affiliate Rate (Tier 1 only) */}
           {affiliate.tier_level === 1 && (
-            <EditField
-              label="Sub-affiliate Rate (%)"
-              saving={saving === "sub_affiliate_rate"}
-            >
-              <input
-                type="number"
-                min={0}
-                max={50}
-                value={subAffiliateRate}
-                onChange={(e) => setSubAffiliateRate(Number(e.target.value))}
-                className="flex-1 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-[13px] text-white outline-none focus:border-zinc-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              />
-              <SaveButton
-                disabled={subAffiliateRate === affiliate.sub_affiliate_rate}
-                loading={saving === "sub_affiliate_rate"}
-                onClick={() =>
-                  saveField("sub_affiliate_rate", subAffiliateRate)
-                }
-              />
-            </EditField>
+            <>
+              <EditField
+                label="Sub-affiliate Override Rate (%)"
+                saving={saving === "sub_affiliate_rate"}
+              >
+                <input
+                  type="number"
+                  min={0}
+                  max={50}
+                  value={subAffiliateRate}
+                  onChange={(e) => setSubAffiliateRate(Number(e.target.value))}
+                  className="flex-1 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-[13px] text-white outline-none focus:border-zinc-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <SaveButton
+                  disabled={subAffiliateRate === affiliate.sub_affiliate_rate}
+                  loading={saving === "sub_affiliate_rate"}
+                  onClick={() =>
+                    saveField("sub_affiliate_rate", subAffiliateRate)
+                  }
+                />
+              </EditField>
+
+              <EditField
+                label="Sub-affiliate Override Duration (months)"
+                saving={saving === "sub_affiliate_duration_months"}
+              >
+                <input
+                  type="number"
+                  min={1}
+                  max={36}
+                  value={subAffiliateDuration}
+                  onChange={(e) => setSubAffiliateDuration(Number(e.target.value))}
+                  className="flex-1 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-[13px] text-white outline-none focus:border-zinc-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <SaveButton
+                  disabled={
+                    subAffiliateDuration ===
+                    affiliate.sub_affiliate_duration_months
+                  }
+                  loading={saving === "sub_affiliate_duration_months"}
+                  onClick={() =>
+                    saveField(
+                      "sub_affiliate_duration_months",
+                      subAffiliateDuration,
+                    )
+                  }
+                />
+              </EditField>
+            </>
           )}
         </div>
       </div>

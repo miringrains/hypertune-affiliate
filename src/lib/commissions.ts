@@ -50,13 +50,13 @@ export async function calculateAndInsertCommissions(
   while (currentParentId && tierDepth < 3) {
     const { data: parent } = await supabase
       .from("affiliates")
-      .select("id, sub_affiliate_rate, parent_id, commission_duration_months")
+      .select("id, sub_affiliate_rate, parent_id, sub_affiliate_duration_months")
       .eq("id", currentParentId)
       .single();
 
     if (!parent) break;
 
-    const parentMaxPayments = planType === "annual" ? 1 : parent.commission_duration_months;
+    const parentMaxPayments = planType === "annual" ? 1 : parent.sub_affiliate_duration_months;
     if (paymentNumber <= parentMaxPayments) {
       const tierAmount = Math.round(paymentAmount * (parent.sub_affiliate_rate / 100) * 100) / 100;
       const tierType: CommissionTierType = tierDepth === 1 ? "tier2" : "tier3";

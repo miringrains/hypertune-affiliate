@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { formatCurrency } from "@/lib/utils";
 
 export default async function AdminAffiliatesPage() {
   const supabase = await createClient();
@@ -19,17 +20,31 @@ export default async function AdminAffiliatesPage() {
   if (!affiliate || affiliate.role !== "admin") redirect("/dashboard");
 
   const service = await createServiceClient();
-  const { data: affiliates } = await service
-    .from("affiliates")
-    .select("*")
-    .order("created_at", { ascending: false });
+  const [{ data: affiliates }, { data: allCommissions }] = await Promise.all([
+    service.from("affiliates").select("*"),
+    service.from("commissions").select("affiliate_id, amount"),
+  ]);
+
+  const revenueByAffiliate = new Map<string, number>();
+  for (const c of allCommissions ?? []) {
+    revenueByAffiliate.set(
+      c.affiliate_id,
+      (revenueByAffiliate.get(c.affiliate_id) ?? 0) + c.amount,
+    );
+  }
+
+  const sorted = (affiliates ?? []).sort((a, b) => {
+    const revA = revenueByAffiliate.get(a.id) ?? 0;
+    const revB = revenueByAffiliate.get(b.id) ?? 0;
+    return revB - revA;
+  });
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-display-sm">Affiliates</h1>
         <p className="text-[14px] text-muted-foreground mt-1">
-          Manage all affiliates in the system
+          Manage all affiliates — sorted by top performers
         </p>
       </div>
 
@@ -47,11 +62,14 @@ export default async function AdminAffiliatesPage() {
                 <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                   Slug
                 </th>
-                <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                  Tier Level
+                <th className="px-5 py-3 text-right text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                  Revenue
                 </th>
                 <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                  Commission Rate %
+                  Tier
+                </th>
+                <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                  Rate
                 </th>
                 <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                   Status
@@ -59,13 +77,10 @@ export default async function AdminAffiliatesPage() {
                 <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                   Role
                 </th>
-                <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                  Created
-                </th>
               </tr>
             </thead>
             <tbody>
-              {affiliates?.map((a) => (
+              {sorted.map((a) => (
                 <tr key={a.id} className="border-b border-border">
                   <td className="px-5 py-3 text-[13px]">
                     <Link
@@ -79,6 +94,9 @@ export default async function AdminAffiliatesPage() {
                   <td className="px-5 py-3 text-[12px] text-muted-foreground font-mono">
                     {a.slug}
                   </td>
+                  <td className="px-5 py-3 text-[13px] text-right font-medium">
+                    {formatCurrency(revenueByAffiliate.get(a.id) ?? 0)}
+                  </td>
                   <td className="px-5 py-3 text-[13px]">{a.tier_level}</td>
                   <td className="px-5 py-3 text-[13px]">
                     {a.commission_rate}%
@@ -89,14 +107,11 @@ export default async function AdminAffiliatesPage() {
                   <td className="px-5 py-3 text-[13px] capitalize">
                     {a.role}
                   </td>
-                  <td className="px-5 py-3 text-[12px] text-muted-foreground">
-                    {new Date(a.created_at).toLocaleDateString()}
-                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
-          {(!affiliates || affiliates.length === 0) && (
+          {sorted.length === 0 && (
             <div className="py-12 text-center">
               <p className="text-[14px] text-muted-foreground">
                 No affiliates found.

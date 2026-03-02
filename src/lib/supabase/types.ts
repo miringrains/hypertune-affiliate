@@ -24,6 +24,7 @@ export type Database = {
           role: Database["public"]["Enums"]["affiliate_role"]
           slug: string
           status: Database["public"]["Enums"]["affiliate_status"]
+          sub_affiliate_duration_months: number
           sub_affiliate_rate: number
           tier_level: number
           updated_at: string
@@ -40,6 +41,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["affiliate_role"]
           slug: string
           status?: Database["public"]["Enums"]["affiliate_status"]
+          sub_affiliate_duration_months?: number
           sub_affiliate_rate?: number
           tier_level?: number
           updated_at?: string
@@ -56,6 +58,7 @@ export type Database = {
           role?: Database["public"]["Enums"]["affiliate_role"]
           slug?: string
           status?: Database["public"]["Enums"]["affiliate_status"]
+          sub_affiliate_duration_months?: number
           sub_affiliate_rate?: number
           tier_level?: number
           updated_at?: string

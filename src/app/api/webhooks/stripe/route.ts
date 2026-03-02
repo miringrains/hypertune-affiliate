@@ -320,6 +320,18 @@ async function recordCampaignEvent(
   stripeEventId: string | null,
   metadata: Record<string, unknown> = {},
 ) {
+  if (email && (eventType === "customer" || eventType === "trial")) {
+    const { data: existing } = await (supabase as any)
+      .from("campaign_events")
+      .select("id")
+      .eq("campaign_id", campaignId)
+      .eq("event_type", eventType)
+      .eq("email", email)
+      .limit(1) as { data: { id: string }[] | null; error: any };
+
+    if (existing && existing.length > 0) return;
+  }
+
   const { error } = await (supabase as any).from("campaign_events").insert({
     campaign_id: campaignId,
     event_type: eventType,

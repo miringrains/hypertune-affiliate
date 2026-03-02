@@ -160,7 +160,7 @@ export default function AdminCampaignsPage() {
           <StatCard icon={MousePointerClick} label="Total Clicks" value={totalClicks} />
           <StatCard icon={UserPlus} label="Total Leads" value={totalLeads} pct={pctOf(totalLeads, totalClicks)} />
           <StatCard icon={FlaskConical} label="Total Trials" value={totalTrials} pct={pctOf(totalTrials, totalLeads)} />
-          <StatCard icon={ShoppingCart} label="Total Conversions" value={totalCustomers} pct={pctOf(totalCustomers, totalTrials)} />
+          <StatCard icon={ShoppingCart} label="Total Conversions" value={totalCustomers} pct={pctOf(totalCustomers, totalLeads)} />
         </div>
       )}
 
@@ -305,7 +305,7 @@ export default function AdminCampaignsPage() {
                     <MiniStat label="Clicks" value={c.stats.clicks} />
                     <MiniStat label="Leads" value={c.stats.leads} pct={pctOf(c.stats.leads, c.stats.clicks)} />
                     <MiniStat label="Trials" value={c.stats.trials} pct={pctOf(c.stats.trials, c.stats.leads)} />
-                    <MiniStat label="Conversions" value={c.stats.customers} pct={pctOf(c.stats.customers, c.stats.trials)} />
+                    <MiniStat label="Conversions" value={c.stats.customers} pct={pctOf(c.stats.customers, c.stats.leads)} />
                   </div>
                 </CardContent>
               </Card>
@@ -345,7 +345,7 @@ function StatCard({
         </p>
         {pct !== undefined && (
           <p className="text-[11px] text-muted-foreground mt-1 tabular-nums">
-            {pct !== null ? `${pct}% of prev step` : "—"}
+            {pct !== null ? `${pct}% conv` : "—"}
           </p>
         )}
       </CardContent>

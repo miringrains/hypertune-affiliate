@@ -169,7 +169,7 @@ export default function AcceptInvitePage() {
         <h2 className="text-heading-2">Join as an Affiliate</h2>
         <p className="text-body-sm text-muted-foreground">
           You&apos;ve been invited to the Hypertune affiliate program at{" "}
-          <strong>70%</strong> commission.
+          <strong>{invite.commission_rate}%</strong> commission.
         </p>
       </div>
 

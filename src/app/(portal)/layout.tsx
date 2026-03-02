@@ -64,7 +64,7 @@ async function tryRecoverAffiliate(user: {
       commission_rate: commissionRate,
       status: "active",
     })
-    .select("name, email, role, tier_level")
+    .select("id, name, email, role, tier_level")
     .single();
 
   if (error) {
@@ -75,7 +75,7 @@ async function tryRecoverAffiliate(user: {
   if (created && !invite.is_reusable) {
     await service
       .from("invite_links")
-      .update({ used_by_affiliate_id: user.id })
+      .update({ used_by_affiliate_id: created.id })
       .eq("id", invite.id);
   }
 

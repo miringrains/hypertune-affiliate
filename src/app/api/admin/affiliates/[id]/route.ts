@@ -3,13 +3,77 @@ import { createServiceClient } from "@/lib/supabase/server";
 import { requireAdmin, handleApiError, ApiError } from "@/lib/auth";
 import { COMMISSION_RATES } from "@/lib/constants";
 
+async function computeStats(
+  supabase: ReturnType<typeof createServiceClient> extends Promise<infer T> ? T : never,
+  affiliateIds: string[],
+  from?: string,
+) {
+  let clicksQuery = supabase
+    .from("clicks")
+    .select("id", { count: "exact", head: true })
+    .in("affiliate_id", affiliateIds);
+  let leadsQuery = supabase
+    .from("leads")
+    .select("id", { count: "exact", head: true })
+    .in("affiliate_id", affiliateIds);
+  let customersQuery = supabase
+    .from("customers")
+    .select("id, current_state, plan_type, created_at")
+    .in("affiliate_id", affiliateIds);
+  let commissionsQuery = supabase
+    .from("commissions")
+    .select("amount, status, created_at")
+    .in("affiliate_id", affiliateIds);
+
+  if (from) {
+    clicksQuery = clicksQuery.gte("clicked_at", from);
+    leadsQuery = leadsQuery.gte("created_at", from);
+    customersQuery = customersQuery.gte("created_at", from);
+    commissionsQuery = commissionsQuery.gte("created_at", from);
+  }
+
+  const [clicksResult, leadsResult, customersResult, commissionsResult] =
+    await Promise.all([clicksQuery, leadsQuery, customersQuery, commissionsQuery]);
+
+  const customers = customersResult.data ?? [];
+  const commissions = commissionsResult.data ?? [];
+  const totalEarned = commissions.reduce((sum, c) => sum + c.amount, 0);
+  const pendingAmount = commissions
+    .filter((c) => c.status === "pending" || c.status === "approved")
+    .reduce((sum, c) => sum + c.amount, 0);
+  const paidAmount = commissions
+    .filter((c) => c.status === "paid")
+    .reduce((sum, c) => sum + c.amount, 0);
+
+  const trialing = customers.filter((c) => c.current_state === "trialing").length;
+  const activeMonthly = customers.filter((c) => c.current_state === "active_monthly").length;
+  const activeAnnual = customers.filter((c) => c.current_state === "active_annual").length;
+  const canceled = customers.filter((c) => c.current_state === "canceled").length;
+
+  return {
+    clicks: clicksResult.count ?? 0,
+    leads: leadsResult.count ?? 0,
+    customers: customers.length,
+    trialing,
+    activeSubs: activeMonthly + activeAnnual,
+    activeMonthly,
+    activeAnnual,
+    canceled,
+    totalEarned,
+    pendingAmount,
+    paidAmount,
+  };
+}
+
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await requireAdmin();
     const { id } = await params;
+    const { searchParams } = request.nextUrl;
+    const days = searchParams.get("days");
 
     const supabase = await createServiceClient();
 
@@ -23,41 +87,33 @@ export async function GET(
       throw new ApiError(404, "Affiliate not found");
     }
 
-    const [leadsResult, customersResult, commissionsResult] = await Promise.all(
-      [
-        supabase
-          .from("leads")
-          .select("id", { count: "exact", head: true })
-          .eq("affiliate_id", id),
-        supabase
-          .from("customers")
-          .select("id", { count: "exact", head: true })
-          .eq("affiliate_id", id),
-        supabase
-          .from("commissions")
-          .select("amount, status")
-          .eq("affiliate_id", id),
-      ],
-    );
+    let from: string | undefined;
+    if (days && days !== "all") {
+      const d = new Date();
+      d.setDate(d.getDate() - Number(days));
+      from = d.toISOString();
+    }
 
-    const commissions = commissionsResult.data ?? [];
-    const totalEarned = commissions.reduce((sum, c) => sum + c.amount, 0);
-    const pendingAmount = commissions
-      .filter((c) => c.status === "pending" || c.status === "approved")
-      .reduce((sum, c) => sum + c.amount, 0);
-    const paidAmount = commissions
-      .filter((c) => c.status === "paid")
-      .reduce((sum, c) => sum + c.amount, 0);
+    const directStats = await computeStats(supabase, [id], from);
+
+    // For Tier 1 affiliates, also compute sub-affiliate stats
+    let subStats = null;
+    if (affiliate.tier_level === 1) {
+      const { data: subAffiliates } = await supabase
+        .from("affiliates")
+        .select("id")
+        .eq("parent_id", id);
+
+      const subIds = (subAffiliates ?? []).map((s) => s.id);
+      if (subIds.length > 0) {
+        subStats = await computeStats(supabase, subIds, from);
+      }
+    }
 
     return NextResponse.json({
       affiliate,
-      stats: {
-        leads: leadsResult.count ?? 0,
-        customers: customersResult.count ?? 0,
-        totalEarned,
-        pendingAmount,
-        paidAmount,
-      },
+      stats: directStats,
+      subStats,
     });
   } catch (err) {
     return handleApiError(err);

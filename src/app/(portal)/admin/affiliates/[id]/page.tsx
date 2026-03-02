@@ -2,6 +2,60 @@ import { redirect, notFound } from "next/navigation";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { AffiliateDetailClient } from "./affiliate-detail-client";
 
+async function computeStatsForIds(
+  service: Awaited<ReturnType<typeof createServiceClient>>,
+  ids: string[],
+) {
+  const [clicksResult, leadsResult, customersResult, commissionsResult] =
+    await Promise.all([
+      service
+        .from("clicks")
+        .select("id", { count: "exact", head: true })
+        .in("affiliate_id", ids),
+      service
+        .from("leads")
+        .select("id", { count: "exact", head: true })
+        .in("affiliate_id", ids),
+      service
+        .from("customers")
+        .select("id, current_state, plan_type")
+        .in("affiliate_id", ids),
+      service
+        .from("commissions")
+        .select("amount, status")
+        .in("affiliate_id", ids),
+    ]);
+
+  const customers = customersResult.data ?? [];
+  const commissions = commissionsResult.data ?? [];
+  const totalEarned = commissions.reduce((sum, c) => sum + c.amount, 0);
+  const pendingAmount = commissions
+    .filter((c) => c.status === "pending" || c.status === "approved")
+    .reduce((sum, c) => sum + c.amount, 0);
+  const paidAmount = commissions
+    .filter((c) => c.status === "paid")
+    .reduce((sum, c) => sum + c.amount, 0);
+
+  const trialing = customers.filter((c) => c.current_state === "trialing").length;
+  const activeMonthly = customers.filter((c) => c.current_state === "active_monthly").length;
+  const activeAnnual = customers.filter((c) => c.current_state === "active_annual").length;
+  const canceled = customers.filter((c) => c.current_state === "canceled").length;
+
+  return {
+    clicks: clicksResult.count ?? 0,
+    leads: leadsResult.count ?? 0,
+    customers: customers.length,
+    trialing,
+    activeSubs: activeMonthly + activeAnnual,
+    activeMonthly,
+    activeAnnual,
+    canceled,
+    totalEarned,
+    pendingAmount,
+    paidAmount,
+  };
+}
+
 export default async function AdminAffiliateDetailPage({
   params,
 }: {
@@ -32,67 +86,26 @@ export default async function AdminAffiliateDetailPage({
 
   if (!affiliate) notFound();
 
-  const [
-    clicksResult,
-    leadsResult,
-    customersResult,
-    commissionsResult,
-  ] = await Promise.all([
-    service
-      .from("clicks")
-      .select("id", { count: "exact", head: true })
-      .eq("affiliate_id", id),
-    service
-      .from("leads")
-      .select("id", { count: "exact", head: true })
-      .eq("affiliate_id", id),
-    service
-      .from("customers")
-      .select("id, current_state, plan_type")
-      .eq("affiliate_id", id),
-    service
-      .from("commissions")
-      .select("amount, status")
-      .eq("affiliate_id", id),
-  ]);
+  const stats = await computeStatsForIds(service, [id]);
 
-  const customers = customersResult.data ?? [];
-  const commissions = commissionsResult.data ?? [];
-  const totalEarned = commissions.reduce((sum, c) => sum + c.amount, 0);
-  const pendingAmount = commissions
-    .filter((c) => c.status === "pending" || c.status === "approved")
-    .reduce((sum, c) => sum + c.amount, 0);
-  const paidAmount = commissions
-    .filter((c) => c.status === "paid")
-    .reduce((sum, c) => sum + c.amount, 0);
+  let subStats = null;
+  if (affiliate.tier_level === 1) {
+    const { data: subAffiliates } = await service
+      .from("affiliates")
+      .select("id")
+      .eq("parent_id", id);
 
-  const trialing = customers.filter((c) => c.current_state === "trialing").length;
-  const activeMonthly = customers.filter((c) => c.current_state === "active_monthly").length;
-  const activeAnnual = customers.filter((c) => c.current_state === "active_annual").length;
-  const activeSubs = activeMonthly + activeAnnual;
-  const canceled = customers.filter((c) => c.current_state === "canceled").length;
-
-  const monthlyMrr = activeMonthly * (affiliate.commission_rate / 100);
-  const annualMrr = activeAnnual * (affiliate.commission_rate / 100);
-  const mrr = monthlyMrr + annualMrr;
+    const subIds = (subAffiliates ?? []).map((s) => s.id);
+    if (subIds.length > 0) {
+      subStats = await computeStatsForIds(service, subIds);
+    }
+  }
 
   return (
     <AffiliateDetailClient
       affiliate={affiliate}
-      stats={{
-        clicks: clicksResult.count ?? 0,
-        leads: leadsResult.count ?? 0,
-        customers: customers.length,
-        trialing,
-        activeSubs,
-        activeMonthly,
-        activeAnnual,
-        canceled,
-        totalEarned,
-        pendingAmount,
-        paidAmount,
-        mrr,
-      }}
+      stats={stats}
+      subStats={subStats}
     />
   );
 }

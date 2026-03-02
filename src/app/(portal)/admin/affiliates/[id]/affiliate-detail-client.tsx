@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Check, Wallet, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -9,7 +9,7 @@ import { formatCurrency } from "@/lib/utils";
 import { COMMISSION_RATES } from "@/lib/constants";
 import type { Tables } from "@/lib/supabase/types";
 
-interface Stats {
+interface FunnelStats {
   clicks: number;
   leads: number;
   customers: number;
@@ -21,7 +21,6 @@ interface Stats {
   totalEarned: number;
   pendingAmount: number;
   paidAmount: number;
-  mrr: number;
 }
 
 interface PayoutMethodRow {
@@ -31,16 +30,31 @@ interface PayoutMethodRow {
   is_primary: boolean;
 }
 
+const DATE_RANGES = [
+  { label: "24h", days: "1" },
+  { label: "7d", days: "7" },
+  { label: "30d", days: "30" },
+  { label: "90d", days: "90" },
+  { label: "All", days: "all" },
+] as const;
+
 interface AffiliateDetailClientProps {
   affiliate: Tables<"affiliates">;
-  stats: Stats;
+  stats: FunnelStats;
+  subStats?: FunnelStats | null;
 }
 
 export function AffiliateDetailClient({
   affiliate: initialAffiliate,
-  stats,
+  stats: initialStats,
+  subStats: initialSubStats,
 }: AffiliateDetailClientProps) {
   const [affiliate, setAffiliate] = useState(initialAffiliate);
+  const [stats, setStats] = useState(initialStats);
+  const [subStats, setSubStats] = useState<FunnelStats | null>(initialSubStats ?? null);
+  const [selectedRange, setSelectedRange] = useState("all");
+  const [loadingStats, setLoadingStats] = useState(false);
+
   const [status, setStatus] = useState(affiliate.status);
   const [commissionRate, setCommissionRate] = useState(affiliate.commission_rate);
   const [durationMonths, setDurationMonths] = useState(
@@ -54,10 +68,26 @@ export function AffiliateDetailClient({
   );
   const [saving, setSaving] = useState<string | null>(null);
 
-  async function saveField(
-    field: string,
-    value: string | number,
-  ) {
+  const fetchStats = useCallback(async (days: string) => {
+    setLoadingStats(true);
+    try {
+      const res = await fetch(`/api/admin/affiliates/${affiliate.id}?days=${days}`);
+      if (res.ok) {
+        const data = await res.json();
+        setStats(data.stats);
+        setSubStats(data.subStats ?? null);
+      }
+    } finally {
+      setLoadingStats(false);
+    }
+  }, [affiliate.id]);
+
+  function handleRangeChange(days: string) {
+    setSelectedRange(days);
+    fetchStats(days);
+  }
+
+  async function saveField(field: string, value: string | number) {
     setSaving(field);
     try {
       const res = await fetch(`/api/admin/affiliates/${affiliate.id}`, {
@@ -76,21 +106,7 @@ export function AffiliateDetailClient({
     }
   }
 
-  const funnelSteps = [
-    { label: "Clicks", value: stats.clicks },
-    { label: "Signups", value: stats.leads },
-    { label: "Trials", value: stats.trialing },
-    { label: "Customers", value: stats.customers },
-    { label: "Active Subs", value: stats.activeSubs },
-    { label: "Canceled", value: stats.canceled },
-  ];
-
-  const financialCards = [
-    { label: "Total Earned", value: formatCurrency(stats.totalEarned) },
-    { label: "Pending", value: formatCurrency(stats.pendingAmount) },
-    { label: "Paid Out", value: formatCurrency(stats.paidAmount) },
-    { label: "MRR", value: formatCurrency(stats.mrr) },
-  ];
+  const isTier1 = affiliate.tier_level === 1;
 
   return (
     <div className="space-y-8">
@@ -104,58 +120,62 @@ export function AffiliateDetailClient({
         </Link>
       </div>
 
-      <div>
-        <h1 className="text-display-sm">{affiliate.name}</h1>
-        <p className="text-[14px] text-muted-foreground mt-1">{affiliate.email}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-display-sm">{affiliate.name}</h1>
+          <p className="text-[14px] text-muted-foreground mt-1">{affiliate.email}</p>
+        </div>
+        <div className="flex items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-900 p-0.5">
+          {DATE_RANGES.map((r) => (
+            <button
+              key={r.days}
+              onClick={() => handleRangeChange(r.days)}
+              className={`px-3 py-1 rounded-md text-[12px] font-medium transition-colors ${
+                selectedRange === r.days
+                  ? "bg-zinc-700 text-white"
+                  : "text-zinc-400 hover:text-white"
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Funnel Stats */}
-      <div className="rounded-lg border border-zinc-700 bg-zinc-950 p-5">
-        <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider mb-4">
-          Full Funnel
-        </p>
-        <div className="flex items-center gap-0 overflow-x-auto">
-          {funnelSteps.map((step, i) => (
-            <div key={step.label} className="flex items-center">
-              <div className="text-center min-w-[90px]">
-                <p className="text-[22px] font-semibold text-white">
-                  {step.value.toLocaleString()}
-                </p>
-                <p className="text-[11px] text-zinc-400 mt-0.5">{step.label}</p>
-              </div>
-              {i < funnelSteps.length - 1 && (
-                <div className="text-zinc-600 mx-2 text-[16px] select-none">→</div>
-              )}
-            </div>
-          ))}
-        </div>
-        {(stats.activeMonthly > 0 || stats.activeAnnual > 0) && (
-          <p className="text-[11px] text-zinc-500 mt-3">
-            {stats.activeMonthly} monthly · {stats.activeAnnual} annual
-          </p>
+      <div className={`relative ${loadingStats ? "opacity-60" : ""}`}>
+        {loadingStats && (
+          <div className="absolute inset-0 flex items-center justify-center z-10">
+            <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
+          </div>
+        )}
+
+        {isTier1 && subStats ? (
+          <div className="space-y-3">
+            <FunnelRow label="Direct Performance" stats={stats} />
+            <FunnelRow label="Sub-affiliate Performance" stats={subStats} muted />
+          </div>
+        ) : (
+          <FunnelRow label="Full Funnel" stats={stats} />
         )}
       </div>
 
       {/* Financial Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {financialCards.map((card) => (
-          <div
-            key={card.label}
-            className="rounded-lg border border-zinc-700 bg-zinc-950 p-5"
-          >
-            <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">
-              {card.label}
-            </p>
-            <p className="text-[22px] font-semibold text-white mt-1">
-              {card.value}
-            </p>
-          </div>
-        ))}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCell label="Total Earned" value={formatCurrency(stats.totalEarned)} />
+        <StatCell label="Pending" value={formatCurrency(stats.pendingAmount)} />
+        <StatCell label="Paid Out" value={formatCurrency(stats.paidAmount)} />
+        <StatCell
+          label="MRR"
+          value={formatCurrency(
+            (stats.activeMonthly + stats.activeAnnual) *
+              (affiliate.commission_rate / 100),
+          )}
+        />
       </div>
 
       {/* Info & Editable Fields */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Read-only info */}
         <div className="rounded-lg border border-zinc-700 bg-zinc-950 p-6 space-y-4">
           <h2 className="text-[15px] font-medium text-white">
             Affiliate Info
@@ -179,11 +199,9 @@ export function AffiliateDetailClient({
           </div>
         </div>
 
-        {/* Editable fields */}
         <div className="rounded-lg border border-zinc-700 bg-zinc-950 p-6 space-y-5">
           <h2 className="text-[15px] font-medium text-white">Settings</h2>
 
-          {/* Status */}
           <EditField label="Status" saving={saving === "status"}>
             <select
               value={status}
@@ -200,7 +218,6 @@ export function AffiliateDetailClient({
             />
           </EditField>
 
-          {/* Commission Rate */}
           <EditField label="Commission Rate" saving={saving === "commission_rate"}>
             <select
               value={commissionRate}
@@ -220,7 +237,6 @@ export function AffiliateDetailClient({
             />
           </EditField>
 
-          {/* Commission Duration */}
           <EditField
             label="Commission Duration (months)"
             saving={saving === "commission_duration_months"}
@@ -234,18 +250,13 @@ export function AffiliateDetailClient({
               className="flex-1 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-[13px] text-white outline-none focus:border-zinc-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
             <SaveButton
-              disabled={
-                durationMonths === affiliate.commission_duration_months
-              }
+              disabled={durationMonths === affiliate.commission_duration_months}
               loading={saving === "commission_duration_months"}
-              onClick={() =>
-                saveField("commission_duration_months", durationMonths)
-              }
+              onClick={() => saveField("commission_duration_months", durationMonths)}
             />
           </EditField>
 
-          {/* Sub-affiliate Rate (Tier 1 only) */}
-          {affiliate.tier_level === 1 && (
+          {isTier1 && (
             <>
               <EditField
                 label="Sub-affiliate Override Rate (%)"
@@ -262,9 +273,7 @@ export function AffiliateDetailClient({
                 <SaveButton
                   disabled={subAffiliateRate === affiliate.sub_affiliate_rate}
                   loading={saving === "sub_affiliate_rate"}
-                  onClick={() =>
-                    saveField("sub_affiliate_rate", subAffiliateRate)
-                  }
+                  onClick={() => saveField("sub_affiliate_rate", subAffiliateRate)}
                 />
               </EditField>
 
@@ -281,17 +290,9 @@ export function AffiliateDetailClient({
                   className="flex-1 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-[13px] text-white outline-none focus:border-zinc-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
                 <SaveButton
-                  disabled={
-                    subAffiliateDuration ===
-                    affiliate.sub_affiliate_duration_months
-                  }
+                  disabled={subAffiliateDuration === affiliate.sub_affiliate_duration_months}
                   loading={saving === "sub_affiliate_duration_months"}
-                  onClick={() =>
-                    saveField(
-                      "sub_affiliate_duration_months",
-                      subAffiliateDuration,
-                    )
-                  }
+                  onClick={() => saveField("sub_affiliate_duration_months", subAffiliateDuration)}
                 />
               </EditField>
             </>
@@ -299,11 +300,86 @@ export function AffiliateDetailClient({
         </div>
       </div>
 
-      {/* Payout Methods */}
       <AdminPayoutMethods affiliateId={affiliate.id} />
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Funnel row with individual bordered cells
+// ---------------------------------------------------------------------------
+
+function FunnelRow({
+  label,
+  stats,
+  muted,
+}: {
+  label: string;
+  stats: FunnelStats;
+  muted?: boolean;
+}) {
+  const steps = [
+    { label: "Clicks", value: stats.clicks },
+    { label: "Signups", value: stats.leads },
+    { label: "Trials", value: stats.trialing },
+    { label: "Customers", value: stats.customers },
+    { label: "Active Subs", value: stats.activeSubs },
+    { label: "Canceled", value: stats.canceled },
+  ];
+
+  return (
+    <div className={`rounded-lg border border-zinc-700 bg-zinc-950 p-5 ${muted ? "opacity-75" : ""}`}>
+      <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider mb-4">
+        {label}
+      </p>
+      <div className="grid grid-cols-6 gap-2">
+        {steps.map((step, i) => {
+          const prev = i > 0 ? steps[i - 1].value : null;
+          const pct = prev && prev > 0 ? ((step.value / prev) * 100).toFixed(1) : null;
+
+          return (
+            <div
+              key={step.label}
+              className="rounded-md border border-zinc-800 bg-zinc-900/50 px-3 py-3 text-center"
+            >
+              <p className="text-[20px] font-semibold text-white tabular-nums">
+                {step.value.toLocaleString()}
+              </p>
+              <p className="text-[10px] text-zinc-400 mt-0.5">{step.label}</p>
+              {pct !== null && (
+                <p className="text-[10px] text-zinc-500 mt-1 tabular-nums">{pct}%</p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {(stats.activeMonthly > 0 || stats.activeAnnual > 0) && (
+        <p className="text-[11px] text-zinc-500 mt-3">
+          {stats.activeMonthly} monthly · {stats.activeAnnual} annual
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Stat cell
+// ---------------------------------------------------------------------------
+
+function StatCell({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-zinc-700 bg-zinc-950 p-5">
+      <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">
+        {label}
+      </p>
+      <p className="text-[22px] font-semibold text-white mt-1">{value}</p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Admin Payout Methods
+// ---------------------------------------------------------------------------
 
 function AdminPayoutMethods({ affiliateId }: { affiliateId: string }) {
   const [methods, setMethods] = useState<PayoutMethodRow[]>([]);
@@ -354,9 +430,7 @@ function AdminPayoutMethods({ affiliateId }: { affiliateId: string }) {
   return (
     <div className="rounded-lg border border-zinc-700 bg-zinc-950 p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h2 className="text-[15px] font-medium text-white">PayPal Payouts</h2>
-        </div>
+        <h2 className="text-[15px] font-medium text-white">PayPal Payouts</h2>
         {!showAdd && (
           <button
             onClick={() => setShowAdd(true)}
@@ -418,6 +492,10 @@ function AdminPayoutMethods({ affiliateId }: { affiliateId: string }) {
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 function InfoRow({
   label,

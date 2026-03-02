@@ -42,16 +42,16 @@ export async function POST(request: NextRequest) {
   try {
     switch (event.type) {
       case "checkout.session.completed":
-        await handleCheckoutCompleted(supabase, event.data.object);
+        await handleCheckoutCompleted(supabase, event.data.object, event.id);
         break;
       case "invoice.payment_succeeded":
-        await handlePaymentSucceeded(supabase, event.data.object);
+        await handlePaymentSucceeded(supabase, event.data.object, event.id);
         break;
       case "invoice.payment_failed":
         await handlePaymentFailed(supabase, event.data.object);
         break;
       case "customer.subscription.created":
-        await handleSubscriptionCreated(supabase, event.data.object);
+        await handleSubscriptionCreated(supabase, event.data.object, event.id);
         break;
       case "customer.subscription.updated":
         await handleSubscriptionUpdated(supabase, event.data.object);
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Shared helpers
 // ---------------------------------------------------------------------------
 
 function getStringId(value: string | { id: string } | null | undefined): string | null {
@@ -93,10 +93,46 @@ function resolvePlanType(priceId: string | null | undefined, interval: string | 
   return "monthly";
 }
 
-function extractPriceId(sub: Stripe.Subscription): string | null {
+function extractPriceInfo(sub: Stripe.Subscription): { priceId: string | null; interval: string | null } {
   const item = sub.items?.data?.[0];
-  return item?.price?.id ?? null;
+  return {
+    priceId: item?.price?.id ?? null,
+    interval: item?.price?.recurring?.interval ?? null,
+  };
 }
+
+function planTypeFromSub(sub: Stripe.Subscription): "monthly" | "annual" {
+  const { priceId, interval } = extractPriceInfo(sub);
+  return resolvePlanType(priceId, interval);
+}
+
+function activeStateForPlan(planType: "monthly" | "annual"): CustomerState {
+  return planType === "annual" ? "active_annual" : "active_monthly";
+}
+
+const STATE_RANK: Record<string, number> = {
+  signed_up: 0,
+  trialing: 1,
+  active_monthly: 2,
+  active_annual: 2,
+  canceled: 3,
+  dormant: 4,
+};
+
+/**
+ * Returns true if the new state should overwrite the current state.
+ * Prevents regressions (e.g., active -> trialing due to event reordering).
+ * Canceled can only be set by subscription.deleted, so this function
+ * should not be called with newState=canceled — that handler sets it directly.
+ */
+function shouldTransitionTo(currentState: CustomerState, newState: CustomerState): boolean {
+  if (currentState === newState) return false;
+  return (STATE_RANK[newState] ?? 0) >= (STATE_RANK[currentState] ?? 0);
+}
+
+// ---------------------------------------------------------------------------
+// Lead / affiliate resolution
+// ---------------------------------------------------------------------------
 
 async function findOrCreateLead(
   supabase: ServiceClient,
@@ -134,6 +170,15 @@ async function findOrCreateLead(
   return newLead;
 }
 
+async function findLeadByStripeCustomer(supabase: ServiceClient, stripeCustomerId: string) {
+  const { data } = await supabase
+    .from("leads")
+    .select("id, affiliate_id")
+    .eq("stripe_customer_id", stripeCustomerId)
+    .single();
+  return data;
+}
+
 async function resolveAffiliateBySlug(supabase: ServiceClient, slug: string) {
   const { data } = await supabase
     .from("affiliates")
@@ -158,92 +203,285 @@ async function logEvent(
 }
 
 // ---------------------------------------------------------------------------
-// checkout.session.completed — attribution bridge
+// am_id resolution: subscription metadata > session metadata > customer metadata
+// ---------------------------------------------------------------------------
+
+async function resolveAmId(
+  sub?: Stripe.Subscription | null,
+  stripeCustomerId?: string | null,
+): Promise<string | null> {
+  if (sub?.metadata?.am_id) return sub.metadata.am_id;
+
+  if (stripeCustomerId) {
+    try {
+      const sessions = await stripe.checkout.sessions.list({
+        customer: stripeCustomerId,
+        limit: 5,
+      });
+      const fromSession = sessions.data
+        .map((s) => s.metadata?.am_id)
+        .find((id) => !!id);
+      if (fromSession) return fromSession;
+    } catch { /* ignore */ }
+
+    try {
+      const cust = await stripe.customers.retrieve(stripeCustomerId);
+      if (!cust.deleted && "metadata" in cust && cust.metadata?.am_id) {
+        return cust.metadata.am_id;
+      }
+    } catch { /* ignore */ }
+  }
+
+  return null;
+}
+
+async function getStripeCustomerEmail(stripeCustomerId: string): Promise<string | null> {
+  try {
+    const cust = await stripe.customers.retrieve(stripeCustomerId);
+    if (!cust.deleted && "email" in cust) return cust.email;
+  } catch { /* ignore */ }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Idempotent customer upsert
+// ---------------------------------------------------------------------------
+
+/**
+ * Attempts to insert a customer record. If the stripe_customer_id already
+ * exists (unique constraint), returns the existing record instead.
+ */
+async function upsertCustomer(
+  supabase: ServiceClient,
+  fields: Database["public"]["Tables"]["customers"]["Insert"],
+): Promise<Database["public"]["Tables"]["customers"]["Row"] | null> {
+  const { data: inserted, error } = await supabase
+    .from("customers")
+    .insert(fields)
+    .select("*")
+    .single();
+
+  if (inserted) return inserted;
+
+  if (error && error.code === "23505") {
+    const { data: existing } = await supabase
+      .from("customers")
+      .select("*")
+      .eq("stripe_customer_id", fields.stripe_customer_id)
+      .single();
+    return existing;
+  }
+
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Resolve lead from am_id when not found by stripe_customer_id
+// ---------------------------------------------------------------------------
+
+async function resolveLeadFromAmId(
+  supabase: ServiceClient,
+  stripeCustomerId: string,
+  subscriptionId: string | null,
+  email: string | null,
+): Promise<{ id: string; affiliate_id: string } | null> {
+  let sub: Stripe.Subscription | null = null;
+  if (subscriptionId) {
+    try { sub = await stripe.subscriptions.retrieve(subscriptionId); } catch { /* ignore */ }
+  }
+
+  const amId = await resolveAmId(sub, stripeCustomerId);
+  if (!amId || !email) return null;
+
+  const affiliate = await resolveAffiliateBySlug(supabase, amId);
+  if (!affiliate) return null;
+
+  return findOrCreateLead(supabase, affiliate.id, email, stripeCustomerId);
+}
+
+// ---------------------------------------------------------------------------
+// Campaign helpers
+// ---------------------------------------------------------------------------
+
+async function resolveCampaignBySlug(supabase: ServiceClient, slug: string) {
+  const { data } = await (supabase as any)
+    .from("campaigns")
+    .select("id")
+    .eq("slug", slug)
+    .single() as { data: { id: string } | null; error: any };
+  return data;
+}
+
+async function recordCampaignEvent(
+  supabase: ServiceClient,
+  campaignId: string,
+  eventType: string,
+  email: string | null,
+  stripeEventId: string | null,
+  metadata: Record<string, unknown> = {},
+) {
+  const { error } = await (supabase as any).from("campaign_events").insert({
+    campaign_id: campaignId,
+    event_type: eventType,
+    email,
+    stripe_event_id: stripeEventId,
+    metadata,
+  });
+  if (error && error.code === "23505") return;
+}
+
+async function findCampaignByLeadEmail(supabase: ServiceClient, email: string) {
+  const { data } = await (supabase as any)
+    .from("campaign_events")
+    .select("campaign_id")
+    .eq("event_type", "lead")
+    .eq("email", email)
+    .order("created_at", { ascending: false })
+    .limit(1) as { data: { campaign_id: string }[] | null; error: any };
+
+  return data?.[0]?.campaign_id ?? null;
+}
+
+/**
+ * Attempts affiliate attribution first, then campaign attribution for a
+ * subscription event. Used by subscription.created for both trial and active.
+ */
+async function attributeSubscription(
+  supabase: ServiceClient,
+  sub: Stripe.Subscription,
+  stripeCustomerId: string,
+  stripeEventId: string,
+): Promise<boolean> {
+  const amId = sub.metadata?.am_id ?? await resolveAmId(null, stripeCustomerId);
+  if (!amId) return false;
+
+  const email = await getStripeCustomerEmail(stripeCustomerId);
+  const planType = planTypeFromSub(sub);
+  const isTrial = sub.status === "trialing";
+
+  // Try affiliate path
+  const affiliate = await resolveAffiliateBySlug(supabase, amId);
+  if (affiliate && email) {
+    const lead = await findOrCreateLead(supabase, affiliate.id, email, stripeCustomerId);
+    if (lead) {
+      const initialState: CustomerState = isTrial ? "trialing" : activeStateForPlan(planType);
+      const customer = await upsertCustomer(supabase, {
+        affiliate_id: affiliate.id,
+        lead_id: lead.id,
+        stripe_customer_id: stripeCustomerId,
+        stripe_subscription_id: sub.id,
+        current_state: initialState,
+        payment_count: 0,
+      });
+      if (customer) {
+        const eventType: CustomerEventType = isTrial ? "trial_started" : "account_created";
+        await logEvent(supabase, customer.id, eventType, {
+          subscription_id: sub.id,
+          trial_end: sub.trial_end,
+        });
+      }
+      return true;
+    }
+  }
+
+  // Try campaign path
+  const campaign = await resolveCampaignBySlug(supabase, amId);
+  if (campaign) {
+    const campaignEventType = isTrial ? "trial" : "customer";
+    await recordCampaignEvent(supabase, campaign.id, campaignEventType, email, stripeEventId, {
+      stripe_customer_id: stripeCustomerId,
+      subscription_id: sub.id,
+      trial_end: sub.trial_end,
+    });
+    return true;
+  }
+
+  return false;
+}
+
+// ---------------------------------------------------------------------------
+// checkout.session.completed
+//
+// NOTE: The hypertune.gg checkout flow may not use Stripe Checkout, so this
+// event may never fire. subscription.created is the primary attribution handler.
+// This is kept as a secondary path for resilience.
 // ---------------------------------------------------------------------------
 
 async function handleCheckoutCompleted(
   supabase: ServiceClient,
   session: Stripe.Checkout.Session,
+  stripeEventId: string,
 ) {
-  // Try session metadata, then subscription metadata, then customer metadata
+  const stripeCustomerId = getStringId(session.customer);
+  if (!stripeCustomerId) return;
+
+  const stripeSubscriptionId = getStringId(
+    (session as unknown as Record<string, unknown>).subscription as string | { id: string } | null,
+  );
+
   let amId = session.metadata?.am_id;
 
-  if (!amId) {
-    const stripeCustomerId = getStringId(session.customer);
-    const stripeSubscriptionId = getStringId(
-      (session as unknown as Record<string, unknown>).subscription as string | { id: string } | null,
-    );
-
-    if (stripeSubscriptionId) {
-      try {
-        const sub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
-        amId = sub.metadata?.am_id ?? null;
-      } catch { /* ignore */ }
-    }
-
-    if (!amId && stripeCustomerId) {
-      try {
-        const cust = await stripe.customers.retrieve(stripeCustomerId);
-        if (!cust.deleted && "metadata" in cust) {
-          amId = cust.metadata?.am_id ?? null;
-        }
-      } catch { /* ignore */ }
-    }
+  if (!amId && stripeSubscriptionId) {
+    try {
+      const sub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+      amId = sub.metadata?.am_id ?? null;
+    } catch { /* ignore */ }
   }
 
   if (!amId) {
-    // Last resort: match by email against campaign leads
+    try {
+      const cust = await stripe.customers.retrieve(stripeCustomerId);
+      if (!cust.deleted && "metadata" in cust) amId = cust.metadata?.am_id ?? null;
+    } catch { /* ignore */ }
+  }
+
+  if (!amId) {
     const email = session.customer_details?.email;
     if (email) {
       const campaignId = await findCampaignByLeadEmail(supabase, email);
       if (campaignId) {
-        const stripeSubscriptionId = getStringId(
-          (session as unknown as Record<string, unknown>).subscription as string | { id: string } | null,
-        );
         let eventType = "customer";
         if (stripeSubscriptionId) {
           try {
             const sub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
             if (sub.status === "trialing") eventType = "trial";
-          } catch { /* default to customer */ }
+          } catch { /* ignore */ }
         }
-        await recordCampaignEvent(supabase, campaignId, eventType, email, {
+        await recordCampaignEvent(supabase, campaignId, eventType, email, stripeEventId, {
           checkout_session_id: session.id,
-          stripe_customer_id: getStringId(session.customer),
-          stripe_subscription_id: stripeSubscriptionId,
+          stripe_customer_id: stripeCustomerId,
         });
       }
     }
     return;
   }
 
+  // Affiliate path
   const affiliate = await resolveAffiliateBySlug(supabase, amId);
-
   if (!affiliate) {
-    await handleCampaignCheckout(supabase, session, amId);
+    const campaign = await resolveCampaignBySlug(supabase, amId);
+    if (campaign) {
+      const email = session.customer_details?.email ?? null;
+      let eventType = "customer";
+      if (stripeSubscriptionId) {
+        try {
+          const sub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+          if (sub.status === "trialing") eventType = "trial";
+        } catch { /* ignore */ }
+      }
+      await recordCampaignEvent(supabase, campaign.id, eventType, email, stripeEventId, {
+        checkout_session_id: session.id,
+        stripe_customer_id: stripeCustomerId,
+      });
+    }
     return;
   }
 
   const email = session.customer_details?.email;
   if (!email) return;
 
-  const stripeCustomerId = getStringId(session.customer);
-  const stripeSubscriptionId = getStringId(
-    (session as unknown as Record<string, unknown>).subscription as string | { id: string } | null,
-  );
-
   const lead = await findOrCreateLead(supabase, affiliate.id, email, stripeCustomerId);
   if (!lead) return;
-
-  if (!stripeCustomerId) return;
-
-  const { data: existingCustomer } = await supabase
-    .from("customers")
-    .select("id")
-    .eq("stripe_customer_id", stripeCustomerId)
-    .single();
-
-  if (existingCustomer) return;
 
   let initialState: CustomerState = "signed_up";
   let eventType: CustomerEventType = "account_created";
@@ -251,35 +489,27 @@ async function handleCheckoutCompleted(
   if (stripeSubscriptionId) {
     try {
       const sub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
-      const priceId = extractPriceId(sub);
-      const planType = resolvePlanType(priceId, sub.items?.data?.[0]?.price?.recurring?.interval);
-
+      const planType = planTypeFromSub(sub);
       if (sub.status === "trialing") {
         initialState = "trialing";
         eventType = "trial_started";
       } else if (sub.status === "active") {
-        initialState = planType === "annual" ? "active_annual" : "active_monthly";
+        initialState = activeStateForPlan(planType);
         eventType = "first_payment";
       }
-    } catch {
-      // If we can't fetch the subscription, default to signed_up
-    }
+    } catch { /* ignore */ }
   }
 
-  const { data: customer } = await supabase
-    .from("customers")
-    .insert({
-      affiliate_id: affiliate.id,
-      lead_id: lead.id,
-      stripe_customer_id: stripeCustomerId,
-      stripe_subscription_id: stripeSubscriptionId,
-      current_state: initialState,
-      payment_count: 0,
-    })
-    .select("id")
-    .single();
+  const customer = await upsertCustomer(supabase, {
+    affiliate_id: affiliate.id,
+    lead_id: lead.id,
+    stripe_customer_id: stripeCustomerId,
+    stripe_subscription_id: stripeSubscriptionId,
+    current_state: initialState,
+    payment_count: 0,
+  });
 
-  if (customer) {
+  if (customer && customer.current_state === initialState) {
     await logEvent(supabase, customer.id, eventType, {
       checkout_session_id: session.id,
       subscription_id: stripeSubscriptionId,
@@ -288,19 +518,181 @@ async function handleCheckoutCompleted(
 }
 
 // ---------------------------------------------------------------------------
+// customer.subscription.created — PRIMARY attribution handler
+// ---------------------------------------------------------------------------
+
+async function handleSubscriptionCreated(
+  supabase: ServiceClient,
+  sub: Stripe.Subscription,
+  stripeEventId: string,
+) {
+  const stripeCustomerId = getStringId(sub.customer);
+  if (!stripeCustomerId) return;
+
+  const { data: existingCustomer } = await supabase
+    .from("customers")
+    .select("id, current_state")
+    .eq("stripe_customer_id", stripeCustomerId)
+    .single();
+
+  if (existingCustomer) {
+    if (sub.status === "trialing" && shouldTransitionTo(existingCustomer.current_state, "trialing")) {
+      await supabase
+        .from("customers")
+        .update({
+          current_state: "trialing" as CustomerState,
+          stripe_subscription_id: sub.id,
+        })
+        .eq("id", existingCustomer.id);
+      await logEvent(supabase, existingCustomer.id, "trial_started", {
+        subscription_id: sub.id,
+        trial_end: sub.trial_end,
+      });
+    }
+    return;
+  }
+
+  // No customer record yet — attempt full attribution
+  const attributed = await attributeSubscription(supabase, sub, stripeCustomerId, stripeEventId);
+  if (attributed) return;
+
+  // Last resort: email-based campaign fallback
+  const email = await getStripeCustomerEmail(stripeCustomerId);
+  if (email) {
+    const campaignId = await findCampaignByLeadEmail(supabase, email);
+    if (campaignId) {
+      const eventType = sub.status === "trialing" ? "trial" : "customer";
+      await recordCampaignEvent(supabase, campaignId, eventType, email, stripeEventId, {
+        stripe_customer_id: stripeCustomerId,
+        subscription_id: sub.id,
+        trial_end: sub.trial_end,
+      });
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// customer.subscription.updated — state transitions
+// ---------------------------------------------------------------------------
+
+async function handleSubscriptionUpdated(supabase: ServiceClient, sub: Stripe.Subscription) {
+  const stripeCustomerId = getStringId(sub.customer);
+  if (!stripeCustomerId) return;
+
+  const { data: customer } = await supabase
+    .from("customers")
+    .select("id, current_state, payment_count")
+    .eq("stripe_customer_id", stripeCustomerId)
+    .single();
+
+  if (!customer) return;
+
+  const planType = planTypeFromSub(sub);
+  const activeState = activeStateForPlan(planType);
+
+  if (sub.status === "active") {
+    // trial -> active (trial ended and payment succeeded)
+    if (customer.current_state === "trialing" || customer.current_state === "signed_up") {
+      await supabase
+        .from("customers")
+        .update({
+          current_state: activeState,
+          plan_type: planType as Database["public"]["Enums"]["plan_type"],
+          stripe_subscription_id: sub.id,
+        })
+        .eq("id", customer.id);
+      return;
+    }
+
+    // canceled -> active (resubscribed)
+    if (customer.current_state === "canceled") {
+      await supabase
+        .from("customers")
+        .update({
+          current_state: activeState,
+          plan_type: planType as Database["public"]["Enums"]["plan_type"],
+          canceled_at: null,
+          payment_count: 0,
+          stripe_subscription_id: sub.id,
+        })
+        .eq("id", customer.id);
+      await logEvent(supabase, customer.id, "resubscribed", {
+        subscription_id: sub.id,
+      });
+      return;
+    }
+
+    // Plan change (monthly <-> annual) while already active
+    if (
+      (customer.current_state === "active_monthly" || customer.current_state === "active_annual") &&
+      customer.current_state !== activeState
+    ) {
+      await supabase
+        .from("customers")
+        .update({
+          current_state: activeState,
+          plan_type: planType as Database["public"]["Enums"]["plan_type"],
+          stripe_subscription_id: sub.id,
+        })
+        .eq("id", customer.id);
+      return;
+    }
+  }
+
+  if (sub.status === "past_due") {
+    await logEvent(supabase, customer.id, "recurring_payment", {
+      subscription_id: sub.id,
+      status: "past_due",
+    });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// customer.subscription.deleted
+// ---------------------------------------------------------------------------
+
+async function handleSubscriptionDeleted(supabase: ServiceClient, sub: Stripe.Subscription) {
+  const stripeCustomerId = getStringId(sub.customer);
+  if (!stripeCustomerId) return;
+
+  const { data: customer } = await supabase
+    .from("customers")
+    .select("id, current_state")
+    .eq("stripe_customer_id", stripeCustomerId)
+    .single();
+
+  if (!customer) return;
+  if (customer.current_state === "canceled") return;
+
+  await supabase
+    .from("customers")
+    .update({
+      current_state: "canceled" as CustomerState,
+      canceled_at: new Date().toISOString(),
+    })
+    .eq("id", customer.id);
+
+  await logEvent(supabase, customer.id, "canceled", {
+    subscription_id: sub.id,
+    reason: sub.cancellation_details?.reason,
+  });
+}
+
+// ---------------------------------------------------------------------------
 // invoice.payment_succeeded
 // ---------------------------------------------------------------------------
 
-async function handlePaymentSucceeded(supabase: ServiceClient, invoice: Stripe.Invoice) {
+async function handlePaymentSucceeded(
+  supabase: ServiceClient,
+  invoice: Stripe.Invoice,
+  stripeEventId: string,
+) {
   const amountPaid = invoice.amount_paid ?? 0;
-
-  // Skip $0 trial invoices — no commission, no customer update needed
   if (amountPaid === 0) return;
 
   const stripeCustomerId = getStringId(invoice.customer);
   if (!stripeCustomerId) return;
 
-  // Idempotency: check if commissions already exist for this invoice
   const { data: existingCommissions } = await supabase
     .from("commissions")
     .select("id")
@@ -309,53 +701,35 @@ async function handlePaymentSucceeded(supabase: ServiceClient, invoice: Stripe.I
 
   if (existingCommissions && existingCommissions.length > 0) return;
 
-  // Try to find lead by stripe_customer_id
-  let lead = await findLeadByStripeCustomer(supabase, stripeCustomerId);
-
-  // If no lead found, try to attribute via checkout session metadata
-  // This handles cases where the checkout handler ran but lead wasn't linked yet
-  if (!lead) {
-    const customerEmail = invoice.customer_email;
-    if (customerEmail) {
-      const { data: leadByEmail } = await supabase
-        .from("leads")
-        .select("id, affiliate_id")
-        .eq("email", customerEmail)
-        .single();
-
-      if (leadByEmail) {
-        await supabase
-          .from("leads")
-          .update({ stripe_customer_id: stripeCustomerId })
-          .eq("id", leadByEmail.id);
-        lead = leadByEmail;
-      }
-    }
-  }
-
   const subscriptionId = getStringId(
     (invoice as unknown as Record<string, unknown>).subscription as string | { id: string } | null,
   );
 
-  if (!lead) {
-    // Try resolving am_id from subscription/customer/session metadata
-    const amId = await resolveAmIdFromStripe(stripeCustomerId, subscriptionId);
-    if (amId) {
-      const affiliate = await resolveAffiliateBySlug(supabase, amId);
-      if (affiliate) {
-        const customerEmail = invoice.customer_email;
-        if (customerEmail) {
-          const newLead = await findOrCreateLead(supabase, affiliate.id, customerEmail, stripeCustomerId);
-          if (newLead) {
-            lead = newLead;
-          }
-        }
-      }
+  // Resolve lead through multiple strategies
+  let lead = await findLeadByStripeCustomer(supabase, stripeCustomerId);
+
+  if (!lead && invoice.customer_email) {
+    const { data: leadByEmail } = await supabase
+      .from("leads")
+      .select("id, affiliate_id")
+      .eq("email", invoice.customer_email)
+      .single();
+
+    if (leadByEmail) {
+      await supabase
+        .from("leads")
+        .update({ stripe_customer_id: stripeCustomerId })
+        .eq("id", leadByEmail.id);
+      lead = leadByEmail;
     }
   }
 
   if (!lead) {
-    await handleCampaignPayment(supabase, invoice, stripeCustomerId);
+    lead = await resolveLeadFromAmId(supabase, stripeCustomerId, subscriptionId, invoice.customer_email ?? null);
+  }
+
+  if (!lead) {
+    await handleCampaignPayment(supabase, invoice, stripeCustomerId, subscriptionId, stripeEventId);
     return;
   }
 
@@ -364,6 +738,7 @@ async function handlePaymentSucceeded(supabase: ServiceClient, invoice: Stripe.I
     | { id?: string; recurring?: { interval?: string } }
     | null;
   const planType = resolvePlanType(priceId?.id, priceId?.recurring?.interval);
+  const activeState = activeStateForPlan(planType);
 
   let { data: customer } = await supabase
     .from("customers")
@@ -372,26 +747,18 @@ async function handlePaymentSucceeded(supabase: ServiceClient, invoice: Stripe.I
     .single();
 
   if (!customer) {
-    const newState: CustomerState = planType === "annual" ? "active_annual" : "active_monthly";
+    customer = await upsertCustomer(supabase, {
+      affiliate_id: lead.affiliate_id,
+      lead_id: lead.id,
+      stripe_customer_id: stripeCustomerId,
+      stripe_subscription_id: subscriptionId,
+      current_state: activeState,
+      plan_type: planType as Database["public"]["Enums"]["plan_type"],
+      payment_count: 1,
+      first_payment_at: new Date().toISOString(),
+    });
 
-    const { data: newCustomer } = await supabase
-      .from("customers")
-      .insert({
-        affiliate_id: lead.affiliate_id,
-        lead_id: lead.id,
-        stripe_customer_id: stripeCustomerId,
-        stripe_subscription_id: subscriptionId,
-        current_state: newState,
-        plan_type: planType as Database["public"]["Enums"]["plan_type"],
-        payment_count: 1,
-        first_payment_at: new Date().toISOString(),
-      })
-      .select("*")
-      .single();
-
-    customer = newCustomer;
-
-    if (customer) {
+    if (customer && customer.payment_count === 1) {
       await logEvent(supabase, customer.id, "first_payment", {
         invoice_id: invoice.id,
         amount: amountPaid / 100,
@@ -400,13 +767,12 @@ async function handlePaymentSucceeded(supabase: ServiceClient, invoice: Stripe.I
   } else {
     const wasTrialing = customer.current_state === "trialing" || customer.current_state === "signed_up";
     const newCount = customer.payment_count + 1;
-    const newState: CustomerState = planType === "annual" ? "active_annual" : "active_monthly";
 
     await supabase
       .from("customers")
       .update({
         payment_count: newCount,
-        current_state: newState,
+        current_state: activeState,
         plan_type: planType as Database["public"]["Enums"]["plan_type"],
         stripe_subscription_id: subscriptionId,
         first_payment_at: customer.first_payment_at || new Date().toISOString(),
@@ -460,145 +826,7 @@ async function handlePaymentFailed(supabase: ServiceClient, invoice: Stripe.Invo
 }
 
 // ---------------------------------------------------------------------------
-// customer.subscription.created
-// ---------------------------------------------------------------------------
-
-async function handleSubscriptionCreated(supabase: ServiceClient, sub: Stripe.Subscription) {
-  const stripeCustomerId = getStringId(sub.customer);
-  if (!stripeCustomerId) return;
-
-  // Check subscription metadata for am_id (dev team puts it here)
-  const amId = sub.metadata?.am_id;
-
-  const { data: customer } = await supabase
-    .from("customers")
-    .select("id")
-    .eq("stripe_customer_id", stripeCustomerId)
-    .single();
-
-  if (!customer) {
-    if (sub.status === "trialing") {
-      // Path 1: am_id on subscription metadata
-      if (amId) {
-        const affiliate = await resolveAffiliateBySlug(supabase, amId);
-        if (affiliate) {
-          const email = await getStripeCustomerEmail(stripeCustomerId);
-          const lead = email ? await findOrCreateLead(supabase, affiliate.id, email, stripeCustomerId) : null;
-          if (lead) {
-            const { data: newCustomer } = await supabase
-              .from("customers")
-              .insert({
-                affiliate_id: affiliate.id,
-                lead_id: lead.id,
-                stripe_customer_id: stripeCustomerId,
-                stripe_subscription_id: sub.id,
-                current_state: "trialing" as CustomerState,
-                payment_count: 0,
-              })
-              .select("id")
-              .single();
-            if (newCustomer) {
-              await logEvent(supabase, newCustomer.id, "trial_started", {
-                subscription_id: sub.id,
-                trial_end: sub.trial_end,
-              });
-            }
-            return;
-          }
-        }
-
-        const campaign = await resolveCampaignBySlug(supabase, amId);
-        if (campaign) {
-          const email = await getStripeCustomerEmail(stripeCustomerId);
-          await recordCampaignEvent(supabase, campaign.id, "trial", email, {
-            stripe_customer_id: stripeCustomerId,
-            subscription_id: sub.id,
-            trial_end: sub.trial_end,
-          });
-          return;
-        }
-      }
-
-      // Path 2: fallback to customer metadata or email matching
-      await tryRecordCampaignTrial(supabase, stripeCustomerId, sub.id, sub.trial_end ?? null);
-    }
-    return;
-  }
-
-  if (sub.status === "trialing") {
-    await supabase
-      .from("customers")
-      .update({ current_state: "trialing" as CustomerState })
-      .eq("id", customer.id);
-
-    await logEvent(supabase, customer.id, "trial_started", {
-      subscription_id: sub.id,
-      trial_end: sub.trial_end,
-    });
-  }
-}
-
-// ---------------------------------------------------------------------------
-// customer.subscription.updated
-// ---------------------------------------------------------------------------
-
-async function handleSubscriptionUpdated(supabase: ServiceClient, sub: Stripe.Subscription) {
-  const stripeCustomerId = getStringId(sub.customer);
-  if (!stripeCustomerId) return;
-
-  const { data: customer } = await supabase
-    .from("customers")
-    .select("id, current_state")
-    .eq("stripe_customer_id", stripeCustomerId)
-    .single();
-
-  if (!customer) return;
-
-  if (sub.status === "active" && customer.current_state === "canceled") {
-    const priceId = extractPriceId(sub);
-    const planType = resolvePlanType(priceId, sub.items?.data?.[0]?.price?.recurring?.interval);
-    const newState: CustomerState = planType === "annual" ? "active_annual" : "active_monthly";
-
-    await supabase
-      .from("customers")
-      .update({ current_state: newState, canceled_at: null, payment_count: 0 })
-      .eq("id", customer.id);
-
-    await logEvent(supabase, customer.id, "resubscribed", {
-      subscription_id: sub.id,
-    });
-  }
-}
-
-// ---------------------------------------------------------------------------
-// customer.subscription.deleted
-// ---------------------------------------------------------------------------
-
-async function handleSubscriptionDeleted(supabase: ServiceClient, sub: Stripe.Subscription) {
-  const stripeCustomerId = getStringId(sub.customer);
-  if (!stripeCustomerId) return;
-
-  const { data: customer } = await supabase
-    .from("customers")
-    .select("id")
-    .eq("stripe_customer_id", stripeCustomerId)
-    .single();
-
-  if (!customer) return;
-
-  await supabase
-    .from("customers")
-    .update({ current_state: "canceled" as CustomerState, canceled_at: new Date().toISOString() })
-    .eq("id", customer.id);
-
-  await logEvent(supabase, customer.id, "canceled", {
-    subscription_id: sub.id,
-    reason: sub.cancellation_details?.reason,
-  });
-}
-
-// ---------------------------------------------------------------------------
-// charge.refunded
+// charge.refunded / charge.dispute.created
 // ---------------------------------------------------------------------------
 
 async function handleChargeRefunded(supabase: ServiceClient, charge: Stripe.Charge) {
@@ -608,10 +836,6 @@ async function handleChargeRefunded(supabase: ServiceClient, charge: Stripe.Char
   if (!invoiceId) return;
   await voidCommissionsForInvoice(supabase, invoiceId);
 }
-
-// ---------------------------------------------------------------------------
-// charge.dispute.created
-// ---------------------------------------------------------------------------
 
 async function handleDisputeCreated(supabase: ServiceClient, dispute: Stripe.Dispute) {
   const chargeId = getStringId(dispute.charge as string | { id: string } | null);
@@ -626,158 +850,28 @@ async function handleDisputeCreated(supabase: ServiceClient, dispute: Stripe.Dis
 }
 
 // ---------------------------------------------------------------------------
-// Campaign tracking helpers (0% commission, admin marketing links)
+// Campaign payment tracking
 // ---------------------------------------------------------------------------
-
-async function resolveCampaignBySlug(supabase: ServiceClient, slug: string) {
-  const { data } = await (supabase as any)
-    .from("campaigns")
-    .select("id")
-    .eq("slug", slug)
-    .single() as { data: { id: string } | null; error: any };
-  return data;
-}
-
-async function recordCampaignEvent(
-  supabase: ServiceClient,
-  campaignId: string,
-  eventType: string,
-  email: string | null,
-  metadata: Record<string, unknown> = {},
-) {
-  await (supabase as any).from("campaign_events").insert({
-    campaign_id: campaignId,
-    event_type: eventType,
-    email,
-    metadata,
-  });
-}
-
-async function findCampaignByLeadEmail(supabase: ServiceClient, email: string) {
-  const { data } = await (supabase as any)
-    .from("campaign_events")
-    .select("campaign_id")
-    .eq("event_type", "lead")
-    .eq("email", email)
-    .order("created_at", { ascending: false })
-    .limit(1) as { data: { campaign_id: string }[] | null; error: any };
-
-  return data?.[0]?.campaign_id ?? null;
-}
-
-async function handleCampaignCheckout(
-  supabase: ServiceClient,
-  session: Stripe.Checkout.Session,
-  amId: string,
-) {
-  const campaign = await resolveCampaignBySlug(supabase, amId);
-  if (!campaign) return;
-
-  const email = session.customer_details?.email ?? null;
-  const stripeSubscriptionId = getStringId(
-    (session as unknown as Record<string, unknown>).subscription as string | { id: string } | null,
-  );
-
-  let eventType = "customer";
-
-  if (stripeSubscriptionId) {
-    try {
-      const sub = await stripe.subscriptions.retrieve(stripeSubscriptionId);
-      if (sub.status === "trialing") {
-        eventType = "trial";
-      }
-    } catch {
-      // Default to customer if we can't fetch subscription
-    }
-  }
-
-  await recordCampaignEvent(supabase, campaign.id, eventType, email, {
-    checkout_session_id: session.id,
-    stripe_customer_id: getStringId(session.customer),
-    stripe_subscription_id: stripeSubscriptionId,
-  });
-}
-
-async function tryRecordCampaignTrial(
-  supabase: ServiceClient,
-  stripeCustomerId: string,
-  subscriptionId: string,
-  trialEnd: number | null,
-) {
-  let email: string | null = null;
-  try {
-    const cust = await stripe.customers.retrieve(stripeCustomerId);
-    if (!cust.deleted && "email" in cust) email = cust.email;
-  } catch { /* ignore */ }
-  if (!email) return;
-
-  const campaignId = await findCampaignByLeadEmail(supabase, email);
-  if (!campaignId) return;
-
-  await recordCampaignEvent(supabase, campaignId, "trial", email, {
-    stripe_customer_id: stripeCustomerId,
-    subscription_id: subscriptionId,
-    trial_end: trialEnd,
-  });
-}
-
-async function getStripeCustomerEmail(stripeCustomerId: string): Promise<string | null> {
-  try {
-    const cust = await stripe.customers.retrieve(stripeCustomerId);
-    if (!cust.deleted && "email" in cust) return cust.email;
-  } catch { /* ignore */ }
-  return null;
-}
-
-async function resolveAmIdFromStripe(stripeCustomerId: string, subscriptionId?: string | null): Promise<string | null> {
-  // Check subscription metadata (dev team puts am_id here)
-  if (subscriptionId) {
-    try {
-      const sub = await stripe.subscriptions.retrieve(subscriptionId);
-      if (sub.metadata?.am_id) return sub.metadata.am_id;
-    } catch { /* ignore */ }
-  }
-
-  // Check checkout session metadata
-  try {
-    const sessions = await stripe.checkout.sessions.list({
-      customer: stripeCustomerId,
-      limit: 5,
-    });
-    const fromSession = sessions.data
-      .map((s) => s.metadata?.am_id)
-      .find((id) => !!id);
-    if (fromSession) return fromSession;
-  } catch { /* ignore */ }
-
-  // Check customer metadata
-  try {
-    const cust = await stripe.customers.retrieve(stripeCustomerId);
-    if (!cust.deleted && "metadata" in cust && cust.metadata?.am_id) {
-      return cust.metadata.am_id;
-    }
-  } catch { /* ignore */ }
-
-  return null;
-}
 
 async function handleCampaignPayment(
   supabase: ServiceClient,
   invoice: Stripe.Invoice,
   stripeCustomerId: string,
+  subscriptionId: string | null,
+  stripeEventId: string,
 ) {
   const email = invoice.customer_email;
-  const subscriptionId = getStringId(
-    (invoice as unknown as Record<string, unknown>).subscription as string | { id: string } | null,
-  );
 
-  // Path 1: resolve am_id from subscription/session/customer metadata
-  const amId = await resolveAmIdFromStripe(stripeCustomerId, subscriptionId);
+  let sub: Stripe.Subscription | null = null;
+  if (subscriptionId) {
+    try { sub = await stripe.subscriptions.retrieve(subscriptionId); } catch { /* ignore */ }
+  }
 
+  const amId = await resolveAmId(sub, stripeCustomerId);
   if (amId) {
     const campaign = await resolveCampaignBySlug(supabase, amId);
     if (campaign) {
-      await recordCampaignEvent(supabase, campaign.id, "customer", email ?? null, {
+      await recordCampaignEvent(supabase, campaign.id, "customer", email ?? null, stripeEventId, {
         invoice_id: invoice.id,
         amount: (invoice.amount_paid ?? 0) / 100,
         stripe_customer_id: stripeCustomerId,
@@ -786,27 +880,13 @@ async function handleCampaignPayment(
     }
   }
 
-  // Path 2: match by email against campaign leads
   if (!email) return;
   const campaignId = await findCampaignByLeadEmail(supabase, email);
   if (!campaignId) return;
 
-  await recordCampaignEvent(supabase, campaignId, "customer", email, {
+  await recordCampaignEvent(supabase, campaignId, "customer", email, stripeEventId, {
     invoice_id: invoice.id,
     amount: (invoice.amount_paid ?? 0) / 100,
     stripe_customer_id: stripeCustomerId,
   });
-}
-
-// ---------------------------------------------------------------------------
-// Internal helpers
-// ---------------------------------------------------------------------------
-
-async function findLeadByStripeCustomer(supabase: ServiceClient, stripeCustomerId: string) {
-  const { data } = await supabase
-    .from("leads")
-    .select("id, affiliate_id")
-    .eq("stripe_customer_id", stripeCustomerId)
-    .single();
-  return data;
 }

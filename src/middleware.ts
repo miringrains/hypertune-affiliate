@@ -5,6 +5,7 @@ const PUBLIC_PATHS = [
   "/login",
   "/accept-invite",
   "/reset-password",
+  "/mfa-verify",
   "/api/auth",
   "/api/track",
   "/api/webhooks",
@@ -52,6 +53,21 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
+  }
+
+  if (user) {
+    const { data: aal } =
+      await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (
+      aal?.nextLevel === "aal2" &&
+      aal.currentLevel !== aal.nextLevel &&
+      !pathname.startsWith("/mfa-verify") &&
+      !pathname.startsWith("/api/")
+    ) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/mfa-verify";
+      return NextResponse.redirect(url);
+    }
   }
 
   if (user && pathname.startsWith("/admin")) {

@@ -50,6 +50,12 @@ export async function GET(request: NextRequest) {
     await tryCreateAffiliate(user, searchParams);
   }
 
+  const { data: aal } =
+    await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal?.nextLevel === "aal2" && aal.currentLevel !== aal.nextLevel) {
+    return NextResponse.redirect(`${origin}/mfa-verify`);
+  }
+
   return response;
 }
 

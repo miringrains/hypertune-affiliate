@@ -60,14 +60,20 @@ function LoginContent() {
       password,
     });
 
-    setLoading(false);
-
     if (error) {
+      setLoading(false);
       toast.error("Login failed", { description: error.message });
       return;
     }
 
-    router.push("/dashboard");
+    const { data: aal } =
+      await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+    if (aal?.nextLevel === "aal2" && aal.currentLevel !== aal.nextLevel) {
+      router.push("/mfa-verify");
+    } else {
+      router.push("/dashboard");
+    }
     router.refresh();
   }
 

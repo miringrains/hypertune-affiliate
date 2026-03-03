@@ -153,7 +153,7 @@ export default async function DashboardPage() {
   }
 
   // ── Affiliate flow ──
-  const [clicksTimeRes, leadsCountRes, customersCountRes, trialingCountRes, commissionsRes, recentCommissionsRes] =
+  const [clicksTimeRes, leadsCountRes, customerStatesRes, commissionsRes, recentCommissionsRes] =
     await Promise.all([
       supabase
         .from("clicks")
@@ -166,13 +166,8 @@ export default async function DashboardPage() {
         .eq("affiliate_id", affiliate.id),
       supabase
         .from("customers")
-        .select("id", { count: "exact", head: true })
+        .select("current_state")
         .eq("affiliate_id", affiliate.id),
-      supabase
-        .from("customers")
-        .select("id", { count: "exact", head: true })
-        .eq("affiliate_id", affiliate.id)
-        .eq("current_state", "trialing"),
       supabase
         .from("commissions")
         .select("amount, status, created_at")
@@ -190,8 +185,11 @@ export default async function DashboardPage() {
   const commRows = commissionsRes.data ?? [];
   const recentComms = recentCommissionsRes.data ?? [];
   const totalLeads = leadsCountRes.count ?? 0;
-  const totalCustomers = customersCountRes.count ?? 0;
-  const totalTrialing = trialingCountRes.count ?? 0;
+  const custStates = customerStatesRes.data ?? [];
+  const totalCustomers = custStates.length;
+  const totalTrialing = custStates.filter((c) => c.current_state === "trialing").length;
+  const totalActive = custStates.filter((c) => c.current_state === "active_monthly" || c.current_state === "active_annual").length;
+  const totalChurned = custStates.filter((c) => c.current_state === "canceled" || c.current_state === "dormant").length;
 
   const totalEarned = commRows
     .filter((c) => c.status === "paid")
@@ -203,10 +201,11 @@ export default async function DashboardPage() {
   const startOfMonthDate = new Date(now.getFullYear(), now.getMonth(), 1);
   const startOfLastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
-  const thisMonthEarned = commRows
+  const nonVoided = commRows.filter((c) => c.status !== "voided");
+  const thisMonthEarned = nonVoided
     .filter((c) => new Date(c.created_at) >= startOfMonthDate)
     .reduce((s, c) => s + Number(c.amount), 0);
-  const lastMonthEarned = commRows
+  const lastMonthEarned = nonVoided
     .filter((c) => {
       const d = new Date(c.created_at);
       return d >= startOfLastMonthDate && d < startOfMonthDate;
@@ -228,7 +227,7 @@ export default async function DashboardPage() {
     chartData: {
       clicksByDay: buildDailySparkline(clickRows, 30),
       earningsByMonth: buildMonthlyEarnings(commRows, 6),
-      customerStates: { active: 0, trialing: 0, churned: 0 },
+      customerStates: { active: totalActive, trialing: totalTrialing, churned: totalChurned },
     },
     recentActivity: recentComms.map((c) => ({
       id: c.id,

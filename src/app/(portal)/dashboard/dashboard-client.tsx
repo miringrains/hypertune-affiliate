@@ -8,6 +8,9 @@ import { toast } from "sonner";
 import {
   BarChart,
   Bar,
+  PieChart,
+  Pie,
+  Cell,
   ResponsiveContainer,
   XAxis,
   YAxis,
@@ -150,11 +153,11 @@ function HeroEarnings({ stats }: { stats: DashboardStats }) {
       <div className="flex items-center gap-6 mt-4 text-[13px] text-zinc-400">
         <span>
           Lifetime earned:{" "}
-          <span className="text-zinc-300 font-medium">{fmtCurrencyShort(stats.earned)}</span>
+          <span className="text-zinc-300 font-medium">{fmtCurrency(stats.earned)}</span>
         </span>
         <span>
           Pending:{" "}
-          <span className="text-amber-400 font-medium">{fmtCurrencyShort(stats.pending)}</span>
+          <span className="text-amber-400 font-medium">{fmtCurrency(stats.pending)}</span>
         </span>
       </div>
     </div>
@@ -344,17 +347,13 @@ function OnboardingBanner({ slug }: { slug: string }) {
 }
 
 function FunnelStrip({ stats }: { stats: DashboardStats }) {
-  const clickToLead =
-    stats.clicks > 0 ? ((stats.leads / stats.clicks) * 100).toFixed(1) : "0";
-  const leadToTrial =
-    stats.leads > 0 ? ((stats.trials / stats.leads) * 100).toFixed(1) : "0";
-  const trialToCustomer =
-    stats.trials > 0 ? ((stats.customers / stats.trials) * 100).toFixed(1) : "0";
+  const pct = (num: number, den: number) =>
+    den > 0 ? ((num / den) * 100).toFixed(1) : "—";
 
   const steps = [
-    { label: "Clicks", value: stats.clicks, icon: MousePointerClick, pct: clickToLead },
-    { label: "Leads", value: stats.leads, icon: Users, pct: leadToTrial },
-    { label: "Trialing", value: stats.trials, icon: Clock, pct: trialToCustomer },
+    { label: "Clicks", value: stats.clicks, icon: MousePointerClick, pct: pct(stats.leads, stats.clicks) },
+    { label: "Leads", value: stats.leads, icon: Users, pct: pct(stats.trials, stats.leads) },
+    { label: "Trialing", value: stats.trials, icon: Clock, pct: pct(stats.customers, stats.trials) },
     { label: "Customers", value: stats.customers, icon: UserCheck, pct: null },
   ];
 
@@ -375,13 +374,13 @@ function FunnelStrip({ stats }: { stats: DashboardStats }) {
               <>
                 <div className="hidden sm:flex flex-col items-center justify-center px-3 shrink-0">
                   <ArrowRight size={16} className="text-zinc-400" />
-                  <span className="text-[12px] font-bold text-emerald-400 mt-1">
-                    {step.pct}%
+                  <span className={`text-[12px] font-bold mt-1 ${step.pct === "—" ? "text-zinc-500" : "text-emerald-400"}`}>
+                    {step.pct === "—" ? "—" : `${step.pct}%`}
                   </span>
                 </div>
                 <div className="flex sm:hidden items-center justify-center py-1.5">
-                  <span className="text-[11px] font-bold text-emerald-400">
-                    ↓ {step.pct}%
+                  <span className={`text-[11px] font-bold ${step.pct === "—" ? "text-zinc-500" : "text-emerald-400"}`}>
+                    {step.pct === "—" ? "↓ —" : `↓ ${step.pct}%`}
                   </span>
                 </div>
               </>
@@ -494,6 +493,79 @@ function ActivityFeed({ items }: { items: ActivityItem[] }) {
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+const PIE_COLORS = {
+  active: "#10b981",
+  trialing: "#f59e0b",
+  churned: "#ef4444",
+};
+
+function CustomerBreakdown({
+  states,
+}: {
+  states: { active: number; trialing: number; churned: number };
+}) {
+  const total = states.active + states.trialing + states.churned;
+  const data = [
+    { name: "Active", value: states.active, color: PIE_COLORS.active },
+    { name: "Trialing", value: states.trialing, color: PIE_COLORS.trialing },
+    { name: "Churned", value: states.churned, color: PIE_COLORS.churned },
+  ].filter((d) => d.value > 0);
+
+  if (total === 0) {
+    return (
+      <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
+        <h3 className="text-[13px] font-medium text-zinc-300 mb-4">Customer Breakdown</h3>
+        <p className="text-[13px] text-zinc-400 text-center py-10">No customers yet</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-[13px] font-medium text-zinc-300">Customer Breakdown</h3>
+        <span className="text-[11px] text-zinc-400">{total} total</span>
+      </div>
+      <div className="flex items-center gap-6">
+        <ResponsiveContainer width={140} height={140}>
+          <PieChart>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              innerRadius={36}
+              outerRadius={60}
+              paddingAngle={2}
+              dataKey="value"
+              strokeWidth={0}
+            >
+              {data.map((entry) => (
+                <Cell key={entry.name} fill={entry.color} />
+              ))}
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="flex flex-col gap-3">
+          {[
+            { label: "Active", value: states.active, color: PIE_COLORS.active },
+            { label: "Trialing", value: states.trialing, color: PIE_COLORS.trialing },
+            { label: "Churned", value: states.churned, color: PIE_COLORS.churned },
+          ].map((item) => (
+            <div key={item.label} className="flex items-center gap-2.5">
+              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+              <span className="text-[13px] text-zinc-300">{item.label}</span>
+              <span className="text-[13px] font-semibold text-white tabular-nums">{item.value}</span>
+              <span className="text-[11px] text-zinc-400">
+                ({total > 0 ? ((item.value / total) * 100).toFixed(0) : 0}%)
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -614,6 +686,10 @@ export function DashboardClient({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <EarningsTrend data={chartData.earningsByMonth} />
         <ActivityFeed items={recentActivity ?? []} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <CustomerBreakdown states={chartData.customerStates} />
       </div>
     </div>
   );

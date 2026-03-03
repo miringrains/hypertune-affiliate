@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
@@ -17,6 +18,7 @@ import {
   Trophy,
   Crown,
   ArrowUpRight,
+  Search,
 } from "lucide-react";
 import { ICON_STROKE_WIDTH, COMMISSION_RATES } from "@/lib/constants";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -62,8 +64,8 @@ function fmtCurrency(amount: number) {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(amount);
 }
 
@@ -73,8 +75,20 @@ export function TeamClient({ affiliate, summary, members }: Props) {
   const [creating, setCreating] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [selectedRate, setSelectedRate] = useState<number>(COMMISSION_RATES[0]);
+  const [memberSearch, setMemberSearch] = useState("");
 
   const appUrl = typeof window !== "undefined" ? window.location.origin : "";
+
+  const filteredMembers = useMemo(() => {
+    if (!memberSearch.trim()) return members;
+    const q = memberSearch.toLowerCase();
+    return members.filter(
+      (m) =>
+        m.name.toLowerCase().includes(q) ||
+        m.email.toLowerCase().includes(q) ||
+        m.slug.toLowerCase().includes(q),
+    );
+  }, [members, memberSearch]);
 
   const fetchLinks = useCallback(async () => {
     const res = await fetch("/api/affiliates/invite-links");
@@ -249,9 +263,26 @@ export function TeamClient({ affiliate, summary, members }: Props) {
 
       {/* ── Full Roster ── */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           <h2 className="text-heading-3">All Members</h2>
-          <span className="text-[12px] text-muted-foreground">{members.length} total</span>
+          <div className="flex items-center gap-3">
+            {members.length > 0 && (
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                <Input
+                  placeholder="Search name, email, tag…"
+                  value={memberSearch}
+                  onChange={(e) => setMemberSearch(e.target.value)}
+                  className="pl-9 h-9 w-[220px] bg-black border-zinc-700 text-[13px]"
+                />
+              </div>
+            )}
+            <span className="text-[12px] text-muted-foreground shrink-0">
+              {filteredMembers.length === members.length
+                ? `${members.length} total`
+                : `${filteredMembers.length} of ${members.length}`}
+            </span>
+          </div>
         </div>
 
         {members.length === 0 ? (
@@ -273,23 +304,31 @@ export function TeamClient({ affiliate, summary, members }: Props) {
                   </tr>
                 </thead>
                 <tbody>
-                  {members.map((m) => (
-                    <tr key={m.id} className="border-b border-zinc-700/50 last:border-0">
-                      <td className="px-5 py-3">
-                        <div>
-                          <p className="text-[13px] font-medium text-white">{m.name}</p>
-                          <p className="text-[11px] text-zinc-400">{m.email}</p>
-                        </div>
+                  {filteredMembers.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-5 py-8 text-center text-[13px] text-zinc-400">
+                        No members match &ldquo;{memberSearch}&rdquo;
                       </td>
-                      <td className="px-5 py-3 text-[12px] font-mono text-zinc-400">{m.slug}</td>
-                      <td className="px-5 py-3 text-[13px] text-zinc-300">{m.commission_rate}%</td>
-                      <td className="px-5 py-3 text-[13px] text-zinc-300 tabular-nums">{m.leads}</td>
-                      <td className="px-5 py-3 text-[13px] text-zinc-300 tabular-nums">{m.customers}</td>
-                      <td className="px-5 py-3 text-[13px] font-medium text-white tabular-nums">{fmtCurrency(m.earned)}</td>
-                      <td className="px-5 py-3"><StatusBadge status={m.status} /></td>
-                      <td className="px-5 py-3 text-[12px] text-zinc-400">{new Date(m.created_at).toLocaleDateString()}</td>
                     </tr>
-                  ))}
+                  ) : (
+                    filteredMembers.map((m) => (
+                      <tr key={m.id} className="border-b border-zinc-700/50 last:border-0">
+                        <td className="px-5 py-3">
+                          <div>
+                            <p className="text-[13px] font-medium text-white">{m.name}</p>
+                            <p className="text-[11px] text-zinc-400">{m.email}</p>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3 text-[12px] font-mono text-zinc-400">{m.slug}</td>
+                        <td className="px-5 py-3 text-[13px] text-zinc-300">{m.commission_rate}%</td>
+                        <td className="px-5 py-3 text-[13px] text-zinc-300 tabular-nums">{m.leads}</td>
+                        <td className="px-5 py-3 text-[13px] text-zinc-300 tabular-nums">{m.customers}</td>
+                        <td className="px-5 py-3 text-[13px] font-medium text-white tabular-nums">{fmtCurrency(m.earned)}</td>
+                        <td className="px-5 py-3"><StatusBadge status={m.status} /></td>
+                        <td className="px-5 py-3 text-[12px] text-zinc-400">{new Date(m.created_at).toLocaleDateString()}</td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

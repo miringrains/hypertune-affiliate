@@ -61,7 +61,7 @@ export default async function TeamPage() {
         leads: allLeads.filter((l) => l.affiliate_id === id).length,
         customers: allCustomers.filter((c) => c.affiliate_id === id).length,
         earned: allComms
-          .filter((c) => c.affiliate_id === id && c.status === "paid")
+          .filter((c) => c.affiliate_id === id && c.status !== "voided")
           .reduce((s, c) => s + Number(c.amount), 0),
       };
     }

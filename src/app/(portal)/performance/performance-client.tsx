@@ -103,11 +103,12 @@ export function PerformanceClient({
   const [showTable, setShowTable] = useState(false);
   const [search, setSearch] = useState("");
 
-  const clickToLead = funnel.clicks > 0 ? ((funnel.leads / funnel.clicks) * 100).toFixed(1) : "0";
-  const leadToTrial = funnel.leads > 0 ? ((funnel.trials / funnel.leads) * 100).toFixed(1) : "0";
-  const trialToCustomer = funnel.trials > 0 ? ((funnel.customers / funnel.trials) * 100).toFixed(1) : "0";
-  const overallConversion =
-    funnel.clicks > 0 ? ((funnel.customers / funnel.clicks) * 100).toFixed(1) : "0";
+  const pct = (num: number, den: number) =>
+    den > 0 ? ((num / den) * 100).toFixed(1) : "—";
+  const clickToLead = pct(funnel.leads, funnel.clicks);
+  const leadToTrial = pct(funnel.trials, funnel.leads);
+  const trialToCustomer = pct(funnel.customers, funnel.trials);
+  const overallConversion = pct(funnel.customers, funnel.clicks);
 
   const filteredLeads = useMemo(
     () => leads.filter((l) => l.email.toLowerCase().includes(search.toLowerCase())),
@@ -156,13 +157,13 @@ export function PerformanceClient({
                 <>
                   <div className="hidden sm:flex flex-col items-center justify-center px-3 shrink-0">
                     <ArrowRight size={16} className="text-zinc-400" />
-                    <span className="text-[12px] font-bold text-emerald-400 mt-1">
-                      {stage.pct}%
+                    <span className={`text-[12px] font-bold mt-1 ${stage.pct === "—" ? "text-zinc-500" : "text-emerald-400"}`}>
+                      {stage.pct === "—" ? "—" : `${stage.pct}%`}
                     </span>
                   </div>
                   <div className="flex sm:hidden items-center justify-center py-1.5">
-                    <span className="text-[11px] font-bold text-emerald-400">
-                      ↓ {stage.pct}%
+                    <span className={`text-[11px] font-bold ${stage.pct === "—" ? "text-zinc-500" : "text-emerald-400"}`}>
+                      {stage.pct === "—" ? "↓ —" : `↓ ${stage.pct}%`}
                     </span>
                   </div>
                 </>
@@ -174,13 +175,13 @@ export function PerformanceClient({
         <div className="flex flex-wrap items-center gap-6 mt-6 pt-5 border-t border-zinc-700">
           <div className="flex items-center gap-3">
             <ConversionRing
-              value={Number(overallConversion)}
+              value={overallConversion === "—" ? 0 : Number(overallConversion)}
               size={48}
               strokeWidth={4}
               color="#ffffff"
             />
             <div>
-              <p className="text-[18px] font-semibold text-white">{overallConversion}%</p>
+              <p className="text-[18px] font-semibold text-white">{overallConversion === "—" ? "—" : `${overallConversion}%`}</p>
               <p className="text-[11px] text-zinc-400">Overall conversion</p>
             </div>
           </div>

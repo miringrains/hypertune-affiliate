@@ -15,6 +15,16 @@ const TAX_CLASSIFICATION_MAP: Record<string, number> = {
   other: 6,
 };
 
+const TAX_CLASSIFICATIONS_LABEL: Record<string, string> = {
+  individual: "Individual / Sole proprietor",
+  c_corp: "C Corporation",
+  s_corp: "S Corporation",
+  partnership: "Partnership",
+  trust_estate: "Trust / Estate",
+  llc: "LLC",
+  other: "Other",
+};
+
 interface W9Data {
   name: string;
   businessName?: string;
@@ -79,6 +89,10 @@ function validateW8BEN(body: Record<string, unknown>): W8BENData {
   if (!permanentCityStateProvince || typeof permanentCityStateProvince !== "string") throw new ApiError(400, "City/State/Province is required");
   if (!permanentCountry || typeof permanentCountry !== "string") throw new ApiError(400, "Country is required");
   if (!dateOfBirth || typeof dateOfBirth !== "string") throw new ApiError(400, "Date of birth is required");
+  const dobDate = new Date(dateOfBirth as string);
+  if (isNaN(dobDate.getTime())) throw new ApiError(400, "Invalid date of birth");
+  const year = dobDate.getFullYear();
+  if (year < 1900 || year > new Date().getFullYear()) throw new ApiError(400, "Date of birth year must be between 1900 and now");
   if (!signatureName || typeof signatureName !== "string") throw new ApiError(400, "Signature name is required");
   if (!signatureDate || typeof signatureDate !== "string") throw new ApiError(400, "Signature date is required");
 
@@ -87,88 +101,210 @@ function validateW8BEN(body: Record<string, unknown>): W8BENData {
 
 async function fillW9(data: W9Data): Promise<Uint8Array> {
   const templatePath = join(process.cwd(), "public", "forms", "fw9.pdf");
-  const templateBytes = await readFile(templatePath);
-  const pdf = await PDFDocument.load(templateBytes);
-  const form = pdf.getForm();
-
-  const setField = (name: string, value: string) => {
-    try {
-      form.getTextField(name).setText(value);
-    } catch { /* field may not exist */ }
-  };
-
-  setField("topmostSubform[0].Page1[0].f1_01[0]", data.name);
-  setField("topmostSubform[0].Page1[0].f1_02[0]", data.businessName ?? "");
-
-  const cbIdx = TAX_CLASSIFICATION_MAP[data.taxClassification];
-  if (cbIdx !== undefined) {
-    try {
-      form.getCheckBox(`topmostSubform[0].Page1[0].Boxes3a-b_ReadOrder[0].c1_1[${cbIdx}]`).check();
-    } catch { /* checkbox may not exist */ }
+  let templateBytes: Buffer;
+  try {
+    templateBytes = await readFile(templatePath);
+  } catch (fsErr) {
+    console.error("W-9 template read error:", fsErr);
+    return generateW9Fallback(data);
   }
 
-  if (data.taxClassification === "llc" && data.llcClassification) {
-    setField("topmostSubform[0].Page1[0].Boxes3a-b_ReadOrder[0].f1_03[0]", data.llcClassification);
+  try {
+    const pdf = await PDFDocument.load(templateBytes, { ignoreEncryption: true });
+    const form = pdf.getForm();
+
+    const setField = (name: string, value: string) => {
+      try {
+        form.getTextField(name).setText(value);
+      } catch { /* field may not exist */ }
+    };
+
+    setField("topmostSubform[0].Page1[0].f1_01[0]", data.name);
+    setField("topmostSubform[0].Page1[0].f1_02[0]", data.businessName ?? "");
+
+    const cbIdx = TAX_CLASSIFICATION_MAP[data.taxClassification];
+    if (cbIdx !== undefined) {
+      try {
+        form.getCheckBox(`topmostSubform[0].Page1[0].Boxes3a-b_ReadOrder[0].c1_1[${cbIdx}]`).check();
+      } catch { /* checkbox may not exist */ }
+    }
+
+    if (data.taxClassification === "llc" && data.llcClassification) {
+      setField("topmostSubform[0].Page1[0].Boxes3a-b_ReadOrder[0].f1_03[0]", data.llcClassification);
+    }
+    if (data.taxClassification === "other" && data.otherDescription) {
+      setField("topmostSubform[0].Page1[0].Boxes3a-b_ReadOrder[0].f1_04[0]", data.otherDescription);
+    }
+
+    setField("topmostSubform[0].Page1[0].f1_05[0]", data.exemptPayeeCode ?? "");
+    setField("topmostSubform[0].Page1[0].f1_06[0]", data.fatcaCode ?? "");
+    setField("topmostSubform[0].Page1[0].Address_ReadOrder[0].f1_07[0]", data.address);
+    setField("topmostSubform[0].Page1[0].Address_ReadOrder[0].f1_08[0]", data.cityStateZip);
+
+    const digits = data.tin.replace(/\D/g, "");
+    if (data.tinType === "ssn") {
+      setField("topmostSubform[0].Page1[0].f1_11[0]", digits.slice(0, 3));
+      setField("topmostSubform[0].Page1[0].f1_12[0]", digits.slice(3, 5));
+      setField("topmostSubform[0].Page1[0].f1_13[0]", digits.slice(5, 9));
+    } else {
+      setField("topmostSubform[0].Page1[0].f1_14[0]", digits.slice(0, 2));
+      setField("topmostSubform[0].Page1[0].f1_15[0]", digits.slice(2, 9));
+    }
+
+    form.flatten();
+    return pdf.save();
+  } catch (pdfErr) {
+    console.error("W-9 PDF fill error, using fallback:", pdfErr);
+    return generateW9Fallback(data);
   }
-  if (data.taxClassification === "other" && data.otherDescription) {
-    setField("topmostSubform[0].Page1[0].Boxes3a-b_ReadOrder[0].f1_04[0]", data.otherDescription);
+}
+
+async function generateW9Fallback(data: W9Data): Promise<Uint8Array> {
+  const { StandardFonts, rgb } = await import("pdf-lib");
+  const pdf = await PDFDocument.create();
+  const page = pdf.addPage([612, 792]);
+  const font = await pdf.embedFont(StandardFonts.Helvetica);
+  const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const black = rgb(0, 0, 0);
+  const gray = rgb(0.4, 0.4, 0.4);
+
+  let y = 740;
+  const lx = 50;
+
+  function heading(text: string) {
+    page.drawText(text, { x: lx, y, font: bold, size: 14, color: black });
+    y -= 28;
+  }
+  function row(label: string, value: string) {
+    page.drawText(label, { x: lx, y, font, size: 9, color: gray });
+    page.drawText(value, { x: lx + 180, y, font, size: 10, color: black });
+    y -= 18;
   }
 
-  setField("topmostSubform[0].Page1[0].f1_05[0]", data.exemptPayeeCode ?? "");
-  setField("topmostSubform[0].Page1[0].f1_06[0]", data.fatcaCode ?? "");
-  setField("topmostSubform[0].Page1[0].Address_ReadOrder[0].f1_07[0]", data.address);
-  setField("topmostSubform[0].Page1[0].Address_ReadOrder[0].f1_08[0]", data.cityStateZip);
+  const classLabel = TAX_CLASSIFICATIONS_LABEL[data.taxClassification] ?? data.taxClassification;
+  const maskedTin = data.tin.replace(/\d(?=.{4})/g, "*");
 
-  const digits = data.tin.replace(/\D/g, "");
-  if (data.tinType === "ssn") {
-    setField("topmostSubform[0].Page1[0].f1_11[0]", digits.slice(0, 3));
-    setField("topmostSubform[0].Page1[0].f1_12[0]", digits.slice(3, 5));
-    setField("topmostSubform[0].Page1[0].f1_13[0]", digits.slice(5, 9));
-  } else {
-    setField("topmostSubform[0].Page1[0].f1_14[0]", digits.slice(0, 2));
-    setField("topmostSubform[0].Page1[0].f1_15[0]", digits.slice(2, 9));
-  }
+  heading("Form W-9 — Request for Taxpayer Identification Number");
+  y -= 4;
+  row("Name:", data.name);
+  if (data.businessName) row("Business Name:", data.businessName);
+  row("Tax Classification:", classLabel);
+  if (data.taxClassification === "llc" && data.llcClassification)
+    row("LLC Classification:", data.llcClassification);
+  row("Address:", data.address);
+  row("City / State / ZIP:", data.cityStateZip);
+  row("TIN Type:", data.tinType.toUpperCase());
+  row("TIN:", maskedTin);
+  y -= 10;
+  heading("Certification");
+  row("Signature:", data.signatureName);
+  row("Date:", data.signatureDate);
 
-  form.flatten();
   return pdf.save();
 }
 
 async function fillW8BEN(data: W8BENData): Promise<Uint8Array> {
   const templatePath = join(process.cwd(), "public", "forms", "fw8ben.pdf");
-  const templateBytes = await readFile(templatePath);
-  const pdf = await PDFDocument.load(templateBytes);
-  const form = pdf.getForm();
-
-  const setField = (name: string, value: string) => {
-    try {
-      form.getTextField(name).setText(value);
-    } catch { /* field may not exist */ }
-  };
-
-  setField("topmostSubform[0].Page1[0].f_1[0]", data.name);
-  setField("topmostSubform[0].Page1[0].f_2[0]", data.countryOfCitizenship);
-  setField("topmostSubform[0].Page1[0].f_3[0]", data.permanentAddress);
-  setField("topmostSubform[0].Page1[0].f_4[0]", data.permanentCityStateProvince);
-  setField("topmostSubform[0].Page1[0].f_5[0]", data.permanentCountry);
-  setField("topmostSubform[0].Page1[0].f_6[0]", data.mailingAddress ?? "");
-  setField("topmostSubform[0].Page1[0].f_7[0]", data.mailingCityStateProvince ?? "");
-  setField("topmostSubform[0].Page1[0].f_8[0]", data.mailingCountry ?? "");
-  setField("topmostSubform[0].Page1[0].f_9[0]", data.usTin ?? "");
-  setField("topmostSubform[0].Page1[0].f_10[0]", data.foreignTin ?? "");
-  setField("topmostSubform[0].Page1[0].f_12[0]", data.dateOfBirth);
-
-  if (data.treatyCountry) {
-    setField("topmostSubform[0].Page1[0].f_13[0]", data.treatyCountry);
-    setField("topmostSubform[0].Page1[0].f_14[0]", data.treatyArticle ?? "");
-    setField("topmostSubform[0].Page1[0].f_15[0]", data.treatyRate ?? "");
-    setField("topmostSubform[0].Page1[0].f_16[0]", data.treatyIncomeType ?? "");
-    setField("topmostSubform[0].Page1[0].f_17[0]", data.treatyExplanation ?? "");
+  let templateBytes: Buffer;
+  try {
+    templateBytes = await readFile(templatePath);
+  } catch (fsErr) {
+    console.error("W-8BEN template read error:", fsErr);
+    return generateW8BENFallback(data);
   }
 
-  setField("topmostSubform[0].Page1[0].f_21[0]", data.signatureName);
-  setField("topmostSubform[0].Page1[0].Date[0]", data.signatureDate);
+  try {
+    const pdf = await PDFDocument.load(templateBytes, { ignoreEncryption: true });
+    const form = pdf.getForm();
 
-  form.flatten();
+    const setField = (name: string, value: string) => {
+      try {
+        form.getTextField(name).setText(value);
+      } catch { /* field may not exist */ }
+    };
+
+    setField("topmostSubform[0].Page1[0].f_1[0]", data.name);
+    setField("topmostSubform[0].Page1[0].f_2[0]", data.countryOfCitizenship);
+    setField("topmostSubform[0].Page1[0].f_3[0]", data.permanentAddress);
+    setField("topmostSubform[0].Page1[0].f_4[0]", data.permanentCityStateProvince);
+    setField("topmostSubform[0].Page1[0].f_5[0]", data.permanentCountry);
+    setField("topmostSubform[0].Page1[0].f_6[0]", data.mailingAddress ?? "");
+    setField("topmostSubform[0].Page1[0].f_7[0]", data.mailingCityStateProvince ?? "");
+    setField("topmostSubform[0].Page1[0].f_8[0]", data.mailingCountry ?? "");
+    setField("topmostSubform[0].Page1[0].f_9[0]", data.usTin ?? "");
+    setField("topmostSubform[0].Page1[0].f_10[0]", data.foreignTin ?? "");
+    setField("topmostSubform[0].Page1[0].f_12[0]", data.dateOfBirth);
+
+    if (data.treatyCountry) {
+      setField("topmostSubform[0].Page1[0].f_13[0]", data.treatyCountry);
+      setField("topmostSubform[0].Page1[0].f_14[0]", data.treatyArticle ?? "");
+      setField("topmostSubform[0].Page1[0].f_15[0]", data.treatyRate ?? "");
+      setField("topmostSubform[0].Page1[0].f_16[0]", data.treatyIncomeType ?? "");
+      setField("topmostSubform[0].Page1[0].f_17[0]", data.treatyExplanation ?? "");
+    }
+
+    setField("topmostSubform[0].Page1[0].f_21[0]", data.signatureName);
+    setField("topmostSubform[0].Page1[0].Date[0]", data.signatureDate);
+
+    form.flatten();
+    return pdf.save();
+  } catch (pdfErr) {
+    console.error("W-8BEN PDF fill error, using fallback:", pdfErr);
+    return generateW8BENFallback(data);
+  }
+}
+
+async function generateW8BENFallback(data: W8BENData): Promise<Uint8Array> {
+  const { StandardFonts, rgb } = await import("pdf-lib");
+  const pdf = await PDFDocument.create();
+  const page = pdf.addPage([612, 792]);
+  const font = await pdf.embedFont(StandardFonts.Helvetica);
+  const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const black = rgb(0, 0, 0);
+  const gray = rgb(0.4, 0.4, 0.4);
+
+  let y = 740;
+  const lx = 50;
+
+  function heading(text: string) {
+    page.drawText(text, { x: lx, y, font: bold, size: 14, color: black });
+    y -= 28;
+  }
+  function row(label: string, value: string) {
+    page.drawText(label, { x: lx, y, font, size: 9, color: gray });
+    page.drawText(value, { x: lx + 180, y, font, size: 10, color: black });
+    y -= 18;
+  }
+
+  heading("Form W-8BEN — Certificate of Foreign Status");
+  y -= 4;
+  row("Name:", data.name);
+  row("Country of Citizenship:", data.countryOfCitizenship);
+  row("Permanent Address:", data.permanentAddress);
+  row("City / Province:", data.permanentCityStateProvince);
+  row("Country:", data.permanentCountry);
+  if (data.mailingAddress) {
+    row("Mailing Address:", data.mailingAddress);
+    row("Mailing City/Province:", data.mailingCityStateProvince ?? "");
+    row("Mailing Country:", data.mailingCountry ?? "");
+  }
+  if (data.foreignTin) row("Foreign TIN:", data.foreignTin);
+  if (data.usTin) row("US TIN:", data.usTin);
+  row("Date of Birth:", data.dateOfBirth);
+  y -= 10;
+  if (data.treatyCountry) {
+    heading("Treaty Benefits (Part II)");
+    row("Treaty Country:", data.treatyCountry);
+    if (data.treatyArticle) row("Article:", data.treatyArticle);
+    if (data.treatyRate) row("Rate:", data.treatyRate);
+    if (data.treatyIncomeType) row("Income Type:", data.treatyIncomeType);
+    if (data.treatyExplanation) row("Explanation:", data.treatyExplanation);
+    y -= 10;
+  }
+  heading("Certification");
+  row("Signature:", data.signatureName);
+  row("Date:", data.signatureDate);
+
   return pdf.save();
 }
 
@@ -183,17 +319,35 @@ export async function POST(request: NextRequest) {
     }
 
     let pdfBytes: Uint8Array;
-    if (documentType === "w9") {
-      const data = validateW9(body);
-      pdfBytes = await fillW9(data);
-    } else {
-      const data = validateW8BEN(body);
-      pdfBytes = await fillW8BEN(data);
+    try {
+      if (documentType === "w9") {
+        const data = validateW9(body);
+        pdfBytes = await fillW9(data);
+      } else {
+        const data = validateW8BEN(body);
+        pdfBytes = await fillW8BEN(data);
+      }
+    } catch (pdfErr) {
+      if (pdfErr instanceof ApiError) throw pdfErr;
+      console.error("PDF generation error:", pdfErr);
+      throw new ApiError(500, "Failed to generate PDF — please check your inputs and try again");
     }
 
     const supabase = await createServiceClient();
     const timestamp = Date.now();
     const filePath = `${affiliate.id}/${documentType}_${timestamp}.pdf`;
+
+    const { data: existing } = await supabase
+      .from("tax_documents")
+      .select("id, file_path")
+      .eq("affiliate_id", affiliate.id)
+      .order("uploaded_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase.storage.from("tax-docs").remove([existing.file_path]);
+    }
 
     const { error: uploadError } = await supabase.storage
       .from("tax-docs")
@@ -207,17 +361,8 @@ export async function POST(request: NextRequest) {
       throw new ApiError(500, "Failed to store document");
     }
 
-    const { data: existing } = await supabase
-      .from("tax_documents")
-      .select("id, file_path")
-      .eq("affiliate_id", affiliate.id)
-      .order("uploaded_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
     if (existing) {
-      await supabase.storage.from("tax-docs").remove([existing.file_path]);
-      await supabase
+      const { error: updateError } = await supabase
         .from("tax_documents")
         .update({
           document_type: documentType,
@@ -225,6 +370,10 @@ export async function POST(request: NextRequest) {
           uploaded_at: new Date().toISOString(),
         })
         .eq("id", existing.id);
+      if (updateError) {
+        console.error("Update error:", updateError);
+        throw new ApiError(500, "Failed to update document record");
+      }
     } else {
       const { error: insertError } = await supabase
         .from("tax_documents")

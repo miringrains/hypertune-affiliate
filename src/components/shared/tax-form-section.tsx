@@ -304,13 +304,15 @@ function W8BENForm({ onSubmit, submitting }: { onSubmit: (data: Record<string, u
           <Input value={foreignTin} onChange={(e) => setForeignTin(e.target.value)} className="h-9 font-mono" placeholder="Your country TIN" />
         </div>
         <div className="space-y-2">
-          <Label className="text-[12px]">Date of birth (MM-DD-YYYY)</Label>
+          <Label className="text-[12px]">Date of birth</Label>
           <Input
             type="date"
             value={dateOfBirth}
             onChange={(e) => setDateOfBirth(e.target.value)}
             className="h-9"
             required
+            min="1900-01-01"
+            max={new Date().toISOString().split("T")[0]}
           />
         </div>
       </div>

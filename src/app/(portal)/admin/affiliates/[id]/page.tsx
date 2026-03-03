@@ -28,11 +28,12 @@ async function computeStatsForIds(
 
   const customers = customersResult.data ?? [];
   const commissions = commissionsResult.data ?? [];
-  const totalEarned = commissions.reduce((sum, c) => sum + c.amount, 0);
-  const pendingAmount = commissions
+  const nonVoided = commissions.filter((c) => c.status !== "voided");
+  const totalEarned = nonVoided.reduce((sum, c) => sum + c.amount, 0);
+  const pendingAmount = nonVoided
     .filter((c) => c.status === "pending" || c.status === "approved")
     .reduce((sum, c) => sum + c.amount, 0);
-  const paidAmount = commissions
+  const paidAmount = nonVoided
     .filter((c) => c.status === "paid")
     .reduce((sum, c) => sum + c.amount, 0);
 

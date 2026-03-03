@@ -56,10 +56,7 @@ function wrap(heading: string, body: string, cta?: { label: string; url: string 
 <tr><td align="center" style="padding:48px 20px;">
 <table role="presentation" width="480" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;width:100%;">
 <tr><td align="center" style="padding:0 0 32px;">
-<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-<td style="vertical-align:middle;padding-right:10px;"><img src="https://hypertune-affiliate.vercel.app/hypertune-logo.svg" alt="" width="28" height="30" style="display:block;border:0;"></td>
-<td style="vertical-align:middle;"><span style="font-size:20px;font-weight:700;letter-spacing:0.08em;color:#ffffff;text-transform:uppercase;">Hypertune</span></td>
-</tr></table>
+<img src="${APP_URL}/hypertune-logo.svg" alt="Hypertune" width="36" height="38" style="display:block;border:0;margin:0 auto;">
 </td></tr>
 <tr><td style="background-color:#0a0a0a;background-image:linear-gradient(#0a0a0a,#0a0a0a);border:1px solid #27272a;border-radius:12px;overflow:hidden;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">

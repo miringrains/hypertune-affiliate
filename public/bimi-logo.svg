@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.2" baseProfile="tiny-ps" viewBox="0 0 100 100">
+<title>Hypertune</title>
+<rect width="100" height="100" rx="0" fill="#09090b"/>
+<g transform="translate(35.5,35) scale(1)">
+<path d="M21.5179 0L29 1.71429V28.1429L21.5179 30V17.3571H7.48211V30L0 28.1429V1.71429L7.48211 0V16.0286L10.8682 12.0429H21.5179V0Z" fill="#E1251B"/>
+</g>
+</svg>

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { CheckCircle2, AlertCircle, Eye, EyeOff } from "lucide-react";
+import { SecuritySection } from "@/components/shared/security-section";
 
 const NUMERIC_KEYS = new Set([
   "cookie_duration_days",
@@ -279,6 +280,8 @@ export function SettingsAdminClient({
 }) {
   return (
     <div className="space-y-8">
+      <SecuritySection />
+
       <PayPalConfig isConnected={paypalConnected} mode={paypalMode} />
 
       <Card>

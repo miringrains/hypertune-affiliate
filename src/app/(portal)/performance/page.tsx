@@ -46,7 +46,7 @@ export default async function PerformancePage() {
     (() => {
       const q = supabase
         .from("leads")
-        .select("id, email, affiliate_id, stripe_customer_id, created_at")
+        .select("id, email, affiliate_id, stripe_customer_id, created_at, customers(current_state)")
         .order("created_at", { ascending: false });
       if (!isTier1) q.eq("affiliate_id", affiliate.id);
       return q;
@@ -146,13 +146,17 @@ export default async function PerformancePage() {
       weeklyTrend={weeklyData}
       isTier1={isTier1}
       sourceBreakdown={sourceBreakdown}
-      leads={allLeads.map((l) => ({
-        id: l.id,
-        email: l.email,
-        converted: !!l.stripe_customer_id,
-        source: isTier1 ? (subIdMap[l.affiliate_id] ?? "Unknown") : undefined,
-        created_at: l.created_at,
-      }))}
+      leads={allLeads.map((l) => {
+        const custState = (l.customers as unknown as { current_state: string }[] | null)?.[0]?.current_state ?? null;
+        return {
+          id: l.id,
+          email: l.email,
+          converted: !!l.stripe_customer_id,
+          customerState: custState,
+          source: isTier1 ? (subIdMap[l.affiliate_id] ?? "Unknown") : undefined,
+          created_at: l.created_at,
+        };
+      })}
       customers={allCustomers.map((c) => ({
         id: c.id,
         email: (c.leads as unknown as { email: string } | null)?.email ?? "—",

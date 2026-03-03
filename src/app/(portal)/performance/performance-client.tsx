@@ -58,6 +58,7 @@ interface LeadRow {
   id: string;
   email: string;
   converted: boolean;
+  customerState: string | null;
   source?: string;
   created_at: string;
 }
@@ -334,7 +335,7 @@ export function PerformanceClient({
                         <tr key={l.id} className="border-b border-zinc-700/50 last:border-0">
                           <td className="px-5 py-3 text-[13px] text-zinc-100">{l.email}</td>
                           {isTier1 && <td className="px-5 py-3 text-[12px] text-zinc-400">{l.source}</td>}
-                          <td className="px-5 py-3"><StatusBadge status={l.converted ? "active" : "pending"} /></td>
+                          <td className="px-5 py-3"><StatusBadge status={l.customerState ?? (l.converted ? "active" : "pending")} /></td>
                           <td className="px-5 py-3 text-[12px] text-zinc-400">{new Date(l.created_at).toLocaleDateString()}</td>
                         </tr>
                       ))}

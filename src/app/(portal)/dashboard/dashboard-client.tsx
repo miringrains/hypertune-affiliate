@@ -36,6 +36,7 @@ import type { Tables } from "@/lib/supabase/types";
 interface DashboardStats {
   clicks: number;
   leads: number;
+  trials: number;
   customers: number;
   earned: number;
   pending: number;
@@ -345,53 +346,49 @@ function OnboardingBanner({ slug }: { slug: string }) {
 function FunnelStrip({ stats }: { stats: DashboardStats }) {
   const clickToLead =
     stats.clicks > 0 ? ((stats.leads / stats.clicks) * 100).toFixed(1) : "0";
-  const leadToCustomer =
-    stats.leads > 0 ? ((stats.customers / stats.leads) * 100).toFixed(1) : "0";
+  const leadToTrial =
+    stats.leads > 0 ? ((stats.trials / stats.leads) * 100).toFixed(1) : "0";
+  const trialToCustomer =
+    stats.trials > 0 ? ((stats.customers / stats.trials) * 100).toFixed(1) : "0";
 
   const steps = [
-    { label: "Clicks", value: stats.clicks, icon: MousePointerClick },
-    { label: "Leads", value: stats.leads, icon: Users },
-    { label: "Customers", value: stats.customers, icon: UserCheck },
+    { label: "Clicks", value: stats.clicks, icon: MousePointerClick, pct: clickToLead },
+    { label: "Leads", value: stats.leads, icon: Users, pct: leadToTrial },
+    { label: "Trialing", value: stats.trials, icon: Clock, pct: trialToCustomer },
+    { label: "Customers", value: stats.customers, icon: UserCheck, pct: null },
   ];
 
-  const rates = [clickToLead, leadToCustomer];
-
   return (
-    <div className="flex flex-col sm:flex-row items-stretch gap-0">
-      {steps.map((step, i) => (
-        <div key={step.label} className="flex items-stretch flex-1 min-w-0">
-          <div className="flex-1 rounded-xl border border-zinc-700 bg-zinc-950">
-            <div className="p-4 sm:p-5 flex items-center gap-3">
-              <div className="shrink-0 flex items-center justify-center w-10 h-10 rounded-lg border border-zinc-700 bg-black">
-                <step.icon size={18} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-400" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[22px] sm:text-[26px] font-semibold tracking-tight leading-none text-white">
-                  {step.value.toLocaleString()}
-                </p>
-                <p className="text-[11px] text-zinc-400 mt-0.5">{step.label}</p>
-              </div>
+    <div className="rounded-2xl border border-zinc-700 bg-zinc-950 p-6 sm:p-8">
+      <div className="flex flex-col sm:flex-row items-stretch gap-0">
+        {steps.map((step, i) => (
+          <div key={step.label} className="flex items-stretch flex-1 min-w-0">
+            <div className="flex-1 text-center p-4 sm:p-5 rounded-xl border border-zinc-700 bg-black">
+              <step.icon size={22} strokeWidth={ICON_STROKE_WIDTH} className="mx-auto mb-2 text-zinc-400" />
+              <p className="text-[28px] sm:text-[34px] font-semibold tracking-tight leading-none text-white">
+                {step.value.toLocaleString()}
+              </p>
+              <p className="text-[12px] text-zinc-400 mt-1.5">{step.label}</p>
             </div>
+
+            {i < steps.length - 1 && (
+              <>
+                <div className="hidden sm:flex flex-col items-center justify-center px-3 shrink-0">
+                  <ArrowRight size={16} className="text-zinc-400" />
+                  <span className="text-[12px] font-bold text-emerald-400 mt-1">
+                    {step.pct}%
+                  </span>
+                </div>
+                <div className="flex sm:hidden items-center justify-center py-1.5">
+                  <span className="text-[11px] font-bold text-emerald-400">
+                    ↓ {step.pct}%
+                  </span>
+                </div>
+              </>
+            )}
           </div>
-
-          {i < steps.length - 1 && (
-            <div className="hidden sm:flex flex-col items-center justify-center px-2 shrink-0">
-              <ArrowRight size={14} className="text-zinc-400" />
-              <span className="text-[10px] font-semibold text-emerald-400 mt-0.5">
-                {rates[i]}%
-              </span>
-            </div>
-          )}
-
-          {i < steps.length - 1 && (
-            <div className="flex sm:hidden items-center justify-center py-1">
-              <span className="text-[10px] font-semibold text-emerald-400">
-                ↓ {rates[i]}%
-              </span>
-            </div>
-          )}
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

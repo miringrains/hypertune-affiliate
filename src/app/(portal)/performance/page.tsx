@@ -98,7 +98,16 @@ export default async function PerformancePage() {
     });
   }
 
-  // Customer state breakdown
+  // Direct-only stats for the funnel (Tier 1 sees their own funnel, not the network's)
+  const directLeads = isTier1
+    ? allLeads.filter((l) => l.affiliate_id === affiliate.id)
+    : allLeads;
+  const directCustomers = isTier1
+    ? allCustomers.filter((c) => c.affiliate_id === affiliate.id)
+    : allCustomers;
+  const directTrialing = directCustomers.filter((c) => c.current_state === "trialing").length;
+
+  // Customer state breakdown (full network for Tier 1)
   const activeCustomers = allCustomers.filter(
     (c) => c.current_state === "active_monthly" || c.current_state === "active_annual",
   );
@@ -127,7 +136,7 @@ export default async function PerformancePage() {
 
   return (
     <PerformanceClient
-      funnel={{ clicks: clicks30d, leads: allLeads.length, trials: trialingCount, customers: allCustomers.length }}
+      funnel={{ clicks: clicks30d, leads: directLeads.length, trials: directTrialing, customers: directCustomers.length }}
       customerStates={{
         active: activeCustomers.length,
         trialing: trialingCount,

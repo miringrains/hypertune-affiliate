@@ -129,6 +129,7 @@ export default async function DashboardPage() {
         stats={{
           clicks: clickRows.length,
           leads: leadsCountRes.count ?? 0,
+          trials: trialingCount,
           customers: customersRes.count ?? 0,
           earned: allAmount,
           pending: pendingAmount,
@@ -152,7 +153,7 @@ export default async function DashboardPage() {
   }
 
   // ── Affiliate flow ──
-  const [clicksTimeRes, leadsCountRes, customersCountRes, commissionsRes, recentCommissionsRes] =
+  const [clicksTimeRes, leadsCountRes, customersCountRes, trialingCountRes, commissionsRes, recentCommissionsRes] =
     await Promise.all([
       supabase
         .from("clicks")
@@ -167,6 +168,11 @@ export default async function DashboardPage() {
         .from("customers")
         .select("id", { count: "exact", head: true })
         .eq("affiliate_id", affiliate.id),
+      supabase
+        .from("customers")
+        .select("id", { count: "exact", head: true })
+        .eq("affiliate_id", affiliate.id)
+        .eq("current_state", "trialing"),
       supabase
         .from("commissions")
         .select("amount, status, created_at")
@@ -185,6 +191,7 @@ export default async function DashboardPage() {
   const recentComms = recentCommissionsRes.data ?? [];
   const totalLeads = leadsCountRes.count ?? 0;
   const totalCustomers = customersCountRes.count ?? 0;
+  const totalTrialing = trialingCountRes.count ?? 0;
 
   const totalEarned = commRows
     .filter((c) => c.status === "paid")
@@ -211,6 +218,7 @@ export default async function DashboardPage() {
     stats: {
       clicks: clickRows.length,
       leads: totalLeads,
+      trials: totalTrialing,
       customers: totalCustomers,
       earned: totalEarned,
       pending: totalPending,

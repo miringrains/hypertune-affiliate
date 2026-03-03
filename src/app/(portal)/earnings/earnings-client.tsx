@@ -192,7 +192,7 @@ export function EarningsClient({
                 >
                   {seg.pct > 15 && (
                     <span className={`text-[10px] font-medium ${seg.textColor}`}>
-                      {fmtCurrencyShort(seg.amount)}
+                      {fmtCurrency(seg.amount)}
                     </span>
                   )}
                 </div>
@@ -204,7 +204,7 @@ export function EarningsClient({
               <div key={seg.label} className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-zinc-600" />
                 <span className="text-[11px] text-zinc-400">{seg.label}</span>
-                <span className={`text-[11px] font-medium ${seg.textColor}`}>{fmtCurrencyShort(seg.amount)}</span>
+                <span className={`text-[11px] font-medium ${seg.textColor}`}>{fmtCurrency(seg.amount)}</span>
               </div>
             ))}
           </div>

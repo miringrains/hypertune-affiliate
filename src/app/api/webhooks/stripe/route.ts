@@ -684,6 +684,13 @@ async function handleSubscriptionDeleted(supabase: ServiceClient, sub: Stripe.Su
     })
     .eq("id", customer.id);
 
+  // Void any pending/approved commissions for this customer
+  await supabase
+    .from("commissions")
+    .update({ status: "voided" as const })
+    .eq("customer_id", customer.id)
+    .in("status", ["pending", "approved"]);
+
   await logEvent(supabase, customer.id, "canceled", {
     subscription_id: sub.id,
     reason: sub.cancellation_details?.reason,

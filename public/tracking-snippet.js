@@ -2,11 +2,11 @@
  * Hypertune Affiliate Tracking Snippet
  * Add this script to hypertune.gg to enable affiliate tracking.
  *
- * Usage: <script src="https://affiliates.hypertune.gg/tracking-snippet.js" data-api="https://affiliates.hypertune.gg"></script>
+ * Usage: <script src="https://hypertune-affiliate.vercel.app/tracking-snippet.js" data-api="https://hypertune-affiliate.vercel.app"></script>
  */
 (function () {
   var script = document.currentScript;
-  var apiBase = script && script.getAttribute("data-api") || "https://affiliates.hypertune.gg";
+  var apiBase = script && script.getAttribute("data-api") || "https://hypertune-affiliate.vercel.app";
 
   var params = new URLSearchParams(window.location.search);
   var amId = params.get("am_id");

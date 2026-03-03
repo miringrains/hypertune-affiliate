@@ -177,8 +177,7 @@ function ReferralLinkBar({ affiliate }: { affiliate: Tables<"affiliates"> }) {
   const [slug, setSlug] = useState(affiliate.slug);
   const [saving, setSaving] = useState(false);
 
-  const appUrl = typeof window !== "undefined" ? window.location.origin : "";
-  const referralLink = `${appUrl}/api/track/click?am_id=${slug}`;
+  const referralLink = `https://hypertune.gg?am_id=${slug}`;
 
   async function copyLink() {
     await navigator.clipboard.writeText(referralLink);

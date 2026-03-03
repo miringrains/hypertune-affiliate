@@ -153,7 +153,7 @@ export default async function DashboardPage() {
   }
 
   // ── Affiliate flow ──
-  const [clicksTimeRes, leadsCountRes, customerStatesRes, commissionsRes, recentCommissionsRes] =
+  const [clicksTimeRes, leadsCountRes, customerStatesRes, commissionsRes, recentCommissionsRes, taxDocRes] =
     await Promise.all([
       supabase
         .from("clicks")
@@ -179,6 +179,10 @@ export default async function DashboardPage() {
         .eq("affiliate_id", affiliate.id)
         .order("created_at", { ascending: false })
         .limit(8),
+      supabase
+        .from("tax_documents")
+        .select("id", { count: "exact", head: true })
+        .eq("affiliate_id", affiliate.id),
     ]);
 
   const clickRows = clicksTimeRes.data ?? [];
@@ -212,8 +216,11 @@ export default async function DashboardPage() {
     })
     .reduce((s, c) => s + Number(c.amount), 0);
 
+  const hasTaxForm = (taxDocRes.count ?? 0) > 0;
+
   const baseProps = {
     affiliate,
+    hasTaxForm,
     stats: {
       clicks: clickRows.length,
       leads: totalLeads,

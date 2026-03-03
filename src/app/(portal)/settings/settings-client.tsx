@@ -24,6 +24,7 @@ import { ICON_STROKE_WIDTH } from "@/lib/constants";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { createClient } from "@/lib/supabase/client";
 import { SecuritySection } from "@/components/shared/security-section";
+import { TaxFormSection } from "@/components/shared/tax-form-section";
 import type { Tables } from "@/lib/supabase/types";
 
 interface PayoutMethod {
@@ -381,6 +382,9 @@ export function SettingsClient({ affiliate, userEmail, payoutMethods: initialMet
           )}
         </CardContent>
       </Card>
+
+      {/* Tax Documents */}
+      <TaxFormSection />
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, Loader2, Check, Wallet, Trash2, Plus, ChevronDown } from "lucide-react";
+import { ArrowLeft, Loader2, Check, Wallet, Trash2, Plus, ChevronDown, FileText, Download, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { formatCurrency } from "@/lib/utils";
@@ -338,6 +338,7 @@ export function AffiliateDetailClient({
       </div>
 
       <AdminPayoutMethods affiliateId={affiliate.id} />
+      <AdminTaxDocuments affiliateId={affiliate.id} />
     </div>
   );
 }
@@ -529,6 +530,94 @@ function AdminPayoutMethods({ affiliateId }: { affiliateId: string }) {
               Cancel
             </button>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Admin Tax Documents
+// ---------------------------------------------------------------------------
+
+function AdminTaxDocuments({ affiliateId }: { affiliateId: string }) {
+  const [loading, setLoading] = useState(true);
+  const [taxData, setTaxData] = useState<{
+    onFile: boolean;
+    documentType?: string;
+    uploadedAt?: string;
+    downloadUrl?: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/admin/tax/${affiliateId}`)
+      .then((r) => r.json())
+      .then(setTaxData)
+      .finally(() => setLoading(false));
+  }, [affiliateId]);
+
+  async function handleDownload() {
+    const res = await fetch(`/api/admin/tax/${affiliateId}`);
+    const data = await res.json();
+    if (data.downloadUrl) {
+      window.open(data.downloadUrl, "_blank");
+    } else {
+      toast.error("Could not generate download link");
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-zinc-700 bg-zinc-950 p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <FileText className="w-4 h-4 text-zinc-400" />
+          <h2 className="text-[15px] font-medium text-white">Tax Documents</h2>
+        </div>
+        {!loading && taxData?.onFile && (
+          <span className="text-[10px] font-medium text-emerald-400 border border-emerald-500/20 bg-emerald-500/10 rounded px-1.5 py-0.5">
+            On File
+          </span>
+        )}
+        {!loading && !taxData?.onFile && (
+          <span className="text-[10px] font-medium text-amber-400 border border-amber-500/20 bg-amber-500/10 rounded px-1.5 py-0.5">
+            Missing
+          </span>
+        )}
+      </div>
+
+      {loading ? (
+        <p className="text-[13px] text-zinc-400">Loading...</p>
+      ) : taxData?.onFile ? (
+        <div className="flex items-center justify-between py-2">
+          <div className="flex items-center gap-3">
+            <FileText className="w-4 h-4 text-zinc-400" />
+            <div>
+              <span className="text-[13px] text-white">
+                {taxData.documentType === "w9" ? "Form W-9" : "Form W-8BEN"}
+              </span>
+              <p className="text-[11px] text-zinc-400">
+                Submitted{" "}
+                {new Date(taxData.uploadedAt!).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleDownload}
+            className="flex items-center gap-1.5 text-[12px] text-zinc-400 hover:text-white transition-colors"
+          >
+            <Download className="w-3.5 h-3.5" /> Download PDF
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 py-2">
+          <AlertCircle className="w-4 h-4 text-amber-400" />
+          <p className="text-[13px] text-zinc-400">
+            No tax form submitted by this affiliate.
+          </p>
         </div>
       )}
     </div>

@@ -30,6 +30,7 @@ import {
   DollarSign,
   Clock,
   Shield,
+  AlertTriangle,
 } from "lucide-react";
 import { ICON_STROKE_WIDTH } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
@@ -91,6 +92,7 @@ interface DashboardClientProps {
   subAffiliateCount?: number;
   subCustomerStates?: CustomerStateData;
   adminData?: AdminData;
+  hasTaxForm?: boolean;
 }
 
 function fmtCurrency(amount: number) {
@@ -580,6 +582,24 @@ function CustomerBreakdown({
   );
 }
 
+function TaxFormBanner() {
+  return (
+    <a
+      href="/settings#tax"
+      className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 px-5 py-3.5 hover:bg-amber-500/10 transition-colors"
+    >
+      <AlertTriangle size={18} className="text-amber-400 shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-[13px] font-medium text-amber-300">Tax form required</p>
+        <p className="text-[11px] text-amber-400/70">
+          Submit your W-9 or W-8BEN in Settings to receive affiliate payouts.
+        </p>
+      </div>
+      <ArrowRight size={14} className="text-amber-400 shrink-0" />
+    </a>
+  );
+}
+
 export function DashboardClient({
   affiliate,
   stats,
@@ -588,6 +608,7 @@ export function DashboardClient({
   subAffiliateCount,
   subCustomerStates,
   adminData,
+  hasTaxForm,
 }: DashboardClientProps) {
   const isAdmin = affiliate.role === "admin";
   const isTier1 = affiliate.tier_level === 1 && !isAdmin;
@@ -686,6 +707,8 @@ export function DashboardClient({
 
       <HeroEarnings stats={stats} />
       <ReferralLinkBar affiliate={affiliate} />
+
+      {hasTaxForm === false && <TaxFormBanner />}
 
       {stats.clicks === 0 && stats.leads === 0 && stats.customers === 0 && (
         <OnboardingBanner slug={affiliate.slug} />

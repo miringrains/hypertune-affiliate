@@ -2,11 +2,15 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, Loader2, Check, Wallet, Trash2, Plus, ChevronDown, FileText, Download, AlertCircle } from "lucide-react";
+import {
+  ArrowLeft, Loader2, Check, Wallet, Trash2, Plus, ChevronDown, FileText,
+  Download, AlertCircle, MousePointerClick, Users, UserCheck, ArrowRight, Clock,
+} from "lucide-react";
 import { toast } from "sonner";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { formatCurrency } from "@/lib/utils";
-import { COMMISSION_RATES } from "@/lib/constants";
+import { COMMISSION_RATES, ICON_STROKE_WIDTH } from "@/lib/constants";
+import { ConversionRing } from "@/components/shared/conversion-ring";
 import type { Tables } from "@/lib/supabase/types";
 
 interface FunnelStats {
@@ -159,27 +163,33 @@ export function AffiliateDetailClient({
         </div>
       </div>
 
-      {/* Funnel Stats */}
-      <div className={`relative ${loadingStats ? "opacity-60" : ""}`}>
+      {/* Performance & Financials */}
+      <div className={`relative rounded-2xl border border-zinc-700 bg-zinc-950 p-6 sm:p-8 space-y-8 ${loadingStats ? "opacity-60" : ""}`}>
         {loadingStats && (
           <div className="absolute inset-0 flex items-center justify-center z-10">
             <Loader2 className="w-5 h-5 animate-spin text-zinc-400" />
           </div>
         )}
 
-        {isTier1 && subStats ? (
-          <div className="space-y-3">
-            <FunnelRow label="Direct Performance" stats={stats} />
-            <FunnelRow
-              label="Sub-affiliate Performance"
+        <PerformanceSection
+          label="Direct Performance"
+          stats={stats}
+          commissionRate={affiliate.commission_rate}
+        />
+
+        {isTier1 && subStats && (
+          <>
+            <div className="border-t border-zinc-700" />
+            <PerformanceSection
+              label="Sub-Affiliate Performance"
               stats={subStats}
-              muted
+              commissionRate={affiliate.commission_rate}
               dropdown={
                 subAffiliates.length > 1 ? (
                   <select
                     value={selectedSubId}
                     onChange={(e) => handleSubIdChange(e.target.value)}
-                    className="rounded-md border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[11px] text-zinc-300 outline-none focus:border-zinc-600 cursor-pointer"
+                    className="rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-[11px] text-zinc-300 outline-none focus:border-zinc-600 cursor-pointer"
                   >
                     <option value="all">All Sub-affiliates ({subAffiliates.length})</option>
                     {subAffiliates.map((s) => (
@@ -191,24 +201,8 @@ export function AffiliateDetailClient({
                 ) : undefined
               }
             />
-          </div>
-        ) : (
-          <FunnelRow label="Full Funnel" stats={stats} />
+          </>
         )}
-      </div>
-
-      {/* Financial Stats */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCell label="Total Earned" value={formatCurrency(stats.totalEarned)} />
-        <StatCell label="Pending" value={formatCurrency(stats.pendingAmount)} />
-        <StatCell label="Paid Out" value={formatCurrency(stats.paidAmount)} />
-        <StatCell
-          label="MRR"
-          value={formatCurrency(
-            (stats.activeMonthly + stats.activeAnnual) *
-              (affiliate.commission_rate / 100),
-          )}
-        />
       </div>
 
       {/* Info & Editable Fields */}
@@ -344,78 +338,125 @@ export function AffiliateDetailClient({
 }
 
 // ---------------------------------------------------------------------------
-// Funnel row with individual bordered cells
+// Performance Section — funnel + financials in one block
 // ---------------------------------------------------------------------------
 
-function FunnelRow({
+function PerformanceSection({
   label,
   stats,
-  muted,
+  commissionRate,
   dropdown,
 }: {
   label: string;
   stats: FunnelStats;
-  muted?: boolean;
+  commissionRate: number;
   dropdown?: React.ReactNode;
 }) {
-  const steps = [
-    { label: "Clicks", value: stats.clicks },
-    { label: "Signups", value: stats.leads },
-    { label: "Trials", value: stats.trialing },
-    { label: "Customers", value: stats.customers },
-    { label: "Active Subs", value: stats.activeSubs },
-    { label: "Canceled", value: stats.canceled },
+  const pct = (num: number, den: number) =>
+    den > 0 ? ((num / den) * 100).toFixed(1) : "—";
+
+  const clickToLead = pct(stats.leads, stats.clicks);
+  const leadToTrial = pct(stats.trialing, stats.leads);
+  const trialToCustomer = pct(stats.customers, stats.trialing);
+  const overallConversion = pct(stats.customers, stats.clicks);
+
+  const stages = [
+    { icon: MousePointerClick, label: "Clicks", value: stats.clicks, convPct: clickToLead },
+    { icon: Users, label: "Leads", value: stats.leads, convPct: leadToTrial },
+    { icon: Clock, label: "Trialing", value: stats.trialing, convPct: trialToCustomer },
+    { icon: UserCheck, label: "Customers", value: stats.customers, convPct: null },
   ];
 
   return (
-    <div className={`rounded-lg border border-zinc-700 bg-zinc-950 p-5 ${muted ? "opacity-75" : ""}`}>
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">
-          {label}
-        </p>
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">{label}</p>
         {dropdown}
       </div>
-      <div className="grid grid-cols-6 gap-2">
-        {steps.map((step, i) => {
-          const prev = i > 0 ? steps[i - 1].value : null;
-          const pct = prev && prev > 0 ? ((step.value / prev) * 100).toFixed(1) : null;
 
-          return (
-            <div
-              key={step.label}
-              className="rounded-md border border-zinc-800 bg-zinc-900/50 px-3 py-3 text-center"
-            >
-              <p className="text-[20px] font-semibold text-white tabular-nums">
-                {step.value.toLocaleString()}
+      {/* Funnel cards */}
+      <div className="flex flex-col sm:flex-row items-stretch gap-0">
+        {stages.map((stage, i, arr) => (
+          <div key={stage.label} className="flex items-stretch flex-1 min-w-0">
+            <div className="flex-1 text-center p-4 sm:p-5 rounded-xl border border-zinc-700 bg-black">
+              <stage.icon size={20} strokeWidth={ICON_STROKE_WIDTH} className="mx-auto mb-2 text-zinc-400" />
+              <p className="text-[24px] sm:text-[28px] font-semibold tracking-tight leading-none text-white">
+                {stage.value.toLocaleString()}
               </p>
-              <p className="text-[10px] text-zinc-400 mt-0.5">{step.label}</p>
-              {pct !== null && (
-                <p className="text-[10px] text-zinc-500 mt-1 tabular-nums">{pct}%</p>
-              )}
+              <p className="text-[11px] text-zinc-400 mt-1.5">{stage.label}</p>
             </div>
-          );
-        })}
+
+            {i < arr.length - 1 && (
+              <>
+                <div className="hidden sm:flex flex-col items-center justify-center px-2.5 shrink-0">
+                  <ArrowRight size={14} className="text-zinc-500" />
+                  <span className={`text-[11px] font-bold mt-1 ${stage.convPct === "—" ? "text-zinc-500" : "text-emerald-400"}`}>
+                    {stage.convPct === "—" ? "—" : `${stage.convPct}%`}
+                  </span>
+                </div>
+                <div className="flex sm:hidden items-center justify-center py-1">
+                  <span className={`text-[10px] font-bold ${stage.convPct === "—" ? "text-zinc-500" : "text-emerald-400"}`}>
+                    {stage.convPct === "—" ? "↓ —" : `↓ ${stage.convPct}%`}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+        ))}
       </div>
-      {(stats.activeMonthly > 0 || stats.activeAnnual > 0) && (
-        <p className="text-[11px] text-zinc-500 mt-3">
-          {stats.activeMonthly} monthly · {stats.activeAnnual} annual
-        </p>
-      )}
-    </div>
-  );
-}
 
-// ---------------------------------------------------------------------------
-// Stat cell
-// ---------------------------------------------------------------------------
+      {/* Summary row: conversion ring + status counts + financials */}
+      <div className="flex flex-wrap items-center gap-6 pt-4 border-t border-zinc-700/50">
+        <div className="flex items-center gap-3">
+          <ConversionRing
+            value={overallConversion === "—" ? 0 : Number(overallConversion)}
+            size={44}
+            strokeWidth={3.5}
+            color="#ffffff"
+          />
+          <div>
+            <p className="text-[16px] font-semibold text-white">
+              {overallConversion === "—" ? "—" : `${overallConversion}%`}
+            </p>
+            <p className="text-[10px] text-zinc-400">Overall</p>
+          </div>
+        </div>
+        <div className="flex gap-4 text-[12px]">
+          <div>
+            <span className="text-emerald-400 font-semibold">{stats.activeSubs}</span>
+            <span className="text-zinc-400 ml-1">active</span>
+          </div>
+          <div>
+            <span className="text-amber-400 font-semibold">{stats.trialing}</span>
+            <span className="text-zinc-400 ml-1">trialing</span>
+          </div>
+          <div>
+            <span className="text-rose-500 font-semibold">{stats.canceled}</span>
+            <span className="text-zinc-400 ml-1">churned</span>
+          </div>
+        </div>
 
-function StatCell({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-zinc-700 bg-zinc-950 p-5">
-      <p className="text-[11px] font-medium text-zinc-400 uppercase tracking-wider">
-        {label}
-      </p>
-      <p className="text-[22px] font-semibold text-white mt-1">{value}</p>
+        <div className="ml-auto flex items-center gap-5 text-right">
+          <div>
+            <p className="text-[16px] font-semibold text-white">{formatCurrency(stats.totalEarned)}</p>
+            <p className="text-[10px] text-zinc-400">Earned</p>
+          </div>
+          <div>
+            <p className="text-[16px] font-semibold text-white">{formatCurrency(stats.pendingAmount)}</p>
+            <p className="text-[10px] text-zinc-400">Pending</p>
+          </div>
+          <div>
+            <p className="text-[16px] font-semibold text-white">{formatCurrency(stats.paidAmount)}</p>
+            <p className="text-[10px] text-zinc-400">Paid</p>
+          </div>
+          <div>
+            <p className="text-[16px] font-semibold text-white">
+              {formatCurrency((stats.activeMonthly + stats.activeAnnual) * (commissionRate / 100))}
+            </p>
+            <p className="text-[10px] text-zinc-400">MRR</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

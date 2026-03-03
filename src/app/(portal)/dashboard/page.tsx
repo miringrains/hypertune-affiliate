@@ -246,10 +246,26 @@ export default async function DashboardPage() {
       .select("id, name")
       .eq("parent_id", affiliate.id);
 
+    const subIds = (subAffiliates ?? []).map((s) => s.id);
+    let subCustomerStates = { active: 0, trialing: 0, churned: 0 };
+    if (subIds.length > 0) {
+      const { data: subCustRows } = await supabase
+        .from("customers")
+        .select("current_state")
+        .in("affiliate_id", subIds);
+      const sc = subCustRows ?? [];
+      subCustomerStates = {
+        active: sc.filter((c) => c.current_state === "active_monthly" || c.current_state === "active_annual").length,
+        trialing: sc.filter((c) => c.current_state === "trialing").length,
+        churned: sc.filter((c) => c.current_state === "canceled" || c.current_state === "dormant").length,
+      };
+    }
+
     return (
       <DashboardClient
         {...baseProps}
-        subAffiliateCount={(subAffiliates ?? []).length}
+        subAffiliateCount={subIds.length}
+        subCustomerStates={subCustomerStates}
       />
     );
   }

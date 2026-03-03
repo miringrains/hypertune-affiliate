@@ -77,12 +77,19 @@ interface AdminData {
   totalPaidOut?: number;
 }
 
+interface CustomerStateData {
+  active: number;
+  trialing: number;
+  churned: number;
+}
+
 interface DashboardClientProps {
   affiliate: Tables<"affiliates">;
   stats: DashboardStats;
   chartData: ChartData;
   recentActivity?: ActivityItem[];
   subAffiliateCount?: number;
+  subCustomerStates?: CustomerStateData;
   adminData?: AdminData;
 }
 
@@ -506,8 +513,10 @@ const PIE_COLORS = {
 
 function CustomerBreakdown({
   states,
+  title = "Customer Breakdown",
 }: {
   states: { active: number; trialing: number; churned: number };
+  title?: string;
 }) {
   const total = states.active + states.trialing + states.churned;
   const data = [
@@ -519,7 +528,7 @@ function CustomerBreakdown({
   if (total === 0) {
     return (
       <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
-        <h3 className="text-[13px] font-medium text-zinc-300 mb-4">Customer Breakdown</h3>
+        <h3 className="text-[13px] font-medium text-zinc-300 mb-4">{title}</h3>
         <p className="text-[13px] text-zinc-400 text-center py-10">No customers yet</p>
       </div>
     );
@@ -528,7 +537,7 @@ function CustomerBreakdown({
   return (
     <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-[13px] font-medium text-zinc-300">Customer Breakdown</h3>
+        <h3 className="text-[13px] font-medium text-zinc-300">{title}</h3>
         <span className="text-[11px] text-zinc-400">{total} total</span>
       </div>
       <div className="flex items-center gap-6">
@@ -577,6 +586,7 @@ export function DashboardClient({
   chartData,
   recentActivity,
   subAffiliateCount,
+  subCustomerStates,
   adminData,
 }: DashboardClientProps) {
   const isAdmin = affiliate.role === "admin";
@@ -689,7 +699,13 @@ export function DashboardClient({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <CustomerBreakdown states={chartData.customerStates} />
+        <CustomerBreakdown
+          states={chartData.customerStates}
+          title={isTier1 ? "Your Customers" : "Customer Breakdown"}
+        />
+        {isTier1 && subCustomerStates && (
+          <CustomerBreakdown states={subCustomerStates} title="Sub-Affiliate Customers" />
+        )}
       </div>
     </div>
   );

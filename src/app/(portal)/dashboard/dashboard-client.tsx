@@ -586,16 +586,16 @@ function TaxFormBanner() {
   return (
     <a
       href="/settings#tax"
-      className="flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 px-5 py-3.5 hover:bg-amber-500/10 transition-colors"
+      className="flex items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 px-5 py-3.5 hover:bg-amber-100 transition-colors"
     >
-      <AlertTriangle size={18} className="text-amber-400 shrink-0" />
+      <AlertTriangle size={18} className="text-amber-600 shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-medium text-amber-300">Tax form required</p>
-        <p className="text-[11px] text-amber-400/70">
+        <p className="text-[13px] font-medium text-amber-900">Tax form required</p>
+        <p className="text-[11px] text-amber-700">
           Submit your W-9 or W-8BEN in Settings to receive affiliate payouts.
         </p>
       </div>
-      <ArrowRight size={14} className="text-amber-400 shrink-0" />
+      <ArrowRight size={14} className="text-amber-600 shrink-0" />
     </a>
   );
 }

@@ -3,7 +3,7 @@ import { PDFDocument } from "pdf-lib";
 import { readFile } from "fs/promises";
 import { join } from "path";
 import { requireAffiliate, handleApiError, ApiError } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
 
 const TAX_CLASSIFICATION_MAP: Record<string, number> = {
   individual: 0,
@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
       pdfBytes = await fillW8BEN(data);
     }
 
-    const supabase = await createClient();
+    const supabase = await createServiceClient();
     const timestamp = Date.now();
     const filePath = `${affiliate.id}/${documentType}_${timestamp}.pdf`;
 

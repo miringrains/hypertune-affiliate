@@ -175,7 +175,7 @@ export default async function DashboardPage() {
         .gte("created_at", sixMonthsAgo),
       supabase
         .from("commissions")
-        .select("id, amount, status, created_at, tier_type, customers(leads(email))")
+        .select("id, amount, status, created_at, tier_type, customers(leads(email, name))")
         .eq("affiliate_id", affiliate.id)
         .order("created_at", { ascending: false })
         .limit(8),
@@ -243,7 +243,8 @@ export default async function DashboardPage() {
       tier_type: c.tier_type,
       created_at: c.created_at,
       email:
-        (c.customers as unknown as { leads: { email: string } | null })?.leads?.email ?? null,
+        (c.customers as unknown as { leads: { email: string; name: string | null } | null })?.leads?.name ||
+        (c.customers as unknown as { leads: { email: string; name: string | null } | null })?.leads?.email ?? null,
     })),
   };
 

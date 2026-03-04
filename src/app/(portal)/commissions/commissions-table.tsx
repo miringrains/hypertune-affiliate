@@ -109,7 +109,7 @@ export function CommissionsTable({ commissions }: CommissionsTableProps) {
                 {filtered.map((commission) => (
                   <tr key={commission.id} className="border-b border-border">
                     <td className="px-5 py-3 text-[13px]">
-                      {commission.customers?.leads?.email ?? "—"}
+                      {commission.customers?.leads?.name || commission.customers?.leads?.email || "—"}
                     </td>
                     <td className="px-5 py-3 text-[13px] font-medium tabular-nums">
                       {formatCurrency(Number(commission.amount))}

@@ -162,7 +162,7 @@ export function CustomersTable({
                 {filtered.map((customer) => (
                   <tr key={customer.id} className="border-b border-border">
                     <td className="px-5 py-3 text-[13px]">
-                      {customer.leads?.email ?? "—"}
+                      {customer.leads?.name || customer.leads?.email || "—"}
                     </td>
                     {isTier1 && (
                       <td className="px-5 py-3 text-[12px] text-muted-foreground">

@@ -54,7 +54,7 @@ export default async function PerformancePage() {
     (() => {
       const q = supabase
         .from("customers")
-        .select("id, affiliate_id, current_state, plan_type, created_at, leads(email)")
+        .select("id, affiliate_id, current_state, plan_type, created_at, leads(email, name)")
         .order("created_at", { ascending: false });
       if (!isTier1) q.eq("affiliate_id", affiliate.id);
       return q;
@@ -159,7 +159,7 @@ export default async function PerformancePage() {
       })}
       customers={allCustomers.map((c) => ({
         id: c.id,
-        email: (c.leads as unknown as { email: string } | null)?.email ?? "—",
+        email: (c.leads as unknown as { email: string; name: string | null } | null)?.name || (c.leads as unknown as { email: string } | null)?.email || "—",
         state: c.current_state,
         plan: c.plan_type,
         source: isTier1 ? (subIdMap[c.affiliate_id] ?? "Unknown") : undefined,

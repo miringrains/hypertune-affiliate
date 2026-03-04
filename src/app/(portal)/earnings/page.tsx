@@ -24,7 +24,7 @@ export default async function EarningsPage() {
   const [commissionsRes, allCommissionsRes, payoutsRes, payoutMethodsRes] = await Promise.all([
     supabase
       .from("commissions")
-      .select("id, amount, rate_snapshot, status, tier_type, created_at, customers(leads(email))")
+      .select("id, amount, rate_snapshot, status, tier_type, created_at, customers(leads(email, name))")
       .eq("affiliate_id", affiliate.id)
       .order("created_at", { ascending: false }),
     supabase
@@ -108,7 +108,8 @@ export default async function EarningsPage() {
         tier_type: c.tier_type,
         created_at: c.created_at,
         email:
-          (c.customers as unknown as { leads: { email: string } | null })?.leads?.email ?? "—",
+          (c.customers as unknown as { leads: { email: string; name: string | null } | null })?.leads?.name ||
+          (c.customers as unknown as { leads: { email: string; name: string | null } | null })?.leads?.email || "—",
       }))}
       payouts={payouts.map((p) => ({
         id: p.id,

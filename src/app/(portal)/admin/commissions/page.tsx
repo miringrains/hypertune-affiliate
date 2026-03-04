@@ -22,7 +22,7 @@ export default async function AdminCommissionsPage() {
   const service = await createServiceClient();
   const { data: commissions } = await service
     .from("commissions")
-    .select("*, affiliates(name, slug), customers(leads(email))")
+    .select("*, affiliates(name, slug), customers(leads(email, name))")
     .order("created_at", { ascending: false });
 
   const rows: CommissionRow[] = (commissions ?? []).map((c) => {
@@ -32,7 +32,7 @@ export default async function AdminCommissionsPage() {
     return {
       id: c.id,
       affiliateName: aff?.name ?? "—",
-      customerEmail: cust?.leads?.email ?? "—",
+      customerEmail: cust?.leads?.name || cust?.leads?.email || "—",
       amount: c.amount,
       rateSnapshot: c.rate_snapshot,
       tierType: c.tier_type,

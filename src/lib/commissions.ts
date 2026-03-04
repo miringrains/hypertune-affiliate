@@ -82,7 +82,7 @@ export async function calculateAndInsertCommissions(
     // Look up the customer email for notification context
     const { data: customer } = await supabase
       .from("customers")
-      .select("leads(email)")
+      .select("leads(email, name)")
       .eq("id", customerId)
       .single();
     const custEmail = (customer?.leads as unknown as { email: string } | null)?.email ?? "a customer";

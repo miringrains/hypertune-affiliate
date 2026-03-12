@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { formatCurrency } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { ICON_STROKE_WIDTH } from "@/lib/constants";
 
 export interface CommissionRow {
@@ -30,28 +30,37 @@ const TABS: { value: StatusFilter; label: string }[] = [
   { value: "voided", label: "Voided" },
 ];
 
+interface CommissionsClientProps {
+  commissions: CommissionRow[];
+  counts: Record<string, number>;
+  currentStatus: string;
+  currentPage: number;
+  totalPages: number;
+  pageSize: number;
+}
+
 export function CommissionsClient({
   commissions,
-}: {
-  commissions: CommissionRow[];
-}) {
+  counts,
+  currentStatus,
+  currentPage,
+  totalPages,
+  pageSize,
+}: CommissionsClientProps) {
   const router = useRouter();
-  const [filter, setFilter] = useState<StatusFilter>("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [acting, setActing] = useState(false);
 
-  const counts = commissions.reduce(
-    (acc, c) => {
-      acc[c.status as StatusFilter] = (acc[c.status as StatusFilter] ?? 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>,
-  );
+  const filter = currentStatus as StatusFilter;
+  const filtered = commissions;
 
-  const filtered =
-    filter === "all"
-      ? commissions
-      : commissions.filter((c) => c.status === filter);
+  function navigate(status: string, page: number) {
+    const p = new URLSearchParams();
+    if (status !== "all") p.set("status", status);
+    if (page > 1) p.set("page", String(page));
+    const qs = p.toString();
+    router.push(`/admin/commissions${qs ? `?${qs}` : ""}`);
+  }
 
   const pendingIds = new Set(
     commissions.filter((c) => c.status === "pending").map((c) => c.id),
@@ -129,12 +138,11 @@ export function CommissionsClient({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex gap-1 rounded-lg border border-zinc-700 bg-zinc-950 p-1">
           {TABS.map((tab) => {
-            const count =
-              tab.value === "all" ? commissions.length : (counts[tab.value] ?? 0);
+            const count = counts[tab.value] ?? 0;
             return (
               <button
                 key={tab.value}
-                onClick={() => setFilter(tab.value)}
+                onClick={() => navigate(tab.value, 1)}
                 className={`rounded-md px-3 py-1.5 text-[12px] font-medium transition-colors ${
                   filter === tab.value
                     ? "bg-zinc-800 text-white"
@@ -143,7 +151,7 @@ export function CommissionsClient({
               >
                 {tab.label}
                 <span className="ml-1.5 text-[11px] text-zinc-400">
-                  {count}
+                  {count.toLocaleString()}
                 </span>
               </button>
             );
@@ -275,6 +283,34 @@ export function CommissionsClient({
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-[12px] text-zinc-400">
+            Page {currentPage} of {totalPages} &middot;{" "}
+            {(counts[filter] ?? counts.all).toLocaleString()} total
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => navigate(filter, currentPage - 1)}
+              disabled={currentPage <= 1}
+              className="inline-flex items-center gap-1 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-[12px] font-medium text-zinc-300 transition-colors hover:bg-zinc-800 disabled:pointer-events-none disabled:opacity-30"
+            >
+              <ChevronLeft size={14} strokeWidth={ICON_STROKE_WIDTH} />
+              Prev
+            </button>
+            <button
+              onClick={() => navigate(filter, currentPage + 1)}
+              disabled={currentPage >= totalPages}
+              className="inline-flex items-center gap-1 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-[12px] font-medium text-zinc-300 transition-colors hover:bg-zinc-800 disabled:pointer-events-none disabled:opacity-30"
+            >
+              Next
+              <ChevronRight size={14} strokeWidth={ICON_STROKE_WIDTH} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

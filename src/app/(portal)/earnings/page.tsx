@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, fetchAllPaginated } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { EarningsClient } from "./earnings-client";
 
@@ -21,17 +21,23 @@ export default async function EarningsPage() {
   const now = new Date();
   const sixMonthsAgo = new Date(now.getTime() - 180 * 86_400_000).toISOString();
 
-  const [commissionsRes, allCommissionsRes, payoutsRes, payoutMethodsRes] = await Promise.all([
-    supabase
-      .from("commissions")
-      .select("id, amount, rate_snapshot, status, tier_type, created_at, customers(leads(email, name))")
-      .eq("affiliate_id", affiliate.id)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("commissions")
-      .select("amount, status, created_at, tier_type")
-      .eq("affiliate_id", affiliate.id)
-      .gte("created_at", sixMonthsAgo),
+  const [commissions, allComms, payoutsRes, payoutMethodsRes] = await Promise.all([
+    fetchAllPaginated((from, to) =>
+      supabase
+        .from("commissions")
+        .select("id, amount, rate_snapshot, status, tier_type, created_at, customers(leads(email, name))")
+        .eq("affiliate_id", affiliate.id)
+        .order("created_at", { ascending: false })
+        .range(from, to),
+    ),
+    fetchAllPaginated((from, to) =>
+      supabase
+        .from("commissions")
+        .select("amount, status, created_at, tier_type")
+        .eq("affiliate_id", affiliate.id)
+        .gte("created_at", sixMonthsAgo)
+        .range(from, to),
+    ),
     supabase
       .from("payouts")
       .select("id, amount, status, method, completed_at, created_at")
@@ -43,8 +49,6 @@ export default async function EarningsPage() {
       .eq("affiliate_id", affiliate.id),
   ]);
 
-  const commissions = commissionsRes.data ?? [];
-  const allComms = allCommissionsRes.data ?? [];
   const payouts = payoutsRes.data ?? [];
   const methods = payoutMethodsRes.data ?? [];
 

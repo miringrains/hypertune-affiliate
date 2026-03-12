@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, fetchAllPaginated } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { PLAN_PRICES } from "@/lib/constants";
 import { PerformanceClient } from "./performance-client";
@@ -37,45 +37,50 @@ export default async function PerformancePage() {
     }
   }
 
-  const [clicksRes, leadsRes, customersRes, clicksTrendRes] = await Promise.all([
+  const [clicksRes, allLeadsRaw, allCustomersRaw, clicksTrendRes] = await Promise.all([
     supabase
       .from("clicks")
       .select("id", { count: "exact", head: true })
       .eq("affiliate_id", affiliate.id)
       .gte("clicked_at", thirtyDaysAgo),
-    (() => {
-      const q = supabase
+    fetchAllPaginated((from, to) => {
+      let q = supabase
         .from("leads")
         .select("id, email, affiliate_id, stripe_customer_id, created_at, customers(current_state)")
-        .order("created_at", { ascending: false });
-      if (!isTier1) q.eq("affiliate_id", affiliate.id);
+        .order("created_at", { ascending: false })
+        .range(from, to);
+      if (!isTier1) q = q.eq("affiliate_id", affiliate.id);
       return q;
-    })(),
-    (() => {
-      const q = supabase
+    }),
+    fetchAllPaginated((from, to) => {
+      let q = supabase
         .from("customers")
         .select("id, affiliate_id, current_state, plan_type, created_at, leads(email, name)")
-        .order("created_at", { ascending: false });
-      if (!isTier1) q.eq("affiliate_id", affiliate.id);
+        .order("created_at", { ascending: false })
+        .range(from, to);
+      if (!isTier1) q = q.eq("affiliate_id", affiliate.id);
       return q;
-    })(),
-    supabase
-      .from("clicks")
-      .select("clicked_at")
-      .eq("affiliate_id", affiliate.id)
-      .gte("clicked_at", ninetyDaysAgo),
+    }),
+    fetchAllPaginated((from, to) =>
+      supabase
+        .from("clicks")
+        .select("clicked_at")
+        .eq("affiliate_id", affiliate.id)
+        .gte("clicked_at", ninetyDaysAgo)
+        .range(from, to),
+    ),
   ]);
 
   const clicks30d = clicksRes.count ?? 0;
-  const allLeads = (leadsRes.data ?? []).filter((l) =>
+  const allLeads = allLeadsRaw.filter((l) =>
     isTier1 ? l.affiliate_id === affiliate.id || subIdMap[l.affiliate_id] : true,
   );
-  const allCustomers = (customersRes.data ?? []).filter((c) =>
+  const allCustomers = allCustomersRaw.filter((c) =>
     isTier1 ? c.affiliate_id === affiliate.id || subIdMap[c.affiliate_id] : true,
   );
 
   // Build weekly trend data (12 weeks)
-  const clickTrendRows = clicksTrendRes.data ?? [];
+  const clickTrendRows = clicksTrendRes;
   const weeklyData: { week: string; clicks: number; leads: number; customers: number }[] = [];
   for (let i = 11; i >= 0; i--) {
     const weekStart = new Date(now.getTime() - (i + 1) * 7 * 86_400_000);

@@ -15,7 +15,7 @@ interface Customer {
   current_state: string | null;
   plan_type: string | null;
   created_at: string;
-  leads: { email: string } | null;
+  leads: { email: string; name?: string | null } | null;
 }
 
 interface CustomersTableProps {

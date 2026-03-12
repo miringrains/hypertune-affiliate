@@ -5,7 +5,14 @@ import {
   type CommissionRow,
 } from "./commissions-client";
 
-export default async function AdminCommissionsPage() {
+const PAGE_SIZE = 50;
+
+export default async function AdminCommissionsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -20,13 +27,46 @@ export default async function AdminCommissionsPage() {
   if (!affiliate || affiliate.role !== "admin") redirect("/dashboard");
 
   const service = await createServiceClient();
-  const { data: commissions } = await service
+
+  const statusFilter = (params.status as string) || "all";
+  const page = Math.max(1, parseInt((params.page as string) || "1", 10));
+
+  const countQueries = await Promise.all([
+    service.from("commissions").select("id", { count: "exact", head: true }),
+    service.from("commissions").select("id", { count: "exact", head: true }).eq("status", "pending"),
+    service.from("commissions").select("id", { count: "exact", head: true }).eq("status", "approved"),
+    service.from("commissions").select("id", { count: "exact", head: true }).eq("status", "paid"),
+    service.from("commissions").select("id", { count: "exact", head: true }).eq("status", "voided"),
+  ]);
+
+  const counts = {
+    all: countQueries[0].count ?? 0,
+    pending: countQueries[1].count ?? 0,
+    approved: countQueries[2].count ?? 0,
+    paid: countQueries[3].count ?? 0,
+    voided: countQueries[4].count ?? 0,
+  };
+
+  const activeCount = statusFilter === "all" ? counts.all : (counts[statusFilter as keyof typeof counts] ?? 0);
+  const totalPages = Math.max(1, Math.ceil(activeCount / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const from = (safePage - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
+  let query = service
     .from("commissions")
     .select("*, affiliates(name, slug), customers(leads(email, name))")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  if (statusFilter !== "all") {
+    query = query.eq("status", statusFilter as "pending" | "approved" | "paid" | "voided");
+  }
+
+  const { data: commissions } = await query;
 
   const rows: CommissionRow[] = (commissions ?? []).map((c) => {
-    const cust = c.customers as { leads: { email: string } | null } | null;
+    const cust = c.customers as { leads: { email: string; name: string } | null } | null;
     const aff = c.affiliates as { name: string; slug: string } | null;
 
     return {
@@ -51,7 +91,14 @@ export default async function AdminCommissionsPage() {
         </p>
       </div>
 
-      <CommissionsClient commissions={rows} />
+      <CommissionsClient
+        commissions={rows}
+        counts={counts}
+        currentStatus={statusFilter}
+        currentPage={safePage}
+        totalPages={totalPages}
+        pageSize={PAGE_SIZE}
+      />
     </div>
   );
 }

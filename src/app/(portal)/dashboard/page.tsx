@@ -1,4 +1,4 @@
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient, fetchAllPaginated } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { DashboardClient } from "./dashboard-client";
 import { PLAN_PRICES } from "@/lib/constants";
@@ -71,20 +71,28 @@ export default async function DashboardPage() {
       clicksTimeRes,
       leadsCountRes,
       customersRes,
-      customerStatesRes,
-      commissionsRes,
-      allCommissionsRes,
-      payoutsRes,
+      stateRows,
+      commRows,
+      allCommsRows,
+      payoutRows,
       recentAffiliatesRes,
     ] = await Promise.all([
       service.from("affiliates").select("id", { count: "exact", head: true }).neq("role", "admin"),
       service.from("clicks").select("clicked_at").gte("clicked_at", thirtyDaysAgo),
       service.from("leads").select("id", { count: "exact", head: true }),
       service.from("customers").select("id", { count: "exact", head: true }),
-      service.from("customers").select("current_state, plan_type"),
-      service.from("commissions").select("amount, status, created_at").gte("created_at", sixMonthsAgo),
-      service.from("commissions").select("amount, status"),
-      service.from("payouts").select("amount, status"),
+      fetchAllPaginated((from, to) =>
+        service.from("customers").select("current_state, plan_type").range(from, to),
+      ),
+      fetchAllPaginated((from, to) =>
+        service.from("commissions").select("amount, status, created_at").gte("created_at", sixMonthsAgo).range(from, to),
+      ),
+      fetchAllPaginated((from, to) =>
+        service.from("commissions").select("amount, status").range(from, to),
+      ),
+      fetchAllPaginated((from, to) =>
+        service.from("payouts").select("amount, status").range(from, to),
+      ),
       service
         .from("affiliates")
         .select("id, name, slug, tier_level, commission_rate, created_at")
@@ -94,8 +102,6 @@ export default async function DashboardPage() {
     ]);
 
     const clickRows = clicksTimeRes.data ?? [];
-    const commRows = commissionsRes.data ?? [];
-    const stateRows = customerStatesRes.data ?? [];
 
     const allAmount = commRows.reduce((s, c) => s + Number(c.amount), 0);
     const pendingAmount = commRows
@@ -114,12 +120,11 @@ export default async function DashboardPage() {
 
     const estimatedMRR = monthlyActive * PLAN_PRICES.monthly + annualActive * (PLAN_PRICES.annual / 12);
 
-    const allComms = allCommissionsRes.data ?? [];
-    const commissionLiability = allComms
+    const commissionLiability = allCommsRows
       .filter((c) => c.status === "pending" || c.status === "approved")
       .reduce((s, c) => s + Number(c.amount), 0);
 
-    const totalPaidOut = (payoutsRes.data ?? [])
+    const totalPaidOut = payoutRows
       .filter((p) => p.status === "completed")
       .reduce((s, p) => s + Number(p.amount), 0);
 
@@ -153,7 +158,7 @@ export default async function DashboardPage() {
   }
 
   // ── Affiliate flow ──
-  const [clicksTimeRes, leadsCountRes, customerStatesRes, commissionsRes, recentCommissionsRes, taxDocRes] =
+  const [clicksTimeRes, leadsCountRes, custStates, commRows, recentCommissionsRes, taxDocRes] =
     await Promise.all([
       supabase
         .from("clicks")
@@ -164,15 +169,21 @@ export default async function DashboardPage() {
         .from("leads")
         .select("id", { count: "exact", head: true })
         .eq("affiliate_id", affiliate.id),
-      supabase
-        .from("customers")
-        .select("current_state")
-        .eq("affiliate_id", affiliate.id),
-      supabase
-        .from("commissions")
-        .select("amount, status, created_at")
-        .eq("affiliate_id", affiliate.id)
-        .gte("created_at", sixMonthsAgo),
+      fetchAllPaginated((from, to) =>
+        supabase
+          .from("customers")
+          .select("current_state")
+          .eq("affiliate_id", affiliate.id)
+          .range(from, to),
+      ),
+      fetchAllPaginated((from, to) =>
+        supabase
+          .from("commissions")
+          .select("amount, status, created_at")
+          .eq("affiliate_id", affiliate.id)
+          .gte("created_at", sixMonthsAgo)
+          .range(from, to),
+      ),
       supabase
         .from("commissions")
         .select("id, amount, status, created_at, tier_type, customers(leads(email, name))")
@@ -186,10 +197,8 @@ export default async function DashboardPage() {
     ]);
 
   const clickRows = clicksTimeRes.data ?? [];
-  const commRows = commissionsRes.data ?? [];
   const recentComms = recentCommissionsRes.data ?? [];
   const totalLeads = leadsCountRes.count ?? 0;
-  const custStates = customerStatesRes.data ?? [];
   const totalCustomers = custStates.length;
   const totalTrialing = custStates.filter((c) => c.current_state === "trialing").length;
   const totalActive = custStates.filter((c) => c.current_state === "active_monthly" || c.current_state === "active_annual").length;
@@ -243,8 +252,8 @@ export default async function DashboardPage() {
       tier_type: c.tier_type,
       created_at: c.created_at,
       email:
-        (c.customers as unknown as { leads: { email: string; name: string | null } | null })?.leads?.name ||
-        (c.customers as unknown as { leads: { email: string; name: string | null } | null })?.leads?.email ?? null,
+        ((c.customers as unknown as { leads: { email: string; name: string | null } | null })?.leads?.name ||
+        (c.customers as unknown as { leads: { email: string; name: string | null } | null })?.leads?.email) ?? null,
     })),
   };
 
@@ -257,11 +266,13 @@ export default async function DashboardPage() {
     const subIds = (subAffiliates ?? []).map((s) => s.id);
     let subCustomerStates = { active: 0, trialing: 0, churned: 0 };
     if (subIds.length > 0) {
-      const { data: subCustRows } = await supabase
-        .from("customers")
-        .select("current_state")
-        .in("affiliate_id", subIds);
-      const sc = subCustRows ?? [];
+      const sc = await fetchAllPaginated((from, to) =>
+        supabase
+          .from("customers")
+          .select("current_state")
+          .in("affiliate_id", subIds)
+          .range(from, to),
+      );
       subCustomerStates = {
         active: sc.filter((c) => c.current_state === "active_monthly" || c.current_state === "active_annual").length,
         trialing: sc.filter((c) => c.current_state === "trialing").length,

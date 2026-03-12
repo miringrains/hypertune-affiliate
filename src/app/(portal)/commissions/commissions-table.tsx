@@ -16,7 +16,7 @@ interface Commission {
   rate_snapshot: number | null;
   status: string | null;
   created_at: string;
-  customers: { leads: { email: string } | null } | null;
+  customers: { leads: { email: string; name?: string | null } | null } | null;
 }
 
 interface CommissionsTableProps {

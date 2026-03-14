@@ -1,5 +1,6 @@
-import { createClient, fetchAllPaginated } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { unstable_cache } from "next/cache";
 import { PLAN_PRICES } from "@/lib/constants";
 import { PerformanceClient } from "./performance-client";
 
@@ -19,152 +20,127 @@ export default async function PerformancePage() {
 
   if (!affiliate) redirect("/login");
 
+  const svc = await createServiceClient();
   const now = new Date();
-  const ninetyDaysAgo = new Date(now.getTime() - 90 * 86_400_000).toISOString();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 86_400_000).toISOString();
 
   const isTier1 = affiliate.tier_level === 1 && affiliate.role !== "admin";
 
+  // Build the set of affiliate IDs this user can see
+  let allIds = [affiliate.id];
   let subIdMap: Record<string, string> = {};
   if (isTier1) {
-    const { data: subs } = await supabase
+    const { data: subs } = await svc
       .from("affiliates")
       .select("id, name")
       .eq("parent_id", affiliate.id);
     if (subs) {
       subIdMap[affiliate.id] = "You";
-      for (const s of subs) subIdMap[s.id] = s.name;
+      for (const s of subs) {
+        subIdMap[s.id] = s.name;
+        allIds.push(s.id);
+      }
     }
   }
 
-  const [clicksRes, allLeadsRaw, allCustomersRaw, clicksTrendRes] = await Promise.all([
-    supabase
-      .from("clicks")
-      .select("id", { count: "exact", head: true })
-      .eq("affiliate_id", affiliate.id)
-      .gte("clicked_at", thirtyDaysAgo),
-    fetchAllPaginated((from, to) => {
-      let q = supabase
-        .from("leads")
-        .select("id, email, affiliate_id, stripe_customer_id, created_at, customers(current_state)")
-        .order("created_at", { ascending: false })
-        .range(from, to);
-      if (!isTier1) q = q.eq("affiliate_id", affiliate.id);
-      return q;
-    }),
-    fetchAllPaginated((from, to) => {
-      let q = supabase
-        .from("customers")
-        .select("id, affiliate_id, current_state, plan_type, created_at, leads(email, name)")
-        .order("created_at", { ascending: false })
-        .range(from, to);
-      if (!isTier1) q = q.eq("affiliate_id", affiliate.id);
-      return q;
-    }),
-    fetchAllPaginated((from, to) =>
-      supabase
-        .from("clicks")
-        .select("clicked_at")
-        .eq("affiliate_id", affiliate.id)
-        .gte("clicked_at", ninetyDaysAgo)
-        .range(from, to),
-    ),
-  ]);
+  // All data via RPC — no recursive RLS, no thousands of rows over the wire
+  const loadData = unstable_cache(
+    async (affiliateId: string, ids: string[], since30d: string) => {
+      const svcInner = await createServiceClient();
 
-  const clicks30d = clicksRes.count ?? 0;
-  const allLeads = allLeadsRaw.filter((l) =>
-    isTier1 ? l.affiliate_id === affiliate.id || subIdMap[l.affiliate_id] : true,
-  );
-  const allCustomers = allCustomersRaw.filter((c) =>
-    isTier1 ? c.affiliate_id === affiliate.id || subIdMap[c.affiliate_id] : true,
+      const [
+        { data: funnelRows },
+        { data: trendRows },
+        { data: subStats },
+        { data: recentLeads },
+        { data: recentCustomers },
+      ] = await Promise.all([
+        svcInner.rpc("get_performance_funnel", { aff_ids: ids, p_clicks_since: since30d }),
+        svcInner.rpc("get_weekly_trend", { aff_ids: ids, p_weeks: 12 }),
+        isTier1
+          ? svcInner.rpc("get_sub_affiliate_stats", { sub_ids: ids })
+          : Promise.resolve({ data: null }),
+        svcInner.rpc("get_recent_leads", { aff_ids: ids, p_limit: 200 }),
+        svcInner.rpc("get_recent_customers", { aff_ids: ids, p_limit: 200 }),
+      ]);
+
+      return { funnelRows, trendRows, subStats, recentLeads, recentCustomers };
+    },
+    [`perf-${affiliate.id}`],
+    { revalidate: 60 },
   );
 
-  // Build weekly trend data (12 weeks)
-  const clickTrendRows = clicksTrendRes;
-  const weeklyData: { week: string; clicks: number; leads: number; customers: number }[] = [];
-  for (let i = 11; i >= 0; i--) {
-    const weekStart = new Date(now.getTime() - (i + 1) * 7 * 86_400_000);
-    const weekEnd = new Date(now.getTime() - i * 7 * 86_400_000);
-    const label = weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    weeklyData.push({
-      week: label,
-      clicks: clickTrendRows.filter((c) => {
-        const d = new Date(c.clicked_at);
-        return d >= weekStart && d < weekEnd;
-      }).length,
-      leads: allLeads.filter((l) => {
-        const d = new Date(l.created_at);
-        return d >= weekStart && d < weekEnd;
-      }).length,
-      customers: allCustomers.filter((c) => {
-        const d = new Date(c.created_at);
-        return d >= weekStart && d < weekEnd;
-      }).length,
+  const { funnelRows, trendRows, subStats, recentLeads, recentCustomers } =
+    await loadData(affiliate.id, allIds, thirtyDaysAgo);
+
+  const f = funnelRows?.[0];
+  const directIds = [affiliate.id];
+
+  // For Tier 1, funnel shows only direct stats
+  let directFunnel = f;
+  if (isTier1 && f) {
+    const { data: directRows } = await svc.rpc("get_performance_funnel", {
+      aff_ids: directIds,
+      p_clicks_since: thirtyDaysAgo,
     });
+    directFunnel = directRows?.[0] ?? f;
   }
 
-  // Direct-only stats for the funnel (Tier 1 sees their own funnel, not the network's)
-  const directLeads = isTier1
-    ? allLeads.filter((l) => l.affiliate_id === affiliate.id)
-    : allLeads;
-  const directCustomers = isTier1
-    ? allCustomers.filter((c) => c.affiliate_id === affiliate.id)
-    : allCustomers;
-  const directTrialing = directCustomers.filter((c) => c.current_state === "trialing").length;
-
-  // Customer state breakdown (full network for Tier 1)
-  const activeCustomers = allCustomers.filter(
-    (c) => c.current_state === "active_monthly" || c.current_state === "active_annual",
-  );
-  const trialingCount = allCustomers.filter((c) => c.current_state === "trialing").length;
-  const churnedCount = allCustomers.filter(
-    (c) => c.current_state === "canceled" || c.current_state === "dormant",
-  ).length;
-  const monthlyActive = allCustomers.filter((c) => c.current_state === "active_monthly").length;
-  const annualActive = allCustomers.filter((c) => c.current_state === "active_annual").length;
+  const monthlyActive = Number(f?.active_monthly ?? 0);
+  const annualActive = Number(f?.active_annual ?? 0);
   const estimatedMRR = monthlyActive * PLAN_PRICES.monthly + annualActive * (PLAN_PRICES.annual / 12);
+
+  // Weekly trend
+  const weeklyData = (trendRows ?? []).map((r) => {
+    const weekStart = new Date(now.getTime() - (12 - Number(r.week_offset)) * 7 * 86_400_000);
+    return {
+      week: weekStart.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      clicks: Number(r.click_count),
+      leads: Number(r.lead_count),
+      customers: Number(r.customer_count),
+    };
+  });
 
   // Source breakdown for Tier 1
   let sourceBreakdown: { name: string; leads: number; customers: number }[] = [];
-  if (isTier1) {
-    const sources = new Map<string, { leads: number; customers: number }>();
-    for (const [id, name] of Object.entries(subIdMap)) {
-      sources.set(name, {
-        leads: allLeads.filter((l) => l.affiliate_id === id).length,
-        customers: allCustomers.filter((c) => c.affiliate_id === id).length,
-      });
-    }
-    sourceBreakdown = Array.from(sources.entries())
-      .map(([name, data]) => ({ name, ...data }))
+  if (isTier1 && subStats) {
+    sourceBreakdown = (subStats as { affiliate_id: string; lead_count: number; customer_count: number }[])
+      .map((s) => ({
+        name: subIdMap[s.affiliate_id] ?? "Unknown",
+        leads: Number(s.lead_count),
+        customers: Number(s.customer_count),
+      }))
       .sort((a, b) => b.customers - a.customers);
   }
 
   return (
     <PerformanceClient
-      funnel={{ clicks: clicks30d, leads: directLeads.length, trials: directTrialing, customers: directCustomers.length }}
+      funnel={{
+        clicks: Number(directFunnel?.clicks_30d ?? 0),
+        leads: Number(directFunnel?.total_leads ?? 0),
+        trials: Number(directFunnel?.trialing ?? 0),
+        customers: Number(directFunnel?.total_customers ?? 0),
+      }}
       customerStates={{
-        active: activeCustomers.length,
-        trialing: trialingCount,
-        churned: churnedCount,
+        active: monthlyActive + annualActive,
+        trialing: Number(f?.trialing ?? 0),
+        churned: Number(f?.churned ?? 0),
         mrr: estimatedMRR,
       }}
       weeklyTrend={weeklyData}
       isTier1={isTier1}
       sourceBreakdown={sourceBreakdown}
-      leads={allLeads.map((l) => {
-        const custState = (l.customers as unknown as { current_state: string }[] | null)?.[0]?.current_state ?? null;
-        return {
-          id: l.id,
-          email: l.email,
-          converted: !!l.stripe_customer_id,
-          customerState: custState,
-          source: isTier1 ? (subIdMap[l.affiliate_id] ?? "Unknown") : undefined,
-          created_at: l.created_at,
-        };
-      })}
-      customers={allCustomers.map((c) => ({
+      leads={(recentLeads ?? []).map((l) => ({
+        id: l.id,
+        email: l.email,
+        converted: !!l.stripe_customer_id,
+        customerState: l.customer_state,
+        source: isTier1 ? (subIdMap[l.affiliate_id] ?? "Unknown") : undefined,
+        created_at: l.created_at,
+      }))}
+      customers={(recentCustomers ?? []).map((c) => ({
         id: c.id,
-        email: (c.leads as unknown as { email: string; name: string | null } | null)?.name || (c.leads as unknown as { email: string } | null)?.email || "—",
+        email: c.lead_name || c.lead_email || "—",
         state: c.current_state,
         plan: c.plan_type,
         source: isTier1 ? (subIdMap[c.affiliate_id] ?? "Unknown") : undefined,

@@ -732,6 +732,41 @@ export type Database = {
           total_amount: number
         }[]
       }
+      get_performance_funnel: {
+        Args: { aff_ids: string[]; p_clicks_since: string }
+        Returns: {
+          active_annual: number
+          active_monthly: number
+          churned: number
+          clicks_30d: number
+          total_customers: number
+          total_leads: number
+          trialing: number
+        }[]
+      }
+      get_recent_customers: {
+        Args: { aff_ids: string[]; p_limit?: number; p_offset?: number }
+        Returns: {
+          affiliate_id: string
+          created_at: string
+          current_state: string
+          id: string
+          lead_email: string
+          lead_name: string
+          plan_type: string
+        }[]
+      }
+      get_recent_leads: {
+        Args: { aff_ids: string[]; p_limit?: number; p_offset?: number }
+        Returns: {
+          affiliate_id: string
+          created_at: string
+          customer_state: string
+          email: string
+          id: string
+          stripe_customer_id: string
+        }[]
+      }
       get_sub_affiliate_stats: {
         Args: { sub_ids: string[] }
         Returns: {
@@ -742,6 +777,15 @@ export type Database = {
         }[]
       }
       get_tier2_earnings: { Args: { aff_id: string }; Returns: number }
+      get_weekly_trend: {
+        Args: { aff_ids: string[]; p_weeks?: number }
+        Returns: {
+          click_count: number
+          customer_count: number
+          lead_count: number
+          week_offset: number
+        }[]
+      }
       import_stripe_affiliate_data: { Args: { p_data: Json }; Returns: Json }
       is_admin: { Args: never; Returns: boolean }
       is_self_or_descendant: {

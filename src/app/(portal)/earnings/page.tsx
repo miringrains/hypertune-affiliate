@@ -1,5 +1,6 @@
-import { createClient, fetchAllPaginated } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { unstable_cache } from "next/cache";
 import { EarningsClient } from "./earnings-client";
 
 export default async function EarningsPage() {
@@ -21,48 +22,51 @@ export default async function EarningsPage() {
   const now = new Date();
   const sixMonthsAgo = new Date(now.getTime() - 180 * 86_400_000).toISOString();
 
-  const [commissions, allComms, payoutsRes, payoutMethodsRes] = await Promise.all([
-    fetchAllPaginated((from, to) =>
-      supabase
-        .from("commissions")
-        .select("id, amount, rate_snapshot, status, tier_type, created_at, customers(leads(email, name))")
+  const svc = await createServiceClient();
+
+  const loadEarnings = unstable_cache(
+    async (affId: string, since6m: string) => {
+      const svcInner = await createServiceClient();
+      const [
+        { data: summaryRows },
+        { data: monthlyRows },
+        { data: recentComms },
+      ] = await Promise.all([
+        svcInner.rpc("get_earnings_summary", { p_affiliate_id: affId }),
+        svcInner.rpc("get_earnings_by_month", { p_affiliate_id: affId, p_since: since6m }),
+        svcInner.rpc("get_recent_commissions", { p_affiliate_id: affId, p_limit: 200 }),
+      ]);
+      return { summaryRows, monthlyRows, recentComms };
+    },
+    [`earnings-${affiliate.id}`],
+    { revalidate: 60 },
+  );
+
+  const [{ summaryRows, monthlyRows, recentComms }, payoutsRes, payoutMethodsRes] =
+    await Promise.all([
+      loadEarnings(affiliate.id, sixMonthsAgo),
+      svc
+        .from("payouts")
+        .select("id, amount, status, method, completed_at, created_at")
         .eq("affiliate_id", affiliate.id)
-        .order("created_at", { ascending: false })
-        .range(from, to),
-    ),
-    fetchAllPaginated((from, to) =>
-      supabase
-        .from("commissions")
-        .select("amount, status, created_at, tier_type")
-        .eq("affiliate_id", affiliate.id)
-        .gte("created_at", sixMonthsAgo)
-        .range(from, to),
-    ),
-    supabase
-      .from("payouts")
-      .select("id, amount, status, method, completed_at, created_at")
-      .eq("affiliate_id", affiliate.id)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("payout_methods")
-      .select("*")
-      .eq("affiliate_id", affiliate.id),
-  ]);
+        .order("created_at", { ascending: false }),
+      svc
+        .from("payout_methods")
+        .select("*")
+        .eq("affiliate_id", affiliate.id),
+    ]);
+
+  const s = summaryRows?.[0];
+  const lifetimeEarned = Number(s?.lifetime_earned ?? 0);
+  const pendingAmount = Number(s?.pending_amount ?? 0);
+  const approvedAmount = Number(s?.approved_amount ?? 0);
+  const hasTier2 = s?.has_tier2 ?? false;
 
   const payouts = payoutsRes.data ?? [];
   const methods = payoutMethodsRes.data ?? [];
-
-  const lifetimeEarned = commissions
-    .filter((c) => c.status === "paid")
-    .reduce((s, c) => s + Number(c.amount), 0);
-
-  const pendingAmount = commissions
-    .filter((c) => c.status === "pending" || c.status === "approved")
-    .reduce((s, c) => s + Number(c.amount), 0);
-
   const lastPayout = payouts.find((p) => p.status === "completed");
 
-  // Build monthly earnings (6 months, split by tier type)
+  // Build monthly earnings chart (6 months)
   const monthlyEarnings: { month: string; direct: number; tier2: number }[] = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
@@ -72,49 +76,37 @@ export default async function EarningsPage() {
       tier2: 0,
     });
   }
-  for (const c of allComms) {
-    if (c.status === "voided") continue;
-    const d = new Date(c.created_at);
+  for (const r of monthlyRows ?? []) {
+    const d = new Date(r.month_start);
     const monthsAgo =
       (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
     if (monthsAgo >= 0 && monthsAgo < 6) {
       const idx = 5 - monthsAgo;
-      const amount = Number(c.amount);
-      if (c.tier_type === "direct") {
-        monthlyEarnings[idx].direct += amount;
-      } else {
-        monthlyEarnings[idx].tier2 += amount;
-      }
+      monthlyEarnings[idx].direct = Number(r.direct_amount);
+      monthlyEarnings[idx].tier2 = Number(r.tier2_amount);
     }
   }
-
-  // Pipeline counts
-  const pipelinePending = commissions.filter((c) => c.status === "pending").reduce((s, c) => s + Number(c.amount), 0);
-  const pipelineApproved = commissions.filter((c) => c.status === "approved").reduce((s, c) => s + Number(c.amount), 0);
-  const pipelinePaid = lifetimeEarned;
 
   return (
     <EarningsClient
       hero={{
         lifetimeEarned,
-        pending: pendingAmount,
+        pending: pendingAmount + approvedAmount,
         lastPayout: lastPayout
           ? { amount: Number(lastPayout.amount), date: lastPayout.completed_at ?? lastPayout.created_at }
           : null,
       }}
-      pipeline={{ pending: pipelinePending, approved: pipelineApproved, paid: pipelinePaid }}
+      pipeline={{ pending: pendingAmount, approved: approvedAmount, paid: lifetimeEarned }}
       monthlyEarnings={monthlyEarnings}
-      hasTier2={commissions.some((c) => c.tier_type !== "direct")}
-      commissions={commissions.map((c) => ({
+      hasTier2={hasTier2}
+      commissions={(recentComms ?? []).map((c) => ({
         id: c.id,
         amount: Number(c.amount),
-        rate: c.rate_snapshot,
+        rate: Number(c.rate_snapshot),
         status: c.status,
         tier_type: c.tier_type,
         created_at: c.created_at,
-        email:
-          (c.customers as unknown as { leads: { email: string; name: string | null } | null })?.leads?.name ||
-          (c.customers as unknown as { leads: { email: string; name: string | null } | null })?.leads?.email || "—",
+        email: c.lead_name || c.lead_email || "—",
       }))}
       payouts={payouts.map((p) => ({
         id: p.id,

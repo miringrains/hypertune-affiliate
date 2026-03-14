@@ -725,6 +725,23 @@ export type Database = {
           day_offset: number
         }[]
       }
+      get_earnings_by_month: {
+        Args: { p_affiliate_id: string; p_since: string }
+        Returns: {
+          direct_amount: number
+          month_start: string
+          tier2_amount: number
+        }[]
+      }
+      get_earnings_summary: {
+        Args: { p_affiliate_id: string }
+        Returns: {
+          approved_amount: number
+          has_tier2: boolean
+          lifetime_earned: number
+          pending_amount: number
+        }[]
+      }
       get_monthly_earnings: {
         Args: { p_since: string }
         Returns: {
@@ -742,6 +759,19 @@ export type Database = {
           total_customers: number
           total_leads: number
           trialing: number
+        }[]
+      }
+      get_recent_commissions: {
+        Args: { p_affiliate_id: string; p_limit?: number; p_offset?: number }
+        Returns: {
+          amount: number
+          created_at: string
+          id: string
+          lead_email: string
+          lead_name: string
+          rate_snapshot: number
+          status: string
+          tier_type: string
         }[]
       }
       get_recent_customers: {

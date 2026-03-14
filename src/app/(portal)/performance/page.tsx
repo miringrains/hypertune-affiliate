@@ -29,15 +29,18 @@ export default async function PerformancePage() {
   // Build the set of affiliate IDs this user can see
   let allIds = [affiliate.id];
   let subIdMap: Record<string, string> = {};
+  let subSlugMap: Record<string, string> = {};
   if (isTier1) {
     const { data: subs } = await svc
       .from("affiliates")
-      .select("id, name")
+      .select("id, name, slug")
       .eq("parent_id", affiliate.id);
     if (subs) {
-      subIdMap[affiliate.id] = "You";
+      subIdMap[affiliate.id] = "You (Direct)";
+      subSlugMap[affiliate.id] = affiliate.slug;
       for (const s of subs) {
         subIdMap[s.id] = s.name;
+        subSlugMap[s.id] = s.slug;
         allIds.push(s.id);
       }
     }
@@ -102,15 +105,22 @@ export default async function PerformancePage() {
   });
 
   // Source breakdown for Tier 1
-  let sourceBreakdown: { name: string; leads: number; customers: number }[] = [];
+  let sourceBreakdown: { name: string; slug: string; leads: number; customers: number; earned: number; isDirect: boolean }[] = [];
   if (isTier1 && subStats) {
-    sourceBreakdown = (subStats as { affiliate_id: string; lead_count: number; customer_count: number }[])
+    sourceBreakdown = (subStats as { affiliate_id: string; lead_count: number; customer_count: number; earned: number }[])
       .map((s) => ({
         name: subIdMap[s.affiliate_id] ?? "Unknown",
+        slug: subSlugMap[s.affiliate_id] ?? "",
         leads: Number(s.lead_count),
         customers: Number(s.customer_count),
+        earned: Number(s.earned ?? 0),
+        isDirect: s.affiliate_id === affiliate.id,
       }))
-      .sort((a, b) => b.customers - a.customers);
+      .sort((a, b) => {
+        if (a.isDirect) return -1;
+        if (b.isDirect) return 1;
+        return b.customers - a.customers;
+      });
   }
 
   return (

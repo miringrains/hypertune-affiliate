@@ -50,8 +50,11 @@ interface WeeklyPoint {
 
 interface SourceRow {
   name: string;
+  slug: string;
   leads: number;
   customers: number;
+  earned: number;
+  isDirect: boolean;
 }
 
 interface LeadRow {
@@ -89,6 +92,76 @@ function fmtCurrency(amount: number) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount);
+}
+
+function SourceBreakdownSection({ sourceBreakdown }: { sourceBreakdown: SourceRow[] }) {
+  const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
+  const totalLeads = Math.max(sourceBreakdown.reduce((s, r) => s + r.leads, 0), 1);
+  const maxLeads = Math.max(...sourceBreakdown.map((r) => r.leads), 1);
+
+  return (
+    <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
+      <h3 className="text-[13px] font-medium text-zinc-300 mb-4">Source Breakdown</h3>
+      <div className="space-y-1">
+        {sourceBreakdown.map((src) => {
+          const pct = ((src.leads / totalLeads) * 100).toFixed(0);
+          const barWidth = ((src.leads / maxLeads) * 100).toFixed(0);
+          const isExpanded = expandedSlug === src.slug;
+          const convRate = src.leads > 0 ? ((src.customers / src.leads) * 100).toFixed(1) : "0.0";
+
+          return (
+            <div key={src.slug || src.name}>
+              <button
+                onClick={() => !src.isDirect && setExpandedSlug(isExpanded ? null : src.slug)}
+                className={`flex items-center gap-3 w-full text-left rounded-lg px-2 py-1.5 transition-colors ${
+                  src.isDirect
+                    ? "cursor-default"
+                    : "hover:bg-zinc-800/50 cursor-pointer"
+                }`}
+              >
+                <span className={`text-[13px] w-28 truncate shrink-0 ${src.isDirect ? "text-zinc-400 italic" : "text-zinc-300"}`}>
+                  {src.name}
+                </span>
+                <div className="flex-1 h-6 rounded-md overflow-hidden bg-black border border-zinc-700/50">
+                  <div
+                    className="h-full rounded-md flex items-center px-2"
+                    style={{
+                      width: `${Math.max(Number(barWidth), 4)}%`,
+                      background: src.isDirect ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.08)",
+                    }}
+                  >
+                    <span className="text-[10px] font-medium text-zinc-400 whitespace-nowrap">
+                      {src.leads} leads · {src.customers} customers
+                    </span>
+                  </div>
+                </div>
+                <span className="text-[11px] text-zinc-400 shrink-0 w-10 text-right">{pct}%</span>
+              </button>
+
+              {isExpanded && !src.isDirect && (
+                <div className="ml-32 mr-14 mb-2 mt-1 grid grid-cols-3 gap-3 rounded-lg border border-zinc-700/50 bg-black p-3">
+                  <div>
+                    <p className="text-[18px] font-semibold text-white">{convRate}%</p>
+                    <p className="text-[10px] text-zinc-500">Conversion rate</p>
+                  </div>
+                  <div>
+                    <p className="text-[18px] font-semibold text-white">{fmtCurrency(src.earned)}</p>
+                    <p className="text-[10px] text-zinc-500">Revenue earned</p>
+                  </div>
+                  <div>
+                    <p className="text-[18px] font-semibold text-white">
+                      {src.customers > 0 ? fmtCurrency(src.earned / src.customers) : "—"}
+                    </p>
+                    <p className="text-[10px] text-zinc-500">Avg per customer</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 export function PerformanceClient({
@@ -246,34 +319,7 @@ export function PerformanceClient({
 
       {/* ── Source Breakdown (Tier 1) ── */}
       {isTier1 && sourceBreakdown.length > 0 && (
-        <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
-          <h3 className="text-[13px] font-medium text-zinc-300 mb-4">Source Breakdown</h3>
-          <div className="space-y-3">
-            {sourceBreakdown.map((src) => {
-              const total = Math.max(funnel.leads, 1);
-              const pct = ((src.leads / total) * 100).toFixed(0);
-              return (
-                <div key={src.name} className="flex items-center gap-3">
-                  <span className="text-[13px] text-zinc-300 w-24 truncate shrink-0">{src.name}</span>
-                  <div className="flex-1 h-6 rounded-md overflow-hidden bg-black border border-zinc-700/50">
-                    <div
-                      className="h-full rounded-md flex items-center px-2"
-                      style={{
-                        width: `${Math.max(Number(pct), 2)}%`,
-                        background: "rgba(255,255,255,0.08)",
-                      }}
-                    >
-                      <span className="text-[10px] font-medium text-zinc-400 whitespace-nowrap">
-                        {src.leads} leads · {src.customers} customers
-                      </span>
-                    </div>
-                  </div>
-                  <span className="text-[11px] text-zinc-400 shrink-0 w-10 text-right">{pct}%</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <SourceBreakdownSection sourceBreakdown={sourceBreakdown} />
       )}
 
       {/* ── Drill-Down Tables ── */}

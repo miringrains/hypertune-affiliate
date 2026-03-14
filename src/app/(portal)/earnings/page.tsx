@@ -57,9 +57,10 @@ export default async function EarningsPage() {
     ]);
 
   const s = summaryRows?.[0];
-  const lifetimeEarned = Number(s?.lifetime_earned ?? 0);
+  const paidAmount = Number(s?.lifetime_earned ?? 0);
   const pendingAmount = Number(s?.pending_amount ?? 0);
   const approvedAmount = Number(s?.approved_amount ?? 0);
+  const lifetimeEarned = paidAmount + pendingAmount + approvedAmount;
   const hasTier2 = s?.has_tier2 ?? false;
 
   const payouts = payoutsRes.data ?? [];
@@ -96,7 +97,7 @@ export default async function EarningsPage() {
           ? { amount: Number(lastPayout.amount), date: lastPayout.completed_at ?? lastPayout.created_at }
           : null,
       }}
-      pipeline={{ pending: pendingAmount, approved: approvedAmount, paid: lifetimeEarned }}
+      pipeline={{ pending: pendingAmount, approved: approvedAmount, paid: paidAmount }}
       monthlyEarnings={monthlyEarnings}
       hasTier2={hasTier2}
       commissions={(recentComms ?? []).map((c) => ({

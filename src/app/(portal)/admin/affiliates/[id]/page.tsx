@@ -1,54 +1,32 @@
 import { redirect, notFound } from "next/navigation";
-import { createClient, createServiceClient, fetchAllPaginated } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { AffiliateDetailClient } from "./affiliate-detail-client";
 
 async function computeStatsForIds(
   service: Awaited<ReturnType<typeof createServiceClient>>,
   ids: string[],
 ) {
-  const [clicksResult, leadsResult, customers, commissions] =
-    await Promise.all([
-      service
-        .from("clicks")
-        .select("id", { count: "exact", head: true })
-        .in("affiliate_id", ids),
-      service
-        .from("leads")
-        .select("id", { count: "exact", head: true })
-        .in("affiliate_id", ids),
-      fetchAllPaginated<{ id: string; current_state: string; plan_type: string | null }>((from, to) =>
-        service.from("customers").select("id, current_state, plan_type").in("affiliate_id", ids).range(from, to),
-      ),
-      fetchAllPaginated<{ amount: number; status: string }>((from, to) =>
-        service.from("commissions").select("amount, status").in("affiliate_id", ids).range(from, to),
-      ),
-    ]);
-  const nonVoided = commissions.filter((c) => c.status !== "voided");
-  const totalEarned = nonVoided.reduce((sum, c) => sum + c.amount, 0);
-  const pendingAmount = nonVoided
-    .filter((c) => c.status === "pending" || c.status === "approved")
-    .reduce((sum, c) => sum + c.amount, 0);
-  const paidAmount = nonVoided
-    .filter((c) => c.status === "paid")
-    .reduce((sum, c) => sum + c.amount, 0);
-
-  const trialing = customers.filter((c) => c.current_state === "trialing").length;
-  const activeMonthly = customers.filter((c) => c.current_state === "active_monthly").length;
-  const activeAnnual = customers.filter((c) => c.current_state === "active_annual").length;
-  const canceled = customers.filter((c) => c.current_state === "canceled").length;
-
+  const { data } = await service.rpc("get_affiliate_detail_stats", { aff_ids: ids });
+  const row = data?.[0];
+  if (!row) {
+    return {
+      clicks: 0, leads: 0, customers: 0, trialing: 0,
+      activeSubs: 0, activeMonthly: 0, activeAnnual: 0, canceled: 0,
+      totalEarned: 0, pendingAmount: 0, paidAmount: 0,
+    };
+  }
   return {
-    clicks: clicksResult.count ?? 0,
-    leads: leadsResult.count ?? 0,
-    customers: customers.length,
-    trialing,
-    activeSubs: activeMonthly + activeAnnual,
-    activeMonthly,
-    activeAnnual,
-    canceled,
-    totalEarned,
-    pendingAmount,
-    paidAmount,
+    clicks: Number(row.clicks),
+    leads: Number(row.leads),
+    customers: Number(row.total_customers),
+    trialing: Number(row.trialing),
+    activeSubs: Number(row.active_monthly) + Number(row.active_annual),
+    activeMonthly: Number(row.active_monthly),
+    activeAnnual: Number(row.active_annual),
+    canceled: Number(row.canceled),
+    totalEarned: Number(row.total_earned),
+    pendingAmount: Number(row.pending_amount),
+    paidAmount: Number(row.paid_amount),
   };
 }
 

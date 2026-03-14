@@ -25,7 +25,7 @@ interface Asset {
   id: string;
   title: string;
   file_type: string;
-  file_size: number;
+  file_size: number | null;
   file_path: string;
   description: string | null;
   created_at: string;
@@ -323,7 +323,7 @@ export function AdminMediaClient({
                         </Badge>
                       </td>
                       <td className="px-5 py-3 text-[12px] text-muted-foreground">
-                        {formatBytes(asset.file_size)}
+                        {formatBytes(asset.file_size ?? 0)}
                       </td>
                       <td className="px-5 py-3 text-[12px] text-muted-foreground">
                         {new Date(asset.created_at).toLocaleDateString()}

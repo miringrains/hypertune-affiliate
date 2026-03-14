@@ -7,6 +7,8 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
@@ -73,6 +75,68 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      campaign_events: {
+        Row: {
+          campaign_id: string
+          created_at: string | null
+          email: string | null
+          event_type: string
+          id: string
+          ip_hash: string | null
+          metadata: Json | null
+          stripe_event_id: string | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string | null
+          email?: string | null
+          event_type: string
+          id?: string
+          ip_hash?: string | null
+          metadata?: Json | null
+          stripe_event_id?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string | null
+          email?: string | null
+          event_type?: string
+          id?: string
+          ip_hash?: string | null
+          metadata?: Json | null
+          stripe_event_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
       }
       clicks: {
         Row: {
@@ -373,45 +437,13 @@ export type Database = {
           },
         ]
       }
-      media_folders: {
-        Row: {
-          id: string
-          name: string
-          color: string
-          created_at: string
-          created_by: string
-        }
-        Insert: {
-          id?: string
-          name: string
-          color?: string
-          created_at?: string
-          created_by: string
-        }
-        Update: {
-          id?: string
-          name?: string
-          color?: string
-          created_at?: string
-          created_by?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "media_folders_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "affiliates"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       media_assets: {
         Row: {
           campaign: string | null
           created_at: string
           description: string | null
           file_path: string
-          file_size: number
+          file_size: number | null
           file_type: string
           folder_id: string | null
           id: string
@@ -423,7 +455,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           file_path: string
-          file_size?: number
+          file_size?: number | null
           file_type: string
           folder_id?: string | null
           id?: string
@@ -435,7 +467,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           file_path?: string
-          file_size?: number
+          file_size?: number | null
           file_type?: string
           folder_id?: string | null
           id?: string
@@ -448,6 +480,38 @@ export type Database = {
             columns: ["folder_id"]
             isOneToOne: false
             referencedRelation: "media_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_folders: {
+        Row: {
+          color: string
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_folders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "affiliates"
             referencedColumns: ["id"]
           },
         ]
@@ -584,6 +648,101 @@ export type Database = {
     }
     Functions: {
       current_affiliate_id: { Args: never; Returns: string }
+      get_admin_dashboard_stats: {
+        Args: { p_start_of_last_month: string; p_start_of_month: string }
+        Returns: {
+          active_monthly_count: number
+          annual_active_count: number
+          churned_count: number
+          commission_liability: number
+          last_month_earned: number
+          pending_amount: number
+          this_month_earned: number
+          total_earned: number
+          total_paid_out: number
+          trialing_count: number
+        }[]
+      }
+      get_affiliate_daily_clicks: {
+        Args: { p_affiliate_id: string; p_days: number; p_since: string }
+        Returns: {
+          click_count: number
+          day_offset: number
+        }[]
+      }
+      get_affiliate_dashboard_stats: {
+        Args: {
+          p_affiliate_id: string
+          p_start_of_last_month: string
+          p_start_of_month: string
+        }
+        Returns: {
+          active_count: number
+          churned_count: number
+          last_month_earned: number
+          paid_amount: number
+          pending_amount: number
+          this_month_earned: number
+          total_customers: number
+          total_earned: number
+          total_leads: number
+          trialing_count: number
+        }[]
+      }
+      get_affiliate_detail_stats: {
+        Args: { aff_ids: string[] }
+        Returns: {
+          active_annual: number
+          active_monthly: number
+          canceled: number
+          clicks: number
+          leads: number
+          paid_amount: number
+          pending_amount: number
+          total_customers: number
+          total_earned: number
+          trialing: number
+        }[]
+      }
+      get_affiliate_monthly_earnings: {
+        Args: { p_affiliate_id: string; p_since: string }
+        Returns: {
+          month_start: string
+          total_amount: number
+        }[]
+      }
+      get_commission_totals_by_affiliate: {
+        Args: never
+        Returns: {
+          affiliate_id: string
+          total_amount: number
+        }[]
+      }
+      get_daily_click_counts: {
+        Args: { p_days: number; p_since: string }
+        Returns: {
+          click_count: number
+          day_offset: number
+        }[]
+      }
+      get_monthly_earnings: {
+        Args: { p_since: string }
+        Returns: {
+          month_start: string
+          total_amount: number
+        }[]
+      }
+      get_sub_affiliate_stats: {
+        Args: { sub_ids: string[] }
+        Returns: {
+          affiliate_id: string
+          customer_count: number
+          earned: number
+          lead_count: number
+        }[]
+      }
+      get_tier2_earnings: { Args: { aff_id: string }; Returns: number }
+      import_stripe_affiliate_data: { Args: { p_data: Json }; Returns: Json }
       is_admin: { Args: never; Returns: boolean }
       is_self_or_descendant: {
         Args: { target_affiliate_id: string }
@@ -621,20 +780,149 @@ export type Database = {
 }
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
-  T extends keyof DefaultSchema["Tables"],
-> = DefaultSchema["Tables"][T]["Row"]
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
 
 export type TablesInsert<
-  T extends keyof DefaultSchema["Tables"],
-> = DefaultSchema["Tables"][T]["Insert"]
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
 
 export type TablesUpdate<
-  T extends keyof DefaultSchema["Tables"],
-> = DefaultSchema["Tables"][T]["Update"]
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
 
 export type Enums<
-  T extends keyof DefaultSchema["Enums"],
-> = DefaultSchema["Enums"][T]
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      affiliate_role: ["affiliate", "admin"],
+      affiliate_status: ["invited", "active", "inactive"],
+      commission_status: ["pending", "approved", "paid", "voided"],
+      commission_tier_type: ["direct", "tier2", "tier3"],
+      customer_event_type: [
+        "account_created",
+        "trial_started",
+        "trial_expired",
+        "first_payment",
+        "recurring_payment",
+        "canceled",
+        "resubscribed",
+      ],
+      customer_state: [
+        "signed_up",
+        "trialing",
+        "active_monthly",
+        "active_annual",
+        "canceled",
+        "dormant",
+      ],
+      payout_method_type: ["paypal", "bank_transfer"],
+      payout_status: ["processing", "completed"],
+      plan_type: ["monthly", "annual"],
+    },
+  },
+} as const

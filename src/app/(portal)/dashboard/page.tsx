@@ -1,24 +1,22 @@
-import { createClient, createServiceClient, fetchAllPaginated } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { DashboardClient } from "./dashboard-client";
 import { PLAN_PRICES } from "@/lib/constants";
 
-function buildDailySparkline(
-  rows: { clicked_at: string }[],
+function sparklineFromBuckets(
+  bucketRows: { day_offset: number; click_count: number }[] | null,
   days: number,
 ): number[] {
-  const now = new Date();
   const buckets = new Array(days).fill(0);
-  for (const r of rows) {
-    const d = new Date(r.clicked_at);
-    const daysAgo = Math.floor((now.getTime() - d.getTime()) / 86_400_000);
-    if (daysAgo >= 0 && daysAgo < days) buckets[days - 1 - daysAgo]++;
+  for (const r of bucketRows ?? []) {
+    const idx = Number(r.day_offset);
+    if (idx >= 0 && idx < days) buckets[idx] = Number(r.click_count);
   }
   return buckets;
 }
 
-function buildMonthlyEarnings(
-  rows: { created_at: string; amount: number; status: string }[],
+function monthlyFromBuckets(
+  rows: { month_start: string; total_amount: number }[] | null,
   months: number,
 ): { month: string; amount: number }[] {
   const now = new Date();
@@ -30,14 +28,12 @@ function buildMonthlyEarnings(
       amount: 0,
     });
   }
-  for (const r of rows) {
-    if (r.status === "voided") continue;
-    const d = new Date(r.created_at);
+  for (const r of rows ?? []) {
+    const d = new Date(r.month_start);
     const monthsAgo =
-      (now.getFullYear() - d.getFullYear()) * 12 +
-      (now.getMonth() - d.getMonth());
+      (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
     if (monthsAgo >= 0 && monthsAgo < months) {
-      buckets[months - 1 - monthsAgo].amount += Number(r.amount);
+      buckets[months - 1 - monthsAgo].amount = Number(r.total_amount);
     }
   }
   return buckets;
@@ -69,33 +65,22 @@ export default async function DashboardPage() {
     const service = await createServiceClient();
     const [
       affiliatesRes,
-      clicksTimeRes,
       leadsCountRes,
       customersRes,
-      stateRows,
-      commRows,
-      allCommsRows,
-      payoutRows,
+      { data: adminStats },
+      { data: clickBuckets },
+      { data: monthlyRows },
       recentAffiliatesRes,
     ] = await Promise.all([
       service.from("affiliates").select("id", { count: "exact", head: true }).neq("role", "admin"),
-      fetchAllPaginated<{ clicked_at: string }>((from, to) =>
-        service.from("clicks").select("clicked_at").gte("clicked_at", thirtyDaysAgo).range(from, to),
-      ),
       service.from("leads").select("id", { count: "exact", head: true }),
       service.from("customers").select("id", { count: "exact", head: true }),
-      fetchAllPaginated((from, to) =>
-        service.from("customers").select("current_state, plan_type").range(from, to),
-      ),
-      fetchAllPaginated((from, to) =>
-        service.from("commissions").select("amount, status, created_at").gte("created_at", sixMonthsAgo).range(from, to),
-      ),
-      fetchAllPaginated((from, to) =>
-        service.from("commissions").select("amount, status, created_at").range(from, to),
-      ),
-      fetchAllPaginated((from, to) =>
-        service.from("payouts").select("amount, status").range(from, to),
-      ),
+      service.rpc("get_admin_dashboard_stats", {
+        p_start_of_month: startOfMonth,
+        p_start_of_last_month: startOfLastMonth,
+      }),
+      service.rpc("get_daily_click_counts", { p_since: thirtyDaysAgo, p_days: 30 }),
+      service.rpc("get_monthly_earnings", { p_since: sixMonthsAgo }),
       service
         .from("affiliates")
         .select("id, name, slug, tier_level, commission_rate, created_at")
@@ -104,169 +89,109 @@ export default async function DashboardPage() {
         .limit(5),
     ]);
 
-    const clickRows = clicksTimeRes;
-
-    const nonVoidedAll = allCommsRows.filter((c) => c.status !== "voided");
-    const allAmount = nonVoidedAll.reduce((s, c) => s + Number(c.amount), 0);
-    const pendingAmount = nonVoidedAll
-      .filter((c) => c.status === "pending" || c.status === "approved")
-      .reduce((s, c) => s + Number(c.amount), 0);
-
-    const adminStartOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const adminStartOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const adminThisMonth = nonVoidedAll
-      .filter((c) => new Date(c.created_at) >= adminStartOfMonth)
-      .reduce((s, c) => s + Number(c.amount), 0);
-    const adminLastMonth = nonVoidedAll
-      .filter((c) => {
-        const d = new Date(c.created_at);
-        return d >= adminStartOfLastMonth && d < adminStartOfMonth;
-      })
-      .reduce((s, c) => s + Number(c.amount), 0);
-
-    const activeCount = stateRows.filter(
-      (c) => c.current_state === "active_monthly" || c.current_state === "active_annual",
-    ).length;
-    const monthlyActive = stateRows.filter((c) => c.current_state === "active_monthly").length;
-    const annualActive = stateRows.filter((c) => c.current_state === "active_annual").length;
-    const trialingCount = stateRows.filter((c) => c.current_state === "trialing").length;
-    const churned = stateRows.filter(
-      (c) => c.current_state === "canceled" || c.current_state === "dormant",
-    ).length;
-
+    const s = adminStats?.[0];
+    const totalClicks = (clickBuckets ?? []).reduce(
+      (sum: number, r: { click_count: number }) => sum + Number(r.click_count), 0,
+    );
+    const monthlyActive = Number(s?.active_monthly_count ?? 0);
+    const annualActive = Number(s?.annual_active_count ?? 0);
+    const trialingCount = Number(s?.trialing_count ?? 0);
+    const churned = Number(s?.churned_count ?? 0);
+    const activeCount = monthlyActive + annualActive;
     const estimatedMRR = monthlyActive * PLAN_PRICES.monthly + annualActive * (PLAN_PRICES.annual / 12);
-
-    const commissionLiability = allCommsRows
-      .filter((c) => c.status === "pending" || c.status === "approved")
-      .reduce((s, c) => s + Number(c.amount), 0);
-
-    const totalPaidOut = payoutRows
-      .filter((p) => p.status === "completed")
-      .reduce((s, p) => s + Number(p.amount), 0);
 
     return (
       <DashboardClient
         affiliate={affiliate}
         stats={{
-          clicks: clickRows.length,
+          clicks: totalClicks,
           leads: leadsCountRes.count ?? 0,
           trials: trialingCount,
           customers: customersRes.count ?? 0,
-          earned: allAmount,
-          pending: pendingAmount,
-          thisMonthEarned: adminThisMonth,
-          lastMonthEarned: adminLastMonth,
+          earned: Number(s?.total_earned ?? 0),
+          pending: Number(s?.pending_amount ?? 0),
+          thisMonthEarned: Number(s?.this_month_earned ?? 0),
+          lastMonthEarned: Number(s?.last_month_earned ?? 0),
         }}
         chartData={{
-          clicksByDay: buildDailySparkline(clickRows, 30),
-          earningsByMonth: buildMonthlyEarnings(commRows, 6),
+          clicksByDay: sparklineFromBuckets(clickBuckets, 30),
+          earningsByMonth: monthlyFromBuckets(monthlyRows, 6),
           customerStates: { active: activeCount, trialing: trialingCount, churned },
         }}
         adminData={{
           totalAffiliates: affiliatesRes.count ?? 0,
           recentAffiliates: recentAffiliatesRes.data ?? [],
           estimatedMRR,
-          commissionLiability,
-          totalPaidOut,
+          commissionLiability: Number(s?.commission_liability ?? 0),
+          totalPaidOut: Number(s?.total_paid_out ?? 0),
         }}
       />
     );
   }
 
   // ── Affiliate flow ──
-  const [clicksTimeRes, leadsCountRes, custStates, allCommRows, commRowsChart, recentCommissionsRes, taxDocRes] =
-    await Promise.all([
-      supabase
-        .from("clicks")
-        .select("clicked_at")
-        .eq("affiliate_id", affiliate.id)
-        .gte("clicked_at", thirtyDaysAgo),
-      supabase
-        .from("leads")
-        .select("id", { count: "exact", head: true })
-        .eq("affiliate_id", affiliate.id),
-      fetchAllPaginated((from, to) =>
-        supabase
-          .from("customers")
-          .select("current_state")
-          .eq("affiliate_id", affiliate.id)
-          .range(from, to),
-      ),
-      fetchAllPaginated((from, to) =>
-        supabase
-          .from("commissions")
-          .select("amount, status, created_at")
-          .eq("affiliate_id", affiliate.id)
-          .range(from, to),
-      ),
-      fetchAllPaginated((from, to) =>
-        supabase
-          .from("commissions")
-          .select("amount, status, created_at")
-          .eq("affiliate_id", affiliate.id)
-          .gte("created_at", sixMonthsAgo)
-          .range(from, to),
-      ),
-      supabase
-        .from("commissions")
-        .select("id, amount, status, created_at, tier_type, customers(leads(email, name))")
-        .eq("affiliate_id", affiliate.id)
-        .order("created_at", { ascending: false })
-        .limit(8),
-      supabase
-        .from("tax_documents")
-        .select("id", { count: "exact", head: true })
-        .eq("affiliate_id", affiliate.id),
-    ]);
+  const svc = await createServiceClient();
+  const [
+    { data: affStats },
+    { data: affClickBuckets },
+    { data: affMonthlyRows },
+    recentCommissionsRes,
+    taxDocRes,
+  ] = await Promise.all([
+    svc.rpc("get_affiliate_dashboard_stats", {
+      p_affiliate_id: affiliate.id,
+      p_start_of_month: startOfMonth,
+      p_start_of_last_month: startOfLastMonth,
+    }),
+    svc.rpc("get_affiliate_daily_clicks", {
+      p_affiliate_id: affiliate.id,
+      p_since: thirtyDaysAgo,
+      p_days: 30,
+    }),
+    svc.rpc("get_affiliate_monthly_earnings", {
+      p_affiliate_id: affiliate.id,
+      p_since: sixMonthsAgo,
+    }),
+    supabase
+      .from("commissions")
+      .select("id, amount, status, created_at, tier_type, customers(leads(email, name))")
+      .eq("affiliate_id", affiliate.id)
+      .order("created_at", { ascending: false })
+      .limit(8),
+    supabase
+      .from("tax_documents")
+      .select("id", { count: "exact", head: true })
+      .eq("affiliate_id", affiliate.id),
+  ]);
 
-  const clickRows = clicksTimeRes.data ?? [];
+  const a = affStats?.[0];
+  const totalClicks = (affClickBuckets ?? []).reduce(
+    (sum: number, r: { click_count: number }) => sum + Number(r.click_count), 0,
+  );
   const recentComms = recentCommissionsRes.data ?? [];
-  const totalLeads = leadsCountRes.count ?? 0;
-  const totalCustomers = custStates.length;
-  const totalTrialing = custStates.filter((c) => c.current_state === "trialing").length;
-  const totalActive = custStates.filter((c) => c.current_state === "active_monthly" || c.current_state === "active_annual").length;
-  const totalChurned = custStates.filter((c) => c.current_state === "canceled" || c.current_state === "dormant").length;
-
-  const nonVoidedAll = allCommRows.filter((c) => c.status !== "voided");
-  const totalEarned = nonVoidedAll
-    .filter((c) => c.status === "paid")
-    .reduce((s, c) => s + Number(c.amount), 0);
-  const totalPending = nonVoidedAll
-    .filter((c) => c.status === "pending" || c.status === "approved")
-    .reduce((s, c) => s + Number(c.amount), 0);
-
-  const startOfMonthDate = new Date(now.getFullYear(), now.getMonth(), 1);
-  const startOfLastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-
-  const thisMonthEarned = nonVoidedAll
-    .filter((c) => new Date(c.created_at) >= startOfMonthDate)
-    .reduce((s, c) => s + Number(c.amount), 0);
-  const lastMonthEarned = nonVoidedAll
-    .filter((c) => {
-      const d = new Date(c.created_at);
-      return d >= startOfLastMonthDate && d < startOfMonthDate;
-    })
-    .reduce((s, c) => s + Number(c.amount), 0);
-
   const hasTaxForm = (taxDocRes.count ?? 0) > 0;
 
   const baseProps = {
     affiliate,
     hasTaxForm,
     stats: {
-      clicks: clickRows.length,
-      leads: totalLeads,
-      trials: totalTrialing,
-      customers: totalCustomers,
-      earned: totalEarned,
-      pending: totalPending,
-      thisMonthEarned,
-      lastMonthEarned,
+      clicks: totalClicks,
+      leads: Number(a?.total_leads ?? 0),
+      trials: Number(a?.trialing_count ?? 0),
+      customers: Number(a?.total_customers ?? 0),
+      earned: Number(a?.paid_amount ?? 0),
+      pending: Number(a?.pending_amount ?? 0),
+      thisMonthEarned: Number(a?.this_month_earned ?? 0),
+      lastMonthEarned: Number(a?.last_month_earned ?? 0),
     },
     chartData: {
-      clicksByDay: buildDailySparkline(clickRows, 30),
-      earningsByMonth: buildMonthlyEarnings(commRowsChart, 6),
-      customerStates: { active: totalActive, trialing: totalTrialing, churned: totalChurned },
+      clicksByDay: sparklineFromBuckets(affClickBuckets, 30),
+      earningsByMonth: monthlyFromBuckets(affMonthlyRows, 6),
+      customerStates: {
+        active: Number(a?.active_count ?? 0),
+        trialing: Number(a?.trialing_count ?? 0),
+        churned: Number(a?.churned_count ?? 0),
+      },
     },
     recentActivity: recentComms.map((c) => ({
       id: c.id,
@@ -289,18 +214,15 @@ export default async function DashboardPage() {
     const subIds = (subAffiliates ?? []).map((s) => s.id);
     let subCustomerStates = { active: 0, trialing: 0, churned: 0 };
     if (subIds.length > 0) {
-      const sc = await fetchAllPaginated((from, to) =>
-        supabase
-          .from("customers")
-          .select("current_state")
-          .in("affiliate_id", subIds)
-          .range(from, to),
-      );
-      subCustomerStates = {
-        active: sc.filter((c) => c.current_state === "active_monthly" || c.current_state === "active_annual").length,
-        trialing: sc.filter((c) => c.current_state === "trialing").length,
-        churned: sc.filter((c) => c.current_state === "canceled" || c.current_state === "dormant").length,
-      };
+      const { data: subData } = await svc.rpc("get_affiliate_detail_stats", { aff_ids: subIds });
+      const sr = subData?.[0];
+      if (sr) {
+        subCustomerStates = {
+          active: Number(sr.active_monthly) + Number(sr.active_annual),
+          trialing: Number(sr.trialing),
+          churned: Number(sr.canceled),
+        };
+      }
     }
 
     return (

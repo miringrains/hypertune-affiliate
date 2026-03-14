@@ -22,7 +22,7 @@ interface Asset {
   id: string;
   title: string;
   file_type: string;
-  file_size: number;
+  file_size: number | null;
   description: string | null;
   created_at: string;
   thumbnail_url?: string | null;
@@ -140,7 +140,7 @@ export function MediaClient({ folders }: { folders: FolderData[] }) {
                   )}
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] text-muted-foreground">
-                      {formatBytes(asset.file_size)}
+                      {formatBytes(asset.file_size ?? 0)}
                     </span>
                     <Button
                       variant="ghost"

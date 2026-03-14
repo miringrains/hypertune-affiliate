@@ -10,6 +10,7 @@ import {
   Activity,
   Wallet,
   Megaphone,
+  ClipboardCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -59,6 +60,7 @@ export const adminNav: NavGroup[] = [
     items: [
       { label: "Commissions", href: "/admin/commissions", icon: DollarSign },
       { label: "Payouts", href: "/admin/payouts", icon: Wallet },
+      { label: "Audit", href: "/admin/audit", icon: ClipboardCheck },
     ],
   },
   {

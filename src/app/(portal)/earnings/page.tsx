@@ -73,6 +73,7 @@ export default async function EarningsPage() {
     });
   }
   for (const c of allComms) {
+    if (c.status === "voided") continue;
     const d = new Date(c.created_at);
     const monthsAgo =
       (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
@@ -103,7 +104,7 @@ export default async function EarningsPage() {
       }}
       pipeline={{ pending: pipelinePending, approved: pipelineApproved, paid: pipelinePaid }}
       monthlyEarnings={monthlyEarnings}
-      hasTier2={allComms.some((c) => c.tier_type !== "direct")}
+      hasTier2={commissions.some((c) => c.tier_type !== "direct")}
       commissions={commissions.map((c) => ({
         id: c.id,
         amount: Number(c.amount),

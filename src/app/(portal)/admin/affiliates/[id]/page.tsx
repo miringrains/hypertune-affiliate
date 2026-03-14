@@ -1,12 +1,12 @@
 import { redirect, notFound } from "next/navigation";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient, fetchAllPaginated } from "@/lib/supabase/server";
 import { AffiliateDetailClient } from "./affiliate-detail-client";
 
 async function computeStatsForIds(
   service: Awaited<ReturnType<typeof createServiceClient>>,
   ids: string[],
 ) {
-  const [clicksResult, leadsResult, customersResult, commissionsResult] =
+  const [clicksResult, leadsResult, customers, commissions] =
     await Promise.all([
       service
         .from("clicks")
@@ -16,18 +16,13 @@ async function computeStatsForIds(
         .from("leads")
         .select("id", { count: "exact", head: true })
         .in("affiliate_id", ids),
-      service
-        .from("customers")
-        .select("id, current_state, plan_type")
-        .in("affiliate_id", ids),
-      service
-        .from("commissions")
-        .select("amount, status")
-        .in("affiliate_id", ids),
+      fetchAllPaginated<{ id: string; current_state: string; plan_type: string | null }>((from, to) =>
+        service.from("customers").select("id, current_state, plan_type").in("affiliate_id", ids).range(from, to),
+      ),
+      fetchAllPaginated<{ amount: number; status: string }>((from, to) =>
+        service.from("commissions").select("amount, status").in("affiliate_id", ids).range(from, to),
+      ),
     ]);
-
-  const customers = customersResult.data ?? [];
-  const commissions = commissionsResult.data ?? [];
   const nonVoided = commissions.filter((c) => c.status !== "voided");
   const totalEarned = nonVoided.reduce((sum, c) => sum + c.amount, 0);
   const pendingAmount = nonVoided

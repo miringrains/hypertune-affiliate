@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient, fetchAllPaginated } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { formatCurrency } from "@/lib/utils";
@@ -20,13 +20,15 @@ export default async function AdminAffiliatesPage() {
   if (!affiliate || affiliate.role !== "admin") redirect("/dashboard");
 
   const service = await createServiceClient();
-  const [{ data: affiliates }, { data: allCommissions }] = await Promise.all([
+  const [{ data: affiliates }, allCommissions] = await Promise.all([
     service.from("affiliates").select("*"),
-    service.from("commissions").select("affiliate_id, amount"),
+    fetchAllPaginated<{ affiliate_id: string; amount: number }>((from, to) =>
+      service.from("commissions").select("affiliate_id, amount").range(from, to),
+    ),
   ]);
 
   const revenueByAffiliate = new Map<string, number>();
-  for (const c of allCommissions ?? []) {
+  for (const c of allCommissions) {
     revenueByAffiliate.set(
       c.affiliate_id,
       (revenueByAffiliate.get(c.affiliate_id) ?? 0) + c.amount,

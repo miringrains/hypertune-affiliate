@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient, fetchAllPaginated } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { TeamClient } from "./team-client";
 
@@ -30,7 +30,10 @@ export default async function TeamPage() {
     );
   }
 
-  const { data: subAffiliates } = await supabase
+  // Use service client to bypass RLS for cross-affiliate queries
+  const svc = await createServiceClient();
+
+  const { data: subAffiliates } = await svc
     .from("affiliates")
     .select("id, name, slug, email, status, created_at, commission_rate, tier_level")
     .eq("parent_id", affiliate.id)
@@ -38,23 +41,25 @@ export default async function TeamPage() {
 
   const subs = subAffiliates ?? [];
 
-  // Get earnings data per sub-affiliate
   let subPerformance: Record<string, { leads: number; customers: number; earned: number }> = {};
   if (subs.length > 0) {
     const subIds = subs.map((s) => s.id);
 
-    const [leadsRes, customersRes, commissionsRes] = await Promise.all([
-      supabase.from("leads").select("affiliate_id").in("affiliate_id", subIds),
-      supabase.from("customers").select("affiliate_id").in("affiliate_id", subIds),
-      supabase
-        .from("commissions")
-        .select("affiliate_id, amount, status")
-        .in("affiliate_id", subIds),
+    const [allLeads, allCustomers, allComms] = await Promise.all([
+      fetchAllPaginated<{ affiliate_id: string }>((from, to) =>
+        svc.from("leads").select("affiliate_id").in("affiliate_id", subIds).range(from, to),
+      ),
+      fetchAllPaginated<{ affiliate_id: string }>((from, to) =>
+        svc.from("customers").select("affiliate_id").in("affiliate_id", subIds).range(from, to),
+      ),
+      fetchAllPaginated<{ affiliate_id: string; amount: number; status: string }>((from, to) =>
+        svc
+          .from("commissions")
+          .select("affiliate_id, amount, status")
+          .in("affiliate_id", subIds)
+          .range(from, to),
+      ),
     ]);
-
-    const allLeads = leadsRes.data ?? [];
-    const allCustomers = customersRes.data ?? [];
-    const allComms = commissionsRes.data ?? [];
 
     for (const id of subIds) {
       subPerformance[id] = {
@@ -70,15 +75,18 @@ export default async function TeamPage() {
   const combinedRevenue = Object.values(subPerformance).reduce((s, p) => s + p.earned, 0);
   const activeCount = subs.filter((s) => s.status === "active").length;
 
-  // Tier 2 commissions earned by this affiliate
-  const { data: tier2Comms } = await supabase
-    .from("commissions")
-    .select("amount, status")
-    .eq("affiliate_id", affiliate.id)
-    .neq("tier_type", "direct");
+  // Tier 2 commissions earned by this affiliate (all-time, paginated)
+  const tier2Comms = await fetchAllPaginated<{ amount: number; status: string }>((from, to) =>
+    svc
+      .from("commissions")
+      .select("amount, status")
+      .eq("affiliate_id", affiliate.id)
+      .neq("tier_type", "direct")
+      .range(from, to),
+  );
 
-  const teamEarnings = (tier2Comms ?? [])
-    .filter((c) => c.status === "paid")
+  const teamEarnings = tier2Comms
+    .filter((c) => c.status !== "voided")
     .reduce((s, c) => s + Number(c.amount), 0);
 
   return (

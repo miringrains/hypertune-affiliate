@@ -106,7 +106,8 @@ export default async function EarningsPage() {
         status: c.status,
         tier_type: c.tier_type,
         created_at: c.created_at,
-        email: c.lead_name || c.lead_email || "—",
+        email: c.lead_email || "—",
+        source: c.source_affiliate ?? undefined,
       }))}
       payouts={payouts.map((p) => ({
         id: p.id,

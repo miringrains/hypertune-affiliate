@@ -140,7 +140,7 @@ export default async function PerformancePage() {
       }))}
       customers={(recentCustomers ?? []).map((c) => ({
         id: c.id,
-        email: c.lead_name || c.lead_email || "—",
+        email: c.lead_email || "—",
         state: c.current_state,
         plan: c.plan_type,
         source: isTier1 ? (subIdMap[c.affiliate_id] ?? "Unknown") : undefined,

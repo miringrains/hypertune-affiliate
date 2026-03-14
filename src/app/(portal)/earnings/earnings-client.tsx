@@ -48,6 +48,7 @@ interface CommissionRow {
   tier_type: string;
   created_at: string;
   email: string;
+  source?: string;
 }
 
 interface PayoutRow {
@@ -349,7 +350,12 @@ export function EarningsClient({
                 <tbody>
                   {filteredCommissions.slice(0, 50).map((c) => (
                     <tr key={c.id} className="border-b border-zinc-700/50 last:border-0">
-                      <td className="px-5 py-3 text-[13px] text-zinc-100">{c.email}</td>
+                      <td className="px-5 py-3">
+                          <p className="text-[13px] text-zinc-100">{c.email}</p>
+                          {c.source && (
+                            <p className="text-[11px] text-zinc-500 mt-0.5">via {c.source}</p>
+                          )}
+                        </td>
                       <td className="px-5 py-3 text-[13px] font-medium text-white tabular-nums">{fmtCurrency(c.amount)}</td>
                       <td className="px-5 py-3 text-[12px] text-zinc-400">{c.rate}%</td>
                       <td className="px-5 py-3">

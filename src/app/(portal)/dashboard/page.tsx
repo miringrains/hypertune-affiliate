@@ -200,8 +200,7 @@ export default async function DashboardPage() {
       tier_type: c.tier_type,
       created_at: c.created_at,
       email:
-        ((c.customers as unknown as { leads: { email: string; name: string | null } | null })?.leads?.name ||
-        (c.customers as unknown as { leads: { email: string; name: string | null } | null })?.leads?.email) ?? null,
+        (c.customers as unknown as { leads: { email: string; name: string | null } | null })?.leads?.email ?? null,
     })),
   };
 

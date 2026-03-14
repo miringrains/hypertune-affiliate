@@ -770,6 +770,7 @@ export type Database = {
           lead_email: string
           lead_name: string
           rate_snapshot: number
+          source_affiliate: string | null
           status: string
           tier_type: string
         }[]

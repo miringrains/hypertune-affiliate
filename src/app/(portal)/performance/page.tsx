@@ -134,21 +134,20 @@ export default async function PerformancePage() {
   const baselineClicks = affiliate.baseline_clicks ?? 0;
   const goLiveAt = affiliate.go_live_at;
 
-  let displayedLeads: number;
-  let displayedClicks: number;
+  const { count: liveClickCount } = await svc
+    .from("clicks").select("id", { count: "exact", head: true })
+    .eq("affiliate_id", affiliate.id);
 
+  const displayedClicks = baselineClicks + (liveClickCount ?? 0);
+
+  let displayedLeads: number;
   if (goLiveAt) {
-    const [{ count: newLeads }, { count: newClicks }] = await Promise.all([
-      svc.from("leads").select("id", { count: "exact", head: true })
-        .eq("affiliate_id", affiliate.id).gte("created_at", goLiveAt),
-      svc.from("clicks").select("id", { count: "exact", head: true })
-        .eq("affiliate_id", affiliate.id).gte("created_at", goLiveAt),
-    ]);
+    const { count: newLeads } = await svc
+      .from("leads").select("id", { count: "exact", head: true })
+      .eq("affiliate_id", affiliate.id).gte("created_at", goLiveAt);
     displayedLeads = baselineLeads + (newLeads ?? 0);
-    displayedClicks = baselineClicks + (newClicks ?? 0);
   } else {
     displayedLeads = baselineLeads > 0 ? baselineLeads : Number(directFunnel?.total_leads ?? 0);
-    displayedClicks = baselineClicks > 0 ? baselineClicks : Number(directFunnel?.clicks_30d ?? 0);
   }
 
   return (

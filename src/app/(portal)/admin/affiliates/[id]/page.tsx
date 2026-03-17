@@ -63,10 +63,15 @@ export default async function AdminAffiliateDetailPage({
   const rawStats = await computeStatsForIds(service, [id]);
   const bLeads = affiliate.baseline_leads ?? 0;
   const bClicks = affiliate.baseline_clicks ?? 0;
+
+  const { count: liveClicks } = await service
+    .from("clicks").select("id", { count: "exact", head: true })
+    .eq("affiliate_id", id);
+
   const stats = {
     ...rawStats,
     leads: bLeads > 0 ? bLeads : rawStats.leads,
-    clicks: bClicks > 0 ? bClicks : rawStats.clicks,
+    clicks: bClicks + (liveClicks ?? 0),
   };
 
   let subStats = null;

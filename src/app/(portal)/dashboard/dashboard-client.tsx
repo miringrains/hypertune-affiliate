@@ -401,42 +401,96 @@ function FunnelStrip({ stats }: { stats: DashboardStats }) {
   );
 }
 
-function EarningsTrend({ data }: { data: { month: string; amount: number }[] }) {
+function EarningsTrend({
+  data,
+  clicksByDay,
+}: {
+  data: { month: string; amount: number }[];
+  clicksByDay: number[];
+}) {
+  const clickData = clicksByDay.map((count, i) => {
+    const d = new Date(Date.now() - (29 - i) * 86_400_000);
+    return {
+      day: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+      clicks: count,
+    };
+  });
+  const totalClicks30d = clicksByDay.reduce((s, c) => s + c, 0);
+
   return (
-    <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-[13px] font-medium text-zinc-300">Earnings Trend</h3>
-        <span className="text-[11px] text-zinc-400">Last 6 months</span>
+    <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5 flex flex-col gap-6">
+      {/* Earnings */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[13px] font-medium text-zinc-300">Earnings Trend</h3>
+          <span className="text-[11px] text-zinc-400">Last 6 months</span>
+        </div>
+        <ResponsiveContainer width="100%" height={160}>
+          <BarChart data={data} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+            <XAxis
+              dataKey="month"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: "#a1a1aa", fontSize: 11 }}
+            />
+            <YAxis hide />
+            <Tooltip
+              cursor={{ fill: "rgba(255,255,255,0.02)" }}
+              contentStyle={{
+                background: "#09090b",
+                border: "1px solid #27272a",
+                borderRadius: 8,
+                fontSize: 12,
+                color: "#fff",
+              }}
+              formatter={(value: number) => [fmtCurrency(value), "Earned"]}
+            />
+            <defs>
+              <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#ffffff" stopOpacity={0.9} />
+                <stop offset="100%" stopColor="#ffffff" stopOpacity={0.3} />
+              </linearGradient>
+            </defs>
+            <Bar dataKey="amount" fill="url(#barGrad)" radius={[4, 4, 0, 0]} maxBarSize={40} />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
-      <ResponsiveContainer width="100%" height={180}>
-        <BarChart data={data} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
-          <XAxis
-            dataKey="month"
-            axisLine={false}
-            tickLine={false}
-            tick={{ fill: "#a1a1aa", fontSize: 11 }}
-          />
-          <YAxis hide />
-          <Tooltip
-            cursor={{ fill: "rgba(255,255,255,0.02)" }}
-            contentStyle={{
-              background: "#09090b",
-              border: "1px solid #27272a",
-              borderRadius: 8,
-              fontSize: 12,
-              color: "#fff",
-            }}
-            formatter={(value: number) => [fmtCurrency(value), "Earned"]}
-          />
-          <defs>
-            <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#ffffff" stopOpacity={0.9} />
-              <stop offset="100%" stopColor="#ffffff" stopOpacity={0.3} />
-            </linearGradient>
-          </defs>
-          <Bar dataKey="amount" fill="url(#barGrad)" radius={[4, 4, 0, 0]} maxBarSize={40} />
-        </BarChart>
-      </ResponsiveContainer>
+
+      {/* Divider */}
+      <div className="border-t border-zinc-800" />
+
+      {/* Click Activity */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-[13px] font-medium text-zinc-300">Click Activity</h3>
+          <span className="text-[11px] text-zinc-400">{totalClicks30d.toLocaleString()} clicks · 30 days</span>
+        </div>
+        <ResponsiveContainer width="100%" height={100}>
+          <BarChart data={clickData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+            <XAxis hide />
+            <YAxis hide />
+            <Tooltip
+              cursor={{ fill: "rgba(255,255,255,0.02)" }}
+              contentStyle={{
+                background: "#09090b",
+                border: "1px solid #27272a",
+                borderRadius: 8,
+                fontSize: 12,
+                color: "#fff",
+              }}
+              labelFormatter={(label: string) => label}
+              formatter={(value: number) => [value.toLocaleString(), "Clicks"]}
+            />
+            <defs>
+              <linearGradient id="clickBarGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#a1a1aa" stopOpacity={0.7} />
+                <stop offset="100%" stopColor="#a1a1aa" stopOpacity={0.15} />
+              </linearGradient>
+            </defs>
+            <Bar dataKey="clicks" fill="url(#clickBarGrad)" radius={[2, 2, 0, 0]} maxBarSize={8} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }
@@ -717,7 +771,7 @@ export function DashboardClient({
       <FunnelStrip stats={stats} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <EarningsTrend data={chartData.earningsByMonth} />
+        <EarningsTrend data={chartData.earningsByMonth} clicksByDay={chartData.clicksByDay} />
         <ActivityFeed items={recentActivity ?? []} />
       </div>
 

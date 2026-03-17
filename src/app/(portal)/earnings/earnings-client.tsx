@@ -118,9 +118,9 @@ export function EarningsClient({
   const pipelineTotal = pipeline.pending + pipeline.approved + pipeline.paid;
   const pipelineSegments = pipelineTotal > 0
     ? [
-        { label: "Pending", amount: pipeline.pending, pct: (pipeline.pending / pipelineTotal) * 100, textColor: "text-amber-400" },
-        { label: "Approved", amount: pipeline.approved, pct: (pipeline.approved / pipelineTotal) * 100, textColor: "text-zinc-300" },
-        { label: "Paid", amount: pipeline.paid, pct: (pipeline.paid / pipelineTotal) * 100, textColor: "text-emerald-400" },
+        { label: "Pending", amount: pipeline.pending, pct: (pipeline.pending / pipelineTotal) * 100, textColor: "text-amber-400", barColor: "rgba(251,191,36,0.25)", dotColor: "bg-amber-400" },
+        { label: "Approved", amount: pipeline.approved, pct: (pipeline.approved / pipelineTotal) * 100, textColor: "text-blue-400", barColor: "rgba(96,165,250,0.25)", dotColor: "bg-blue-400" },
+        { label: "Paid", amount: pipeline.paid, pct: (pipeline.paid / pipelineTotal) * 100, textColor: "text-emerald-400", barColor: "rgba(52,211,153,0.25)", dotColor: "bg-emerald-400" },
       ]
     : [];
 
@@ -180,15 +180,15 @@ export function EarningsClient({
         <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">
           <h3 className="text-[13px] font-medium text-zinc-300 mb-4">Commission Pipeline</h3>
           <div className="flex rounded-lg overflow-hidden h-8 mb-3 border border-zinc-700 bg-black">
-            {pipelineSegments.map((seg) =>
+            {pipelineSegments.map((seg, i) =>
               seg.pct > 0 ? (
                 <div
                   key={seg.label}
                   className="flex items-center justify-center transition-all"
                   style={{
                     width: `${Math.max(seg.pct, 5)}%`,
-                    background: "rgba(255,255,255,0.06)",
-                    borderRight: "1px solid #27272a",
+                    background: seg.barColor,
+                    borderRight: i < pipelineSegments.length - 1 ? "1px solid #27272a" : undefined,
                   }}
                 >
                   {seg.pct > 15 && (
@@ -203,7 +203,7 @@ export function EarningsClient({
           <div className="flex items-center gap-5">
             {pipelineSegments.map((seg) => (
               <div key={seg.label} className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-zinc-600" />
+                <div className={`w-2 h-2 rounded-full ${seg.dotColor}`} />
                 <span className="text-[11px] text-zinc-400">{seg.label}</span>
                 <span className={`text-[11px] font-medium ${seg.textColor}`}>{fmtCurrency(seg.amount)}</span>
               </div>

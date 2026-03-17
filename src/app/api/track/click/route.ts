@@ -92,13 +92,24 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(redirectUrl!);
   }
 
-  await supabase.from("clicks").insert({
-    affiliate_id: affiliate.id,
-    referrer_url: ref,
-    landing_page: page,
-    ip_hash: ipHash,
-    user_agent: userAgent,
-  });
+  // Dedup: same IP + affiliate within 24h = 1 unique click (industry standard)
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const { count: recentHits } = await supabase
+    .from("clicks")
+    .select("id", { count: "exact", head: true })
+    .eq("affiliate_id", affiliate.id)
+    .eq("ip_hash", ipHash)
+    .gte("clicked_at", twentyFourHoursAgo);
+
+  if ((recentHits ?? 0) === 0) {
+    await supabase.from("clicks").insert({
+      affiliate_id: affiliate.id,
+      referrer_url: ref,
+      landing_page: page,
+      ip_hash: ipHash,
+      user_agent: userAgent,
+    });
+  }
 
   const cookieOpts = getTrackingCookieOptions();
 

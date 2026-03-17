@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { unstable_cache } from "next/cache";
 import { PLAN_PRICES } from "@/lib/constants";
 import { PerformanceClient } from "./performance-client";
+import { withBaseline, withBaselineClicks } from "@/lib/baselines";
 
 export default async function PerformancePage() {
   const supabase = await createClient();
@@ -31,19 +32,22 @@ export default async function PerformancePage() {
   let subIdMap: Record<string, string> = {};
   let subSlugMap: Record<string, string> = {};
   let subBaselineMap: Record<string, number> = {};
+  let subBaselineCustomersMap: Record<string, number> = {};
   if (isTier1) {
     const { data: subs } = await svc
       .from("affiliates")
-      .select("id, name, slug, baseline_leads")
+      .select("id, name, slug, baseline_leads, baseline_customers")
       .eq("parent_id", affiliate.id);
     if (subs) {
       subIdMap[affiliate.id] = "You (Direct)";
       subSlugMap[affiliate.id] = affiliate.slug;
       subBaselineMap[affiliate.id] = affiliate.baseline_leads ?? 0;
+      subBaselineCustomersMap[affiliate.id] = affiliate.baseline_customers ?? 0;
       for (const s of subs) {
         subIdMap[s.id] = s.name;
         subSlugMap[s.id] = s.slug;
         subBaselineMap[s.id] = s.baseline_leads ?? 0;
+        subBaselineCustomersMap[s.id] = s.baseline_customers ?? 0;
         allIds.push(s.id);
       }
     }
@@ -113,12 +117,14 @@ export default async function PerformancePage() {
     sourceBreakdown = (subStats as { affiliate_id: string; lead_count: number; customer_count: number; earned: number }[])
       .map((s) => {
         const dbLeads = Number(s.lead_count);
-        const bl = subBaselineMap[s.affiliate_id] ?? 0;
+        const dbCustomers = Number(s.customer_count);
+        const blLeads = subBaselineMap[s.affiliate_id] ?? 0;
+        const blCustomers = subBaselineCustomersMap[s.affiliate_id] ?? 0;
         return {
           name: subIdMap[s.affiliate_id] ?? "Unknown",
           slug: subSlugMap[s.affiliate_id] ?? "",
-          leads: bl > 0 ? bl : dbLeads,
-          customers: Number(s.customer_count),
+          leads: withBaseline(blLeads, dbLeads, null),
+          customers: withBaseline(blCustomers, dbCustomers, null),
           earned: Number(s.earned ?? 0),
           isDirect: s.affiliate_id === affiliate.id,
         };
@@ -130,25 +136,15 @@ export default async function PerformancePage() {
       });
   }
 
-  const baselineLeads = affiliate.baseline_leads ?? 0;
-  const baselineClicks = affiliate.baseline_clicks ?? 0;
   const goLiveAt = affiliate.go_live_at;
 
   const { count: liveClickCount } = await svc
     .from("clicks").select("id", { count: "exact", head: true })
     .eq("affiliate_id", affiliate.id);
 
-  const displayedClicks = baselineClicks + (liveClickCount ?? 0);
-
-  let displayedLeads: number;
-  if (goLiveAt) {
-    const { count: newLeads } = await svc
-      .from("leads").select("id", { count: "exact", head: true })
-      .eq("affiliate_id", affiliate.id).gte("created_at", goLiveAt);
-    displayedLeads = baselineLeads + (newLeads ?? 0);
-  } else {
-    displayedLeads = baselineLeads > 0 ? baselineLeads : Number(directFunnel?.total_leads ?? 0);
-  }
+  const displayedClicks = withBaselineClicks(affiliate.baseline_clicks ?? 0, liveClickCount ?? 0);
+  const displayedLeads = withBaseline(affiliate.baseline_leads ?? 0, Number(directFunnel?.total_leads ?? 0), goLiveAt);
+  const displayedCustomers = withBaseline(affiliate.baseline_customers ?? 0, Number(directFunnel?.total_customers ?? 0), goLiveAt);
 
   return (
     <PerformanceClient
@@ -156,7 +152,7 @@ export default async function PerformancePage() {
         clicks: displayedClicks,
         leads: displayedLeads,
         trials: Number(directFunnel?.trialing ?? 0),
-        customers: Number(directFunnel?.total_customers ?? 0),
+        customers: displayedCustomers,
       }}
       customerStates={{
         active: monthlyActive + annualActive,

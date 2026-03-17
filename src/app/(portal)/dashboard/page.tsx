@@ -2,6 +2,7 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { DashboardClient } from "./dashboard-client";
 import { PLAN_PRICES } from "@/lib/constants";
+import { withBaseline, withBaselineClicks, withBaselineMoney } from "@/lib/baselines";
 
 function sparklineFromBuckets(
   bucketRows: { day_offset: number; click_count: number }[] | null,
@@ -165,31 +166,23 @@ export default async function DashboardPage() {
   ]);
 
   const a = affStats?.[0];
-  const totalClicks = (affClickBuckets ?? []).reduce(
-    (sum: number, r: { click_count: number }) => sum + Number(r.click_count), 0,
-  );
   const recentComms = recentCommissionsRes.data ?? [];
   const hasTaxForm = (taxDocRes.count ?? 0) > 0;
 
-  const baselineLeads = affiliate.baseline_leads ?? 0;
-  const baselineClicks = affiliate.baseline_clicks ?? 0;
   const goLiveAt = affiliate.go_live_at;
 
   const { count: liveClickCount } = await svc
     .from("clicks").select("id", { count: "exact", head: true })
     .eq("affiliate_id", affiliate.id);
 
-  const displayedClicks = baselineClicks + (liveClickCount ?? 0);
+  const displayedClicks = withBaselineClicks(affiliate.baseline_clicks ?? 0, liveClickCount ?? 0);
+  const displayedLeads = withBaseline(affiliate.baseline_leads ?? 0, Number(a?.total_leads ?? 0), goLiveAt);
+  const displayedCustomers = withBaseline(affiliate.baseline_customers ?? 0, Number(a?.total_customers ?? 0), goLiveAt);
 
-  let displayedLeads: number;
-  if (goLiveAt) {
-    const { count: newLeads } = await svc
-      .from("leads").select("id", { count: "exact", head: true })
-      .eq("affiliate_id", affiliate.id).gte("created_at", goLiveAt);
-    displayedLeads = baselineLeads + (newLeads ?? 0);
-  } else {
-    displayedLeads = baselineLeads > 0 ? baselineLeads : Number(a?.total_leads ?? 0);
-  }
+  const dbEarned = Number(a?.paid_amount ?? 0);
+  const dbPending = Number(a?.pending_amount ?? 0);
+  const displayedEarned = withBaselineMoney(affiliate.baseline_paid ?? 0, dbEarned, goLiveAt);
+  const displayedPending = withBaselineMoney(affiliate.baseline_owed ?? 0, dbPending, goLiveAt);
 
   const baseProps = {
     affiliate,
@@ -198,9 +191,9 @@ export default async function DashboardPage() {
       clicks: displayedClicks,
       leads: displayedLeads,
       trials: Number(a?.trialing_count ?? 0),
-      customers: Number(a?.total_customers ?? 0),
-      earned: Number(a?.paid_amount ?? 0),
-      pending: Number(a?.pending_amount ?? 0),
+      customers: displayedCustomers,
+      earned: displayedEarned,
+      pending: displayedPending,
       thisMonthEarned: Number(a?.this_month_earned ?? 0),
       lastMonthEarned: Number(a?.last_month_earned ?? 0),
     },

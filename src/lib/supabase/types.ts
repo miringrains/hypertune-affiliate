@@ -16,8 +16,13 @@ export type Database = {
     Tables: {
       affiliates: {
         Row: {
+          baseline_churned: number
           baseline_clicks: number
+          baseline_customers: number
           baseline_leads: number
+          baseline_owed: number
+          baseline_paid: number
+          baseline_revenue: number
           commission_duration_months: number
           commission_rate: number
           created_at: string
@@ -36,8 +41,13 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          baseline_churned?: number
           baseline_clicks?: number
+          baseline_customers?: number
           baseline_leads?: number
+          baseline_owed?: number
+          baseline_paid?: number
+          baseline_revenue?: number
           commission_duration_months?: number
           commission_rate: number
           created_at?: string
@@ -56,8 +66,13 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          baseline_churned?: number
           baseline_clicks?: number
+          baseline_customers?: number
           baseline_leads?: number
+          baseline_owed?: number
+          baseline_paid?: number
+          baseline_revenue?: number
           commission_duration_months?: number
           commission_rate?: number
           created_at?: string

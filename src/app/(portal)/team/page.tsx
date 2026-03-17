@@ -1,6 +1,7 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { TeamClient } from "./team-client";
+import { withBaseline } from "@/lib/baselines";
 
 export default async function TeamPage() {
   const supabase = await createClient();
@@ -34,7 +35,7 @@ export default async function TeamPage() {
 
   const { data: subAffiliates } = await svc
     .from("affiliates")
-    .select("id, name, slug, email, status, created_at, commission_rate, tier_level, baseline_leads")
+    .select("id, name, slug, email, status, created_at, commission_rate, tier_level, baseline_leads, baseline_customers")
     .eq("parent_id", affiliate.id)
     .order("created_at", { ascending: false });
 
@@ -52,13 +53,16 @@ export default async function TeamPage() {
       svc.rpc("get_tier2_earnings", { aff_id: affiliate.id }),
     ]);
 
-    const baselineBySubId = new Map(subs.map((s) => [s.id, s.baseline_leads ?? 0]));
+    const baselineLeadsById = new Map(subs.map((s) => [s.id, s.baseline_leads ?? 0]));
+    const baselineCustomersById = new Map(subs.map((s) => [s.id, s.baseline_customers ?? 0]));
     for (const row of statsRows ?? []) {
       const dbLeads = Number(row.lead_count);
-      const bl = baselineBySubId.get(row.affiliate_id) ?? 0;
+      const dbCustomers = Number(row.customer_count);
+      const blLeads = baselineLeadsById.get(row.affiliate_id) ?? 0;
+      const blCustomers = baselineCustomersById.get(row.affiliate_id) ?? 0;
       subPerformance[row.affiliate_id] = {
-        leads: bl > 0 ? bl : dbLeads,
-        customers: Number(row.customer_count),
+        leads: withBaseline(blLeads, dbLeads, null),
+        customers: withBaseline(blCustomers, dbCustomers, null),
         earned: Number(row.earned),
       };
     }

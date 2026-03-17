@@ -2,6 +2,7 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { unstable_cache } from "next/cache";
 import { EarningsClient } from "./earnings-client";
+import { withBaselineMoney } from "@/lib/baselines";
 
 export default async function EarningsPage() {
   const supabase = await createClient();
@@ -57,9 +58,13 @@ export default async function EarningsPage() {
     ]);
 
   const s = summaryRows?.[0];
-  const paidAmount = Number(s?.lifetime_earned ?? 0);
-  const pendingAmount = Number(s?.pending_amount ?? 0);
+  const goLiveAt = affiliate.go_live_at;
+  const dbPaid = Number(s?.lifetime_earned ?? 0);
+  const dbPending = Number(s?.pending_amount ?? 0);
   const approvedAmount = Number(s?.approved_amount ?? 0);
+
+  const paidAmount = withBaselineMoney(affiliate.baseline_paid ?? 0, dbPaid, goLiveAt);
+  const pendingAmount = withBaselineMoney(affiliate.baseline_owed ?? 0, dbPending, goLiveAt);
   const lifetimeEarned = paidAmount + pendingAmount + approvedAmount;
   const hasTier2 = s?.has_tier2 ?? false;
 

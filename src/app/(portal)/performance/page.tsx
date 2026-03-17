@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { unstable_cache } from "next/cache";
 import { PLAN_PRICES } from "@/lib/constants";
 import { PerformanceClient } from "./performance-client";
-import { withBaseline, withBaselineClicks } from "@/lib/baselines";
+import { withBaseline, withBaselineClicks, withBaselineMoney } from "@/lib/baselines";
 
 export default async function PerformancePage() {
   const supabase = await createClient();
@@ -33,21 +33,27 @@ export default async function PerformancePage() {
   let subSlugMap: Record<string, string> = {};
   let subBaselineMap: Record<string, number> = {};
   let subBaselineCustomersMap: Record<string, number> = {};
+  let subBaselinePaidMap: Record<string, number> = {};
+  let subBaselineOwedMap: Record<string, number> = {};
   if (isTier1) {
     const { data: subs } = await svc
       .from("affiliates")
-      .select("id, name, slug, baseline_leads, baseline_customers")
+      .select("id, name, slug, baseline_leads, baseline_customers, baseline_paid, baseline_owed")
       .eq("parent_id", affiliate.id);
     if (subs) {
       subIdMap[affiliate.id] = "You (Direct)";
       subSlugMap[affiliate.id] = affiliate.slug;
       subBaselineMap[affiliate.id] = affiliate.baseline_leads ?? 0;
       subBaselineCustomersMap[affiliate.id] = affiliate.baseline_customers ?? 0;
+      subBaselinePaidMap[affiliate.id] = Number(affiliate.baseline_paid ?? 0);
+      subBaselineOwedMap[affiliate.id] = Number(affiliate.baseline_owed ?? 0);
       for (const s of subs) {
         subIdMap[s.id] = s.name;
         subSlugMap[s.id] = s.slug;
         subBaselineMap[s.id] = s.baseline_leads ?? 0;
         subBaselineCustomersMap[s.id] = s.baseline_customers ?? 0;
+        subBaselinePaidMap[s.id] = Number(s.baseline_paid ?? 0);
+        subBaselineOwedMap[s.id] = Number(s.baseline_owed ?? 0);
         allIds.push(s.id);
       }
     }
@@ -118,14 +124,17 @@ export default async function PerformancePage() {
       .map((s) => {
         const dbLeads = Number(s.lead_count);
         const dbCustomers = Number(s.customer_count);
+        const dbEarned = Number(s.earned ?? 0);
         const blLeads = subBaselineMap[s.affiliate_id] ?? 0;
         const blCustomers = subBaselineCustomersMap[s.affiliate_id] ?? 0;
+        const blPaid = subBaselinePaidMap[s.affiliate_id] ?? 0;
+        const blOwed = subBaselineOwedMap[s.affiliate_id] ?? 0;
         return {
           name: subIdMap[s.affiliate_id] ?? "Unknown",
           slug: subSlugMap[s.affiliate_id] ?? "",
           leads: withBaseline(blLeads, dbLeads, null),
           customers: withBaseline(blCustomers, dbCustomers, null),
-          earned: Number(s.earned ?? 0),
+          earned: withBaselineMoney(blPaid + blOwed, dbEarned, null),
           isDirect: s.affiliate_id === affiliate.id,
         };
       })

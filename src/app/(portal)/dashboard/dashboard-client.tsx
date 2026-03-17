@@ -161,7 +161,7 @@ function HeroEarnings({ stats }: { stats: DashboardStats }) {
       </div>
       <div className="flex items-center gap-6 mt-4 text-[13px] text-zinc-400">
         <span>
-          Lifetime earned:{" "}
+          Total paid:{" "}
           <span className="text-zinc-300 font-medium">{fmtCurrency(stats.earned)}</span>
         </span>
         <span>
@@ -404,9 +404,11 @@ function FunnelStrip({ stats }: { stats: DashboardStats }) {
 function EarningsTrend({
   data,
   clicksByDay,
+  totalClicks,
 }: {
   data: { month: string; amount: number }[];
   clicksByDay: number[];
+  totalClicks: number;
 }) {
   const clickData = clicksByDay.map((count, i) => {
     const d = new Date(Date.now() - (29 - i) * 86_400_000);
@@ -415,7 +417,7 @@ function EarningsTrend({
       clicks: count,
     };
   });
-  const totalClicks30d = clicksByDay.reduce((s, c) => s + c, 0);
+  const newClicks30d = clicksByDay.reduce((s, c) => s + c, 0);
 
   return (
     <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5 flex flex-col gap-6">
@@ -463,7 +465,7 @@ function EarningsTrend({
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[13px] font-medium text-zinc-300">Click Activity</h3>
-          <span className="text-[11px] text-zinc-400">{totalClicks30d.toLocaleString()} clicks · 30 days</span>
+          <span className="text-[11px] text-zinc-400">{totalClicks.toLocaleString()} total · {newClicks30d > 0 ? `${newClicks30d.toLocaleString()} new` : "30 days"}</span>
         </div>
         <ResponsiveContainer width="100%" height={100}>
           <BarChart data={clickData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
@@ -771,7 +773,7 @@ export function DashboardClient({
       <FunnelStrip stats={stats} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <EarningsTrend data={chartData.earningsByMonth} clicksByDay={chartData.clicksByDay} />
+        <EarningsTrend data={chartData.earningsByMonth} clicksByDay={chartData.clicksByDay} totalClicks={stats.clicks} />
         <ActivityFeed items={recentActivity ?? []} />
       </div>
 

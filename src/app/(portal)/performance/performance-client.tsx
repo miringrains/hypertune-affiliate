@@ -208,7 +208,7 @@ export function PerformanceClient({
         <div className="flex items-center gap-2 mb-6">
           <Activity size={16} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-400" />
           <h2 className="text-[13px] font-medium text-zinc-400">Conversion Funnel</h2>
-          <span className="ml-auto text-[11px] text-zinc-400">Last 30 days (clicks) · All time (leads/customers)</span>
+          <span className="ml-auto text-[11px] text-zinc-400">All time</span>
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch gap-0">
@@ -342,7 +342,7 @@ export function PerformanceClient({
                     tableView === "leads" ? "bg-zinc-800 text-white" : "text-zinc-400 hover:text-zinc-300"
                   }`}
                 >
-                  Leads ({leads.length})
+                  Leads ({funnel.leads.toLocaleString()})
                 </button>
                 <button
                   onClick={() => setTableView("customers")}
@@ -350,7 +350,7 @@ export function PerformanceClient({
                     tableView === "customers" ? "bg-zinc-800 text-white" : "text-zinc-400 hover:text-zinc-300"
                   }`}
                 >
-                  Customers ({customers.length})
+                  Customers ({funnel.customers.toLocaleString()})
                 </button>
               </div>
               <div className="relative flex-1 max-w-xs">

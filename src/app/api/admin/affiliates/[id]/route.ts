@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { requireAdmin, handleApiError, ApiError } from "@/lib/auth";
 import { COMMISSION_RATES } from "@/lib/constants";
+import { withBaseline, withBaselineClicks, withBaselineMoney } from "@/lib/baselines";
 
 async function computeStats(
   supabase: ReturnType<typeof createServiceClient> extends Promise<infer T> ? T : never,
@@ -95,7 +96,24 @@ export async function GET(
       from = d.toISOString();
     }
 
-    const directStats = await computeStats(supabase, [id], from);
+    const rawStats = await computeStats(supabase, [id], from);
+
+    // Apply baselines only for "all time" view (no date filter)
+    const isAllTime = !from;
+    const goLiveAt = affiliate.go_live_at;
+    const bPaid = Number(affiliate.baseline_paid ?? 0);
+    const bOwed = Number(affiliate.baseline_owed ?? 0);
+    const directStats = isAllTime
+      ? {
+          ...rawStats,
+          clicks: withBaselineClicks(affiliate.baseline_clicks ?? 0, rawStats.clicks),
+          leads: withBaseline(affiliate.baseline_leads ?? 0, rawStats.leads, goLiveAt),
+          customers: withBaseline(affiliate.baseline_customers ?? 0, rawStats.customers, goLiveAt),
+          totalEarned: withBaselineMoney(bPaid + bOwed, rawStats.totalEarned, goLiveAt),
+          pendingAmount: withBaselineMoney(bOwed, rawStats.pendingAmount, goLiveAt),
+          paidAmount: withBaselineMoney(bPaid, rawStats.paidAmount, goLiveAt),
+        }
+      : rawStats;
 
     let subStats = null;
     let subAffiliatesList: { id: string; name: string; slug: string }[] = [];

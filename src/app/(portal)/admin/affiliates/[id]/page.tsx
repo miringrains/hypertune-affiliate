@@ -68,13 +68,17 @@ export default async function AdminAffiliateDetailPage({
     .from("clicks").select("id", { count: "exact", head: true })
     .eq("affiliate_id", id);
 
+  const bPaid = Number(affiliate.baseline_paid ?? 0);
+  const bOwed = Number(affiliate.baseline_owed ?? 0);
+
   const stats = {
     ...rawStats,
     leads: withBaseline(affiliate.baseline_leads ?? 0, rawStats.leads, goLiveAt),
     clicks: withBaselineClicks(affiliate.baseline_clicks ?? 0, liveClicks ?? 0),
     customers: withBaseline(affiliate.baseline_customers ?? 0, rawStats.customers, goLiveAt),
-    totalEarned: withBaselineMoney(affiliate.baseline_paid ?? 0, rawStats.totalEarned, goLiveAt),
-    pendingAmount: withBaselineMoney(affiliate.baseline_owed ?? 0, rawStats.pendingAmount, goLiveAt),
+    totalEarned: withBaselineMoney(bPaid + bOwed, rawStats.totalEarned, goLiveAt),
+    pendingAmount: withBaselineMoney(bOwed, rawStats.pendingAmount, goLiveAt),
+    paidAmount: withBaselineMoney(bPaid, rawStats.paidAmount, goLiveAt),
   };
 
   let subStats = null;

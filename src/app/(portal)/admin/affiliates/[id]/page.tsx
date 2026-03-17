@@ -60,7 +60,14 @@ export default async function AdminAffiliateDetailPage({
 
   if (!affiliate) notFound();
 
-  const stats = await computeStatsForIds(service, [id]);
+  const rawStats = await computeStatsForIds(service, [id]);
+  const bLeads = affiliate.baseline_leads ?? 0;
+  const bClicks = affiliate.baseline_clicks ?? 0;
+  const stats = {
+    ...rawStats,
+    leads: bLeads > 0 ? bLeads : rawStats.leads,
+    clicks: bClicks > 0 ? bClicks : rawStats.clicks,
+  };
 
   let subStats = null;
   let subAffiliatesList: { id: string; name: string; slug: string }[] = [];

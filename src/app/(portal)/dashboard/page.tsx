@@ -171,12 +171,33 @@ export default async function DashboardPage() {
   const recentComms = recentCommissionsRes.data ?? [];
   const hasTaxForm = (taxDocRes.count ?? 0) > 0;
 
+  const baselineLeads = affiliate.baseline_leads ?? 0;
+  const baselineClicks = affiliate.baseline_clicks ?? 0;
+  const goLiveAt = affiliate.go_live_at;
+
+  let displayedLeads: number;
+  let displayedClicks: number;
+
+  if (goLiveAt) {
+    const [{ count: newLeads }, { count: newClicks }] = await Promise.all([
+      svc.from("leads").select("id", { count: "exact", head: true })
+        .eq("affiliate_id", affiliate.id).gte("created_at", goLiveAt),
+      svc.from("clicks").select("id", { count: "exact", head: true })
+        .eq("affiliate_id", affiliate.id).gte("created_at", goLiveAt),
+    ]);
+    displayedLeads = baselineLeads + (newLeads ?? 0);
+    displayedClicks = baselineClicks + (newClicks ?? 0);
+  } else {
+    displayedLeads = baselineLeads > 0 ? baselineLeads : Number(a?.total_leads ?? 0);
+    displayedClicks = baselineClicks > 0 ? baselineClicks : totalClicks;
+  }
+
   const baseProps = {
     affiliate,
     hasTaxForm,
     stats: {
-      clicks: totalClicks,
-      leads: Number(a?.total_leads ?? 0),
+      clicks: displayedClicks,
+      leads: displayedLeads,
       trials: Number(a?.trialing_count ?? 0),
       customers: Number(a?.total_customers ?? 0),
       earned: Number(a?.paid_amount ?? 0),

@@ -16,10 +16,13 @@ export type Database = {
     Tables: {
       affiliates: {
         Row: {
+          baseline_clicks: number
+          baseline_leads: number
           commission_duration_months: number
           commission_rate: number
           created_at: string
           email: string
+          go_live_at: string | null
           id: string
           name: string
           parent_id: string | null
@@ -33,10 +36,13 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          baseline_clicks?: number
+          baseline_leads?: number
           commission_duration_months?: number
           commission_rate: number
           created_at?: string
           email: string
+          go_live_at?: string | null
           id?: string
           name: string
           parent_id?: string | null
@@ -50,10 +56,13 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          baseline_clicks?: number
+          baseline_leads?: number
           commission_duration_months?: number
           commission_rate?: number
           created_at?: string
           email?: string
+          go_live_at?: string | null
           id?: string
           name?: string
           parent_id?: string | null

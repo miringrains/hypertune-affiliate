@@ -30,17 +30,20 @@ export default async function PerformancePage() {
   let allIds = [affiliate.id];
   let subIdMap: Record<string, string> = {};
   let subSlugMap: Record<string, string> = {};
+  let subBaselineMap: Record<string, number> = {};
   if (isTier1) {
     const { data: subs } = await svc
       .from("affiliates")
-      .select("id, name, slug")
+      .select("id, name, slug, baseline_leads")
       .eq("parent_id", affiliate.id);
     if (subs) {
       subIdMap[affiliate.id] = "You (Direct)";
       subSlugMap[affiliate.id] = affiliate.slug;
+      subBaselineMap[affiliate.id] = affiliate.baseline_leads ?? 0;
       for (const s of subs) {
         subIdMap[s.id] = s.name;
         subSlugMap[s.id] = s.slug;
+        subBaselineMap[s.id] = s.baseline_leads ?? 0;
         allIds.push(s.id);
       }
     }
@@ -108,14 +111,18 @@ export default async function PerformancePage() {
   let sourceBreakdown: { name: string; slug: string; leads: number; customers: number; earned: number; isDirect: boolean }[] = [];
   if (isTier1 && subStats) {
     sourceBreakdown = (subStats as { affiliate_id: string; lead_count: number; customer_count: number; earned: number }[])
-      .map((s) => ({
-        name: subIdMap[s.affiliate_id] ?? "Unknown",
-        slug: subSlugMap[s.affiliate_id] ?? "",
-        leads: Number(s.lead_count),
-        customers: Number(s.customer_count),
-        earned: Number(s.earned ?? 0),
-        isDirect: s.affiliate_id === affiliate.id,
-      }))
+      .map((s) => {
+        const dbLeads = Number(s.lead_count);
+        const bl = subBaselineMap[s.affiliate_id] ?? 0;
+        return {
+          name: subIdMap[s.affiliate_id] ?? "Unknown",
+          slug: subSlugMap[s.affiliate_id] ?? "",
+          leads: bl > 0 ? bl : dbLeads,
+          customers: Number(s.customer_count),
+          earned: Number(s.earned ?? 0),
+          isDirect: s.affiliate_id === affiliate.id,
+        };
+      })
       .sort((a, b) => {
         if (a.isDirect) return -1;
         if (b.isDirect) return 1;
@@ -123,11 +130,32 @@ export default async function PerformancePage() {
       });
   }
 
+  const baselineLeads = affiliate.baseline_leads ?? 0;
+  const baselineClicks = affiliate.baseline_clicks ?? 0;
+  const goLiveAt = affiliate.go_live_at;
+
+  let displayedLeads: number;
+  let displayedClicks: number;
+
+  if (goLiveAt) {
+    const [{ count: newLeads }, { count: newClicks }] = await Promise.all([
+      svc.from("leads").select("id", { count: "exact", head: true })
+        .eq("affiliate_id", affiliate.id).gte("created_at", goLiveAt),
+      svc.from("clicks").select("id", { count: "exact", head: true })
+        .eq("affiliate_id", affiliate.id).gte("created_at", goLiveAt),
+    ]);
+    displayedLeads = baselineLeads + (newLeads ?? 0);
+    displayedClicks = baselineClicks + (newClicks ?? 0);
+  } else {
+    displayedLeads = baselineLeads > 0 ? baselineLeads : Number(directFunnel?.total_leads ?? 0);
+    displayedClicks = baselineClicks > 0 ? baselineClicks : Number(directFunnel?.clicks_30d ?? 0);
+  }
+
   return (
     <PerformanceClient
       funnel={{
-        clicks: Number(directFunnel?.clicks_30d ?? 0),
-        leads: Number(directFunnel?.total_leads ?? 0),
+        clicks: displayedClicks,
+        leads: displayedLeads,
         trials: Number(directFunnel?.trialing ?? 0),
         customers: Number(directFunnel?.total_customers ?? 0),
       }}

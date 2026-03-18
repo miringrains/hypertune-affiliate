@@ -104,10 +104,9 @@ function SourceBreakdownSection({ sourceBreakdown }: { sourceBreakdown: SourceRo
       <h3 className="text-[13px] font-medium text-zinc-300 mb-4">Source Breakdown</h3>
       <div className="space-y-1">
         {sourceBreakdown.map((src) => {
-          const pct = ((src.leads / totalLeads) * 100).toFixed(0);
+          const convRate = src.leads > 0 ? ((src.customers / src.leads) * 100).toFixed(1) : "0.0";
           const barWidth = ((src.leads / maxLeads) * 100).toFixed(0);
           const isExpanded = expandedSlug === src.slug;
-          const convRate = src.leads > 0 ? ((src.customers / src.leads) * 100).toFixed(1) : "0.0";
 
           return (
             <div key={src.slug || src.name}>
@@ -135,7 +134,7 @@ function SourceBreakdownSection({ sourceBreakdown }: { sourceBreakdown: SourceRo
                     </span>
                   </div>
                 </div>
-                <span className="text-[11px] text-zinc-400 shrink-0 w-10 text-right">{pct}%</span>
+                <span className="text-[11px] text-zinc-400 shrink-0 w-14 text-right">{convRate}%</span>
               </button>
 
               {isExpanded && !src.isDirect && (

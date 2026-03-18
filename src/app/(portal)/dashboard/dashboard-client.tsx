@@ -469,7 +469,7 @@ function EarningsTrend({
         </div>
         <ResponsiveContainer width="100%" height={100}>
           <BarChart data={clickData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-            <XAxis hide />
+            <XAxis dataKey="day" hide />
             <YAxis hide />
             <Tooltip
               cursor={{ fill: "rgba(255,255,255,0.02)" }}

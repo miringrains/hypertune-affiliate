@@ -102,8 +102,8 @@ export function AppSidebar({
         <form action="/api/auth/signout" method="POST">
           <button
             type="submit"
-            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors"
-            style={{ color: "#666" }}
+            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors hover:bg-white/5 hover:text-white cursor-pointer"
+            style={{ color: "#999" }}
           >
             <LogOut size={16} strokeWidth={ICON_STROKE_WIDTH} />
             <span>Log out</span>

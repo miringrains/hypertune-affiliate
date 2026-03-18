@@ -121,23 +121,51 @@ export async function GET(
     if (affiliate.tier_level === 1) {
       const { data: subAffiliates } = await supabase
         .from("affiliates")
-        .select("id, name, slug")
+        .select("id, name, slug, baseline_leads, baseline_customers, baseline_clicks, baseline_paid, baseline_owed")
         .eq("parent_id", id)
         .order("name");
 
-      subAffiliatesList = (subAffiliates ?? []).map((s) => ({
-        id: s.id,
-        name: s.name,
-        slug: s.slug,
-      }));
+      const subs = subAffiliates ?? [];
+      subAffiliatesList = subs.map((s) => ({ id: s.id, name: s.name, slug: s.slug }));
 
       const subId = searchParams.get("subId");
-      const targetIds = subId
-        ? subAffiliatesList.filter((s) => s.id === subId).map((s) => s.id)
-        : subAffiliatesList.map((s) => s.id);
+      const targetSubs = subId
+        ? subs.filter((s) => s.id === subId)
+        : subs;
+      const targetIds = targetSubs.map((s) => s.id);
 
       if (targetIds.length > 0) {
-        subStats = await computeStats(supabase, targetIds, from);
+        const rawSubStats = await computeStats(supabase, targetIds, from);
+
+        if (isAllTime) {
+          let adjLeads = 0, adjCustomers = 0, adjEarned = 0, totalBaseClicks = 0;
+          let sumSubPaid = 0, sumSubOwed = 0;
+
+          for (const sub of targetSubs) {
+            const subBasePaid = Number(sub.baseline_paid ?? 0);
+            const subBaseOwed = Number(sub.baseline_owed ?? 0);
+            sumSubPaid += subBasePaid;
+            sumSubOwed += subBaseOwed;
+            totalBaseClicks += sub.baseline_clicks ?? 0;
+          }
+
+          // For per-sub lead/customer/earned, we can't get per-sub breakdown from computeStats
+          // so we use aggregate baselines as overrides
+          const sumBlLeads = targetSubs.reduce((s, sub) => s + (sub.baseline_leads ?? 0), 0);
+          const sumBlCustomers = targetSubs.reduce((s, sub) => s + (sub.baseline_customers ?? 0), 0);
+
+          subStats = {
+            ...rawSubStats,
+            clicks: totalBaseClicks + rawSubStats.clicks,
+            leads: sumBlLeads > 0 ? sumBlLeads : rawSubStats.leads,
+            customers: sumBlCustomers > 0 ? sumBlCustomers : rawSubStats.customers,
+            totalEarned: (sumSubPaid + sumSubOwed) > 0 ? (sumSubPaid + sumSubOwed) : rawSubStats.totalEarned,
+            pendingAmount: sumSubOwed > 0 ? sumSubOwed : rawSubStats.pendingAmount,
+            paidAmount: sumSubPaid > 0 ? sumSubPaid : rawSubStats.paidAmount,
+          };
+        } else {
+          subStats = rawSubStats;
+        }
       }
     }
 

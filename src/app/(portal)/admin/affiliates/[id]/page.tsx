@@ -87,19 +87,52 @@ export default async function AdminAffiliateDetailPage({
   if (affiliate.tier_level === 1) {
     const { data: subAffiliates } = await service
       .from("affiliates")
-      .select("id, name, slug")
+      .select("id, name, slug, baseline_leads, baseline_customers, baseline_clicks, baseline_paid, baseline_owed")
       .eq("parent_id", id)
       .order("name");
 
-    subAffiliatesList = (subAffiliates ?? []).map((s) => ({
-      id: s.id,
-      name: s.name,
-      slug: s.slug,
-    }));
+    const subs = subAffiliates ?? [];
+    subAffiliatesList = subs.map((s) => ({ id: s.id, name: s.name, slug: s.slug }));
 
-    const subIds = subAffiliatesList.map((s) => s.id);
+    const subIds = subs.map((s) => s.id);
     if (subIds.length > 0) {
-      subStats = await computeStatsForIds(service, subIds);
+      const [{ data: perSubRaw }, rawAggregate, { count: subLiveClicks }] = await Promise.all([
+        service.rpc("get_sub_affiliate_stats", { sub_ids: subIds }),
+        computeStatsForIds(service, subIds),
+        service.from("clicks").select("id", { count: "exact", head: true }).in("affiliate_id", subIds),
+      ]);
+
+      let adjLeads = 0, adjCustomers = 0, adjEarned = 0, totalBaseClicks = 0;
+      let sumBlPaid = 0, sumBlOwed = 0;
+      for (const sub of subs) {
+        const raw = (perSubRaw ?? []).find((r) => r.affiliate_id === sub.id);
+        const dbLeads = Number(raw?.lead_count ?? 0);
+        const dbCustomers = Number(raw?.customer_count ?? 0);
+        const dbEarned = Number(raw?.earned ?? 0);
+        const sBlPaid = Number(sub.baseline_paid ?? 0);
+        const sBlOwed = Number(sub.baseline_owed ?? 0);
+
+        adjLeads += withBaseline(sub.baseline_leads ?? 0, dbLeads, null);
+        adjCustomers += withBaseline(sub.baseline_customers ?? 0, dbCustomers, null);
+        adjEarned += withBaselineMoney(sBlPaid + sBlOwed, dbEarned, null);
+        totalBaseClicks += sub.baseline_clicks ?? 0;
+        sumBlPaid += sBlPaid;
+        sumBlOwed += sBlOwed;
+      }
+
+      subStats = {
+        clicks: totalBaseClicks + (subLiveClicks ?? 0),
+        leads: adjLeads,
+        customers: adjCustomers,
+        trialing: rawAggregate.trialing,
+        activeSubs: rawAggregate.activeSubs,
+        activeMonthly: rawAggregate.activeMonthly,
+        activeAnnual: rawAggregate.activeAnnual,
+        canceled: rawAggregate.canceled,
+        totalEarned: adjEarned,
+        pendingAmount: withBaselineMoney(sumBlOwed, rawAggregate.pendingAmount, null),
+        paidAmount: withBaselineMoney(sumBlPaid, rawAggregate.paidAmount, null),
+      };
     }
   }
 

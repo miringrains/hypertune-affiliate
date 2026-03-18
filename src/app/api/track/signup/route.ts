@@ -89,6 +89,11 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
+      if (error.code === "23505") {
+        const { data: dup } = await supabase
+          .from("leads").select("id").eq("email", email).eq("affiliate_id", affiliate.id).single();
+        return NextResponse.json({ lead_id: dup?.id ?? null, existing: true });
+      }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 

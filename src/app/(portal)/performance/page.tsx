@@ -132,9 +132,9 @@ export default async function PerformancePage() {
         return {
           name: subIdMap[s.affiliate_id] ?? "Unknown",
           slug: subSlugMap[s.affiliate_id] ?? "",
-          leads: withBaseline(blLeads, dbLeads, null),
-          customers: withBaseline(blCustomers, dbCustomers, null),
-          earned: withBaselineMoney(blPaid + blOwed, dbEarned, null),
+          leads: withBaseline(blLeads, dbLeads),
+          customers: withBaseline(blCustomers, dbCustomers),
+          earned: withBaselineMoney(blPaid + blOwed, dbEarned),
           isDirect: s.affiliate_id === affiliate.id,
         };
       })
@@ -145,15 +145,13 @@ export default async function PerformancePage() {
       });
   }
 
-  const goLiveAt = affiliate.go_live_at;
-
   const { count: liveClickCount } = await svc
     .from("clicks").select("id", { count: "exact", head: true })
     .eq("affiliate_id", affiliate.id);
 
   const displayedClicks = withBaselineClicks(affiliate.baseline_clicks ?? 0, liveClickCount ?? 0);
-  const displayedLeads = withBaseline(affiliate.baseline_leads ?? 0, Number(directFunnel?.total_leads ?? 0), goLiveAt);
-  const displayedCustomers = withBaseline(affiliate.baseline_customers ?? 0, Number(directFunnel?.total_customers ?? 0), goLiveAt);
+  const displayedLeads = withBaseline(affiliate.baseline_leads ?? 0, Number(directFunnel?.total_leads ?? 0));
+  const displayedCustomers = withBaseline(affiliate.baseline_customers ?? 0, Number(directFunnel?.total_customers ?? 0));
 
   return (
     <PerformanceClient

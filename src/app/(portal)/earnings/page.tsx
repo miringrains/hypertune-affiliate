@@ -58,27 +58,15 @@ export default async function EarningsPage() {
     ]);
 
   const s = summaryRows?.[0];
-  const goLiveAt = affiliate.go_live_at;
   const bPaid = Number(affiliate.baseline_paid ?? 0);
   const bOwed = Number(affiliate.baseline_owed ?? 0);
   const dbPaid = Number(s?.lifetime_earned ?? 0);
   const dbPending = Number(s?.pending_amount ?? 0);
   const dbApproved = Number(s?.approved_amount ?? 0);
 
-  const paidAmount = withBaselineMoney(bPaid, dbPaid, goLiveAt);
-
-  // GHL "Owed" = our pending + approved combined.
-  // Pre go-live with baseline: show baseline_owed as pending, zero approved.
-  // Otherwise: raw DB values.
-  let pendingAmount: number;
-  let approvedAmount: number;
-  if (!goLiveAt && bOwed > 0) {
-    pendingAmount = bOwed;
-    approvedAmount = 0;
-  } else {
-    pendingAmount = dbPending;
-    approvedAmount = dbApproved;
-  }
+  const paidAmount = withBaselineMoney(bPaid, dbPaid);
+  const pendingAmount = bOwed + dbPending;
+  const approvedAmount = dbApproved;
 
   const lifetimeEarned = paidAmount + pendingAmount + approvedAmount;
   const hasTier2 = s?.has_tier2 ?? false;

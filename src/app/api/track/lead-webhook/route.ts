@@ -76,6 +76,9 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (error) {
+      if (error.code === "23505") {
+        return NextResponse.json({ tracked: true, type: "affiliate", existing: true });
+      }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 

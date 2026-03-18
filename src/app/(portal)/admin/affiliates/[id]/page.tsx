@@ -62,7 +62,6 @@ export default async function AdminAffiliateDetailPage({
   if (!affiliate) notFound();
 
   const rawStats = await computeStatsForIds(service, [id]);
-  const goLiveAt = affiliate.go_live_at;
 
   const { count: liveClicks } = await service
     .from("clicks").select("id", { count: "exact", head: true })
@@ -73,12 +72,12 @@ export default async function AdminAffiliateDetailPage({
 
   const stats = {
     ...rawStats,
-    leads: withBaseline(affiliate.baseline_leads ?? 0, rawStats.leads, goLiveAt),
+    leads: withBaseline(affiliate.baseline_leads ?? 0, rawStats.leads),
     clicks: withBaselineClicks(affiliate.baseline_clicks ?? 0, liveClicks ?? 0),
-    customers: withBaseline(affiliate.baseline_customers ?? 0, rawStats.customers, goLiveAt),
-    totalEarned: withBaselineMoney(bPaid + bOwed, rawStats.totalEarned, goLiveAt),
-    pendingAmount: withBaselineMoney(bOwed, rawStats.pendingAmount, goLiveAt),
-    paidAmount: withBaselineMoney(bPaid, rawStats.paidAmount, goLiveAt),
+    customers: withBaseline(affiliate.baseline_customers ?? 0, rawStats.customers),
+    totalEarned: withBaselineMoney(bPaid + bOwed, rawStats.totalEarned),
+    pendingAmount: withBaselineMoney(bOwed, rawStats.pendingAmount),
+    paidAmount: withBaselineMoney(bPaid, rawStats.paidAmount),
   };
 
   let subStats = null;
@@ -112,9 +111,9 @@ export default async function AdminAffiliateDetailPage({
         const sBlPaid = Number(sub.baseline_paid ?? 0);
         const sBlOwed = Number(sub.baseline_owed ?? 0);
 
-        adjLeads += withBaseline(sub.baseline_leads ?? 0, dbLeads, null);
-        adjCustomers += withBaseline(sub.baseline_customers ?? 0, dbCustomers, null);
-        adjEarned += withBaselineMoney(sBlPaid + sBlOwed, dbEarned, null);
+        adjLeads += withBaseline(sub.baseline_leads ?? 0, dbLeads);
+        adjCustomers += withBaseline(sub.baseline_customers ?? 0, dbCustomers);
+        adjEarned += withBaselineMoney(sBlPaid + sBlOwed, dbEarned);
         totalBaseClicks += sub.baseline_clicks ?? 0;
         sumBlPaid += sBlPaid;
         sumBlOwed += sBlOwed;
@@ -130,8 +129,8 @@ export default async function AdminAffiliateDetailPage({
         activeAnnual: rawAggregate.activeAnnual,
         canceled: rawAggregate.canceled,
         totalEarned: adjEarned,
-        pendingAmount: withBaselineMoney(sumBlOwed, rawAggregate.pendingAmount, null),
-        paidAmount: withBaselineMoney(sumBlPaid, rawAggregate.paidAmount, null),
+        pendingAmount: withBaselineMoney(sumBlOwed, rawAggregate.pendingAmount),
+        paidAmount: withBaselineMoney(sumBlPaid, rawAggregate.paidAmount),
       };
     }
   }

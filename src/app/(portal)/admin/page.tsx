@@ -57,13 +57,12 @@ export default async function AdminAffiliatesPage() {
     const raw = rawStatsMap.get(a.id) ?? { leads: 0, customers: 0, earned: 0 };
     const bPaid = Number(a.baseline_paid ?? 0);
     const bOwed = Number(a.baseline_owed ?? 0);
-    const goLiveAt = a.go_live_at;
 
     return {
       ...a,
-      displayLeads: withBaseline(a.baseline_leads ?? 0, raw.leads, goLiveAt),
-      displayCustomers: withBaseline(a.baseline_customers ?? 0, raw.customers, goLiveAt),
-      displayEarned: withBaselineMoney(bPaid + bOwed, raw.earned, goLiveAt),
+      displayLeads: withBaseline(a.baseline_leads ?? 0, raw.leads),
+      displayCustomers: withBaseline(a.baseline_customers ?? 0, raw.customers),
+      displayEarned: withBaselineMoney(bPaid + bOwed, raw.earned),
     };
   });
 

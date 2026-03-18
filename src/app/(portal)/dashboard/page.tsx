@@ -169,20 +169,18 @@ export default async function DashboardPage() {
   const recentComms = recentCommissionsRes.data ?? [];
   const hasTaxForm = (taxDocRes.count ?? 0) > 0;
 
-  const goLiveAt = affiliate.go_live_at;
-
   const { count: liveClickCount } = await svc
     .from("clicks").select("id", { count: "exact", head: true })
     .eq("affiliate_id", affiliate.id);
 
   const displayedClicks = withBaselineClicks(affiliate.baseline_clicks ?? 0, liveClickCount ?? 0);
-  const displayedLeads = withBaseline(affiliate.baseline_leads ?? 0, Number(a?.total_leads ?? 0), goLiveAt);
-  const displayedCustomers = withBaseline(affiliate.baseline_customers ?? 0, Number(a?.total_customers ?? 0), goLiveAt);
+  const displayedLeads = withBaseline(affiliate.baseline_leads ?? 0, Number(a?.total_leads ?? 0));
+  const displayedCustomers = withBaseline(affiliate.baseline_customers ?? 0, Number(a?.total_customers ?? 0));
 
   const dbEarned = Number(a?.paid_amount ?? 0);
   const dbPending = Number(a?.pending_amount ?? 0);
-  const displayedEarned = withBaselineMoney(affiliate.baseline_paid ?? 0, dbEarned, goLiveAt);
-  const displayedPending = withBaselineMoney(affiliate.baseline_owed ?? 0, dbPending, goLiveAt);
+  const displayedEarned = withBaselineMoney(affiliate.baseline_paid ?? 0, dbEarned);
+  const displayedPending = withBaselineMoney(affiliate.baseline_owed ?? 0, dbPending);
 
   const baseProps = {
     affiliate,

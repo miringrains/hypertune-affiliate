@@ -1,12 +1,9 @@
 /**
  * Baseline display logic for GHL → portal data transition.
  *
- * Formula for every stat:
- *   Pre go-live  → baseline > 0 ? baseline : dbValue
- *   Post go-live → baseline + newValuesSinceGoLive
- *
- * For clicks the DB table only contains post-system records (no GHL import),
- * so the formula is always: baseline_clicks + dbClicks.
+ * The DB tables (leads, customers, commissions, clicks) only contain
+ * records created AFTER our tracking system went live — no GHL imports.
+ * Therefore every stat is: baseline + dbValue.
  */
 
 export type AffiliateBaselines = {
@@ -20,23 +17,17 @@ export type AffiliateBaselines = {
   go_live_at: string | null;
 };
 
-/** Picks the displayed value: baseline overrides DB, or post-go-live adds on top. */
-export function withBaseline(baseline: number, dbValue: number, goLiveAt: string | null, newSinceGoLive?: number): number {
-  if (goLiveAt) {
-    return baseline + (newSinceGoLive ?? 0);
-  }
-  return baseline > 0 ? baseline : dbValue;
+/** Historical baseline + new data tracked by our system. */
+export function withBaseline(baseline: number, dbValue: number): number {
+  return baseline + dbValue;
 }
 
-/** Clicks always add since the clicks table has no GHL-imported rows. */
+/** Clicks: same addition logic (kept as named alias for readability). */
 export function withBaselineClicks(baselineClicks: number, dbClicks: number): number {
   return baselineClicks + dbClicks;
 }
 
-/** Money-valued baseline (earned, paid, owed): same logic as counts. */
-export function withBaselineMoney(baseline: number, dbValue: number, goLiveAt: string | null, newSinceGoLive?: number): number {
-  if (goLiveAt) {
-    return baseline + (newSinceGoLive ?? 0);
-  }
-  return baseline > 0 ? baseline : dbValue;
+/** Money-valued baseline (earned, paid, owed): same addition logic. */
+export function withBaselineMoney(baseline: number, dbValue: number): number {
+  return baseline + dbValue;
 }

@@ -119,5 +119,5 @@ export async function voidCommissionsForInvoice(
     .from("commissions")
     .update({ status: "voided" as const })
     .eq("stripe_invoice_id", stripeInvoiceId)
-    .eq("status", "pending" as const);
+    .in("status", ["pending", "approved"] as const);
 }

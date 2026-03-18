@@ -66,9 +66,9 @@ export default async function TeamPage() {
       const blPaid = baselinePaidById.get(row.affiliate_id) ?? 0;
       const blOwed = baselineOwedById.get(row.affiliate_id) ?? 0;
       subPerformance[row.affiliate_id] = {
-        leads: withBaseline(blLeads, dbLeads, null),
-        customers: withBaseline(blCustomers, dbCustomers, null),
-        earned: withBaselineMoney(blPaid + blOwed, dbEarned, null),
+        leads: withBaseline(blLeads, dbLeads),
+        customers: withBaseline(blCustomers, dbCustomers),
+        earned: withBaselineMoney(blPaid + blOwed, dbEarned),
       };
     }
 

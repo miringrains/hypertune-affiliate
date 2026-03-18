@@ -98,20 +98,18 @@ export async function GET(
 
     const rawStats = await computeStats(supabase, [id], from);
 
-    // Apply baselines only for "all time" view (no date filter)
     const isAllTime = !from;
-    const goLiveAt = affiliate.go_live_at;
     const bPaid = Number(affiliate.baseline_paid ?? 0);
     const bOwed = Number(affiliate.baseline_owed ?? 0);
     const directStats = isAllTime
       ? {
           ...rawStats,
           clicks: withBaselineClicks(affiliate.baseline_clicks ?? 0, rawStats.clicks),
-          leads: withBaseline(affiliate.baseline_leads ?? 0, rawStats.leads, goLiveAt),
-          customers: withBaseline(affiliate.baseline_customers ?? 0, rawStats.customers, goLiveAt),
-          totalEarned: withBaselineMoney(bPaid + bOwed, rawStats.totalEarned, goLiveAt),
-          pendingAmount: withBaselineMoney(bOwed, rawStats.pendingAmount, goLiveAt),
-          paidAmount: withBaselineMoney(bPaid, rawStats.paidAmount, goLiveAt),
+          leads: withBaseline(affiliate.baseline_leads ?? 0, rawStats.leads),
+          customers: withBaseline(affiliate.baseline_customers ?? 0, rawStats.customers),
+          totalEarned: withBaselineMoney(bPaid + bOwed, rawStats.totalEarned),
+          pendingAmount: withBaselineMoney(bOwed, rawStats.pendingAmount),
+          paidAmount: withBaselineMoney(bPaid, rawStats.paidAmount),
         }
       : rawStats;
 
@@ -138,30 +136,25 @@ export async function GET(
         const rawSubStats = await computeStats(supabase, targetIds, from);
 
         if (isAllTime) {
-          let adjLeads = 0, adjCustomers = 0, adjEarned = 0, totalBaseClicks = 0;
+          let totalBaseClicks = 0, sumBlLeads = 0, sumBlCustomers = 0;
           let sumSubPaid = 0, sumSubOwed = 0;
 
           for (const sub of targetSubs) {
-            const subBasePaid = Number(sub.baseline_paid ?? 0);
-            const subBaseOwed = Number(sub.baseline_owed ?? 0);
-            sumSubPaid += subBasePaid;
-            sumSubOwed += subBaseOwed;
             totalBaseClicks += sub.baseline_clicks ?? 0;
+            sumBlLeads += sub.baseline_leads ?? 0;
+            sumBlCustomers += sub.baseline_customers ?? 0;
+            sumSubPaid += Number(sub.baseline_paid ?? 0);
+            sumSubOwed += Number(sub.baseline_owed ?? 0);
           }
-
-          // For per-sub lead/customer/earned, we can't get per-sub breakdown from computeStats
-          // so we use aggregate baselines as overrides
-          const sumBlLeads = targetSubs.reduce((s, sub) => s + (sub.baseline_leads ?? 0), 0);
-          const sumBlCustomers = targetSubs.reduce((s, sub) => s + (sub.baseline_customers ?? 0), 0);
 
           subStats = {
             ...rawSubStats,
             clicks: totalBaseClicks + rawSubStats.clicks,
-            leads: sumBlLeads > 0 ? sumBlLeads : rawSubStats.leads,
-            customers: sumBlCustomers > 0 ? sumBlCustomers : rawSubStats.customers,
-            totalEarned: (sumSubPaid + sumSubOwed) > 0 ? (sumSubPaid + sumSubOwed) : rawSubStats.totalEarned,
-            pendingAmount: sumSubOwed > 0 ? sumSubOwed : rawSubStats.pendingAmount,
-            paidAmount: sumSubPaid > 0 ? sumSubPaid : rawSubStats.paidAmount,
+            leads: sumBlLeads + rawSubStats.leads,
+            customers: sumBlCustomers + rawSubStats.customers,
+            totalEarned: (sumSubPaid + sumSubOwed) + rawSubStats.totalEarned,
+            pendingAmount: sumSubOwed + rawSubStats.pendingAmount,
+            paidAmount: sumSubPaid + rawSubStats.paidAmount,
           };
         } else {
           subStats = rawSubStats;

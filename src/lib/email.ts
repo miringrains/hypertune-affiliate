@@ -1,7 +1,7 @@
 const MAILGUN_API_KEY = process.env.MAILGUN_API_KEY ?? "";
 const MAILGUN_DOMAIN = process.env.MAILGUN_DOMAIN ?? "";
 const MAILGUN_FROM = process.env.MAILGUN_FROM ?? "Hypertune <affiliate@hello.hypertune.gg>";
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://hypertune-affiliate.vercel.app";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://affiliate.hypertune.gg";
 
 interface SendEmailOpts {
   to: string;

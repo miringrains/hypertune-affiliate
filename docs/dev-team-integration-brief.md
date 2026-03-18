@@ -4,8 +4,7 @@ We're setting up our own affiliate + campaign tracking portal alongside GHL. **N
 
 ## Portal URL
 
-- Staging: `https://hypertune-affiliate.vercel.app`
-- Production: `https://portal.hypertune.gg` (once DNS is set)
+- Production: `https://affiliate.hypertune.gg`
 
 ---
 
@@ -42,7 +41,7 @@ When a new user account is created (via Clerk), fire a POST to our portal so we 
 **Endpoint:**
 
 ```
-POST https://hypertune-affiliate.vercel.app/api/track/lead-webhook
+POST https://affiliate.hypertune.gg/api/track/lead-webhook
 ```
 
 **Headers:**
@@ -110,6 +109,6 @@ All three are additive — they layer on top of existing behavior without modify
 1. Visit `https://hypertune.gg/?am_id=test-campaign`
 2. Create an account — our lead webhook should receive the POST
 3. Start a trial or purchase — our Stripe webhook should receive `am_id` in the checkout session
-4. Check `https://hypertune-affiliate.vercel.app/admin/campaigns` — events should appear
+4. Check `https://affiliate.hypertune.gg/admin/campaigns` — events should appear
 
 If anything doesn't look right, the `am_id` is probably not making it from the cookie into the checkout session metadata. Check browser cookies for `ht_am_id` and verify the Stripe session object in the Stripe dashboard under the session's metadata tab.

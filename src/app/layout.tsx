@@ -21,7 +21,7 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Hypertune Affiliates",
   description: "Hypertune affiliate tracking and management platform",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://affiliates.hypertune.gg"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://affiliate.hypertune.gg"),
   openGraph: {
     title: "Hypertune Affiliates",
     description: "Hypertune affiliate tracking and management platform",

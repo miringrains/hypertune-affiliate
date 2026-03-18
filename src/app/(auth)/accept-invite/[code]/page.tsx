@@ -209,7 +209,7 @@ export default function AcceptInvitePage() {
             )}
           </div>
           <p className="text-caption text-muted-foreground">
-            Your referral link: hypertune.gg/?am_id=
+            Your referral link: affiliate.hypertune.gg/api/track/click?am_id=
             <strong>{slug || "your-tag"}</strong>
           </p>
           {slugAvailable === false && (

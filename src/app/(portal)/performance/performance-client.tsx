@@ -90,7 +90,7 @@ interface PerformanceClientProps {
   customerStates: CustomerStates;
   networkStats?: NetworkStats;
   weeklyTrend: WeeklyPoint[];
-  isTier1: boolean;
+  hasSubAffiliates: boolean;
   sourceBreakdown: SourceRow[];
   leads: LeadRow[];
   customers: CustomerRow[];
@@ -179,7 +179,7 @@ export function PerformanceClient({
   customerStates,
   networkStats,
   weeklyTrend,
-  isTier1,
+  hasSubAffiliates,
   sourceBreakdown,
   leads,
   customers,
@@ -210,7 +210,7 @@ export function PerformanceClient({
       <div>
         <h1 className="text-display-sm">Performance</h1>
         <p className="text-[14px] text-muted-foreground mt-1">
-          {isTier1
+          {hasSubAffiliates
             ? "Your direct stats and network performance — separated for clarity."
             : "Your full conversion funnel — from clicks to paying customers."}
         </p>
@@ -221,7 +221,7 @@ export function PerformanceClient({
         <div className="flex items-center gap-2 mb-6">
           <Activity size={16} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-400" />
           <h2 className="text-[13px] font-medium text-zinc-400">
-            {isTier1 ? "Your Direct Performance" : "Conversion Funnel"}
+            {hasSubAffiliates ? "Your Direct Performance" : "Conversion Funnel"}
           </h2>
           <span className="ml-auto text-[11px] text-zinc-400">All time</span>
         </div>
@@ -296,7 +296,7 @@ export function PerformanceClient({
       </div>
 
       {/* ── Network Overview (Tier 1 only) ── */}
-      {isTier1 && networkStats && (
+      {hasSubAffiliates && networkStats && (
         <div className="rounded-2xl border border-zinc-700 bg-zinc-950 p-6 sm:p-8">
           <div className="flex items-center gap-2 mb-6">
             <Users size={16} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-400" />
@@ -386,7 +386,7 @@ export function PerformanceClient({
       </div>
 
       {/* ── Source Breakdown (Tier 1) ── */}
-      {isTier1 && sourceBreakdown.length > 0 && (
+      {hasSubAffiliates && sourceBreakdown.length > 0 && (
         <SourceBreakdownSection sourceBreakdown={sourceBreakdown} />
       )}
 
@@ -439,7 +439,7 @@ export function PerformanceClient({
                     <thead>
                       <tr className="border-b border-zinc-700">
                         <th className="text-left text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-5 py-3">Email</th>
-                        {isTier1 && <th className="text-left text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-5 py-3">Source</th>}
+                        {hasSubAffiliates && <th className="text-left text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-5 py-3">Source</th>}
                         <th className="text-left text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-5 py-3">Status</th>
                         <th className="text-left text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-5 py-3">Date</th>
                       </tr>
@@ -448,13 +448,13 @@ export function PerformanceClient({
                       {filteredLeads.slice(0, 50).map((l) => (
                         <tr key={l.id} className="border-b border-zinc-700/50 last:border-0">
                           <td className="px-5 py-3 text-[13px] text-zinc-100">{l.email}</td>
-                          {isTier1 && <td className="px-5 py-3 text-[12px] text-zinc-400">{l.source}</td>}
+                          {hasSubAffiliates && <td className="px-5 py-3 text-[12px] text-zinc-400">{l.source}</td>}
                           <td className="px-5 py-3"><StatusBadge status={l.customerState ?? (l.converted ? "active" : "pending")} /></td>
                           <td className="px-5 py-3 text-[12px] text-zinc-400">{new Date(l.created_at).toLocaleDateString()}</td>
                         </tr>
                       ))}
                       {filteredLeads.length === 0 && (
-                        <tr><td colSpan={isTier1 ? 4 : 3} className="px-5 py-8 text-center text-[13px] text-zinc-400">No leads found</td></tr>
+                        <tr><td colSpan={hasSubAffiliates ? 4 : 3} className="px-5 py-8 text-center text-[13px] text-zinc-400">No leads found</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -463,7 +463,7 @@ export function PerformanceClient({
                     <thead>
                       <tr className="border-b border-zinc-700">
                         <th className="text-left text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-5 py-3">Email</th>
-                        {isTier1 && <th className="text-left text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-5 py-3">Source</th>}
+                        {hasSubAffiliates && <th className="text-left text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-5 py-3">Source</th>}
                         <th className="text-left text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-5 py-3">Status</th>
                         <th className="text-left text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-5 py-3">Plan</th>
                         <th className="text-left text-[11px] font-medium text-zinc-400 uppercase tracking-wider px-5 py-3">Since</th>
@@ -473,14 +473,14 @@ export function PerformanceClient({
                       {filteredCustomers.slice(0, 50).map((c) => (
                         <tr key={c.id} className="border-b border-zinc-700/50 last:border-0">
                           <td className="px-5 py-3 text-[13px] text-zinc-100">{c.email}</td>
-                          {isTier1 && <td className="px-5 py-3 text-[12px] text-zinc-400">{c.source}</td>}
+                          {hasSubAffiliates && <td className="px-5 py-3 text-[12px] text-zinc-400">{c.source}</td>}
                           <td className="px-5 py-3"><StatusBadge status={c.state} /></td>
                           <td className="px-5 py-3 text-[12px] text-zinc-400 capitalize">{c.plan ?? "—"}</td>
                           <td className="px-5 py-3 text-[12px] text-zinc-400">{new Date(c.created_at).toLocaleDateString()}</td>
                         </tr>
                       ))}
                       {filteredCustomers.length === 0 && (
-                        <tr><td colSpan={isTier1 ? 5 : 4} className="px-5 py-8 text-center text-[13px] text-zinc-400">No customers found</td></tr>
+                        <tr><td colSpan={hasSubAffiliates ? 5 : 4} className="px-5 py-8 text-center text-[13px] text-zinc-400">No customers found</td></tr>
                       )}
                     </tbody>
                   </table>

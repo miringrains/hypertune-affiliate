@@ -116,7 +116,7 @@ export async function GET(
     let subStats = null;
     let subAffiliatesList: { id: string; name: string; slug: string }[] = [];
 
-    if (affiliate.tier_level === 1) {
+    if (affiliate.tier_level <= 2) {
       const { data: subAffiliates } = await supabase
         .from("affiliates")
         .select("id, name, slug, baseline_leads, baseline_customers, baseline_clicks, baseline_paid, baseline_owed")

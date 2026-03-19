@@ -25,7 +25,7 @@ export default async function PerformancePage() {
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 86_400_000).toISOString();
 
-  const isTier1 = affiliate.tier_level === 1 && affiliate.role !== "admin";
+  const hasSubAffiliates = affiliate.tier_level <= 2 && affiliate.role !== "admin";
 
   // Build the set of affiliate IDs this user can see
   let allIds = [affiliate.id];
@@ -35,7 +35,7 @@ export default async function PerformancePage() {
   let subBaselineCustomersMap: Record<string, number> = {};
   let subBaselinePaidMap: Record<string, number> = {};
   let subBaselineOwedMap: Record<string, number> = {};
-  if (isTier1) {
+  if (hasSubAffiliates) {
     const { data: subs } = await svc
       .from("affiliates")
       .select("id, name, slug, baseline_leads, baseline_customers, baseline_paid, baseline_owed")
@@ -73,7 +73,7 @@ export default async function PerformancePage() {
       ] = await Promise.all([
         svcInner.rpc("get_performance_funnel", { aff_ids: ids, p_clicks_since: since30d }),
         svcInner.rpc("get_weekly_trend", { aff_ids: ids, p_weeks: 12 }),
-        isTier1
+        hasSubAffiliates
           ? svcInner.rpc("get_sub_affiliate_stats", { sub_ids: ids })
           : Promise.resolve({ data: null }),
         svcInner.rpc("get_recent_leads", { aff_ids: ids, p_limit: 200 }),
@@ -94,7 +94,7 @@ export default async function PerformancePage() {
 
   // For Tier 1, compute separate direct and combined stats
   let directFunnel = f;
-  if (isTier1 && f) {
+  if (hasSubAffiliates && f) {
     const { data: directRows } = await svc.rpc("get_performance_funnel", {
       aff_ids: directIds,
       p_clicks_since: thirtyDaysAgo,
@@ -123,7 +123,7 @@ export default async function PerformancePage() {
 
   // Source breakdown for Tier 1
   let sourceBreakdown: { name: string; slug: string; leads: number; customers: number; earned: number; isDirect: boolean }[] = [];
-  if (isTier1 && subStats) {
+  if (hasSubAffiliates && subStats) {
     sourceBreakdown = (subStats as { affiliate_id: string; lead_count: number; customer_count: number; earned: number }[])
       .map((s) => {
         const dbLeads = Number(s.lead_count);
@@ -171,7 +171,7 @@ export default async function PerformancePage() {
         churned: Number(directFunnel?.churned ?? 0),
         mrr: directMRR,
       }}
-      networkStats={isTier1 ? {
+      networkStats={hasSubAffiliates ? {
         leads: sourceBreakdown.filter(s => !s.isDirect).reduce((sum, s) => sum + s.leads, 0),
         customers: sourceBreakdown.filter(s => !s.isDirect).reduce((sum, s) => sum + s.customers, 0),
         active: (combinedMonthly + combinedAnnual) - (directMonthly + directAnnual),
@@ -181,14 +181,14 @@ export default async function PerformancePage() {
         subCount: allIds.length - 1,
       } : undefined}
       weeklyTrend={weeklyData}
-      isTier1={isTier1}
+      hasSubAffiliates={hasSubAffiliates}
       sourceBreakdown={sourceBreakdown}
       leads={(recentLeads ?? []).map((l) => ({
         id: l.id,
         email: l.email,
         converted: !!l.stripe_customer_id,
         customerState: l.customer_state,
-        source: isTier1 ? (subIdMap[l.affiliate_id] ?? "Unknown") : undefined,
+        source: hasSubAffiliates ? (subIdMap[l.affiliate_id] ?? "Unknown") : undefined,
         created_at: l.created_at,
       }))}
       customers={(recentCustomers ?? []).map((c) => ({
@@ -196,7 +196,7 @@ export default async function PerformancePage() {
         email: c.lead_email || "—",
         state: c.current_state,
         plan: c.plan_type,
-        source: isTier1 ? (subIdMap[c.affiliate_id] ?? "Unknown") : undefined,
+        source: hasSubAffiliates ? (subIdMap[c.affiliate_id] ?? "Unknown") : undefined,
         created_at: c.created_at,
       }))}
     />

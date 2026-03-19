@@ -21,14 +21,14 @@ interface Customer {
 interface CustomersTableProps {
   customers: Customer[];
   affiliateId: string;
-  isTier1: boolean;
+  hasSubAffiliates: boolean;
   subIdMap: Record<string, string>;
 }
 
 export function CustomersTable({
   customers,
   affiliateId,
-  isTier1,
+  hasSubAffiliates,
   subIdMap,
 }: CustomersTableProps) {
   const [search, setSearch] = useState("");
@@ -62,7 +62,7 @@ export function CustomersTable({
       },
     ];
 
-    if (isTier1) {
+    if (hasSubAffiliates) {
       const sourceOptions = [{ label: "All sources", value: "all" }];
       for (const [id, name] of Object.entries(subIdMap)) {
         sourceOptions.push({ label: name, value: id });
@@ -71,7 +71,7 @@ export function CustomersTable({
     }
 
     return configs;
-  }, [isTier1, subIdMap]);
+  }, [hasSubAffiliates, subIdMap]);
 
   const filtered = useMemo(() => {
     let rows = customers;
@@ -106,12 +106,12 @@ export function CustomersTable({
       rows = rows.filter((c) => c.plan_type === "annual");
     }
 
-    if (isTier1 && filters.source && filters.source !== "all") {
+    if (hasSubAffiliates && filters.source && filters.source !== "all") {
       rows = rows.filter((c) => c.affiliate_id === filters.source);
     }
 
     return rows;
-  }, [customers, search, filters, period, isTier1]);
+  }, [customers, search, filters, period, hasSubAffiliates]);
 
   return (
     <>
@@ -142,7 +142,7 @@ export function CustomersTable({
                   <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                     Email
                   </th>
-                  {isTier1 && (
+                  {hasSubAffiliates && (
                     <th className="px-5 py-3 text-left text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                       Source
                     </th>
@@ -164,7 +164,7 @@ export function CustomersTable({
                     <td className="px-5 py-3 text-[13px]">
                       {customer.leads?.name || customer.leads?.email || "—"}
                     </td>
-                    {isTier1 && (
+                    {hasSubAffiliates && (
                       <td className="px-5 py-3 text-[12px] text-muted-foreground">
                         {customer.affiliate_id === affiliateId
                           ? "You"

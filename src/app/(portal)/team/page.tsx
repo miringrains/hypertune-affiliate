@@ -19,13 +19,12 @@ export default async function TeamPage() {
 
   if (!affiliate) redirect("/login");
 
-  if (affiliate.tier_level !== 1) {
+  if (affiliate.tier_level > 2) {
     return (
       <div className="space-y-4">
         <h1 className="text-display-sm">Team</h1>
         <p className="text-[14px] text-muted-foreground">
-          Only Tier 1 affiliates can recruit sub-affiliates. Your current tier
-          level is {affiliate.tier_level}.
+          Tier 3 affiliates cannot recruit sub-affiliates.
         </p>
       </div>
     );

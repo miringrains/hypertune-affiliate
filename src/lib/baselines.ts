@@ -1,9 +1,11 @@
 /**
  * Baseline display logic for GHL → portal data transition.
  *
- * The DB tables (leads, customers, commissions, clicks) only contain
- * records created AFTER our tracking system went live — no GHL imports.
- * Therefore every stat is: baseline + dbValue.
+ * baseline = csv_value - live_count_at_sync_time
+ * displayed = baseline + current_live_count
+ *
+ * At sync time: displayed = csv_value (exact match).
+ * After sync: new data increments displayed naturally.
  */
 
 export type AffiliateBaselines = {

@@ -70,9 +70,9 @@ export async function requireAffiliate(): Promise<{
   };
 }
 
-export async function requireTier1Affiliate() {
+export async function requireParentAffiliate() {
   const affiliate = await requireAffiliate();
-  if (affiliate.tierLevel !== 1)
-    throw new ApiError(403, "Tier 1 affiliates only");
+  if (affiliate.tierLevel > 2)
+    throw new ApiError(403, "Only Tier 1 and Tier 2 affiliates can manage sub-affiliates");
   return affiliate;
 }

@@ -29,8 +29,7 @@ interface HeroData {
 }
 
 interface PipelineData {
-  pending: number;
-  approved: number;
+  owed: number;
   paid: number;
 }
 
@@ -115,12 +114,11 @@ export function EarningsClient({
     });
   }, [commissions, statusFilter, search]);
 
-  const pipelineTotal = pipeline.pending + pipeline.approved + pipeline.paid;
+  const pipelineTotal = Math.max(pipeline.owed + pipeline.paid, 0);
   const pipelineSegments = pipelineTotal > 0
     ? [
-        { label: "Pending", amount: pipeline.pending, pct: (pipeline.pending / pipelineTotal) * 100, textColor: "text-amber-400", barColor: "rgba(251,191,36,0.25)", dotColor: "bg-amber-400" },
-        { label: "Approved", amount: pipeline.approved, pct: (pipeline.approved / pipelineTotal) * 100, textColor: "text-blue-400", barColor: "rgba(96,165,250,0.25)", dotColor: "bg-blue-400" },
-        { label: "Paid", amount: pipeline.paid, pct: (pipeline.paid / pipelineTotal) * 100, textColor: "text-emerald-400", barColor: "rgba(52,211,153,0.25)", dotColor: "bg-emerald-400" },
+        { label: "Owed", amount: pipeline.owed, pct: Math.max((pipeline.owed / pipelineTotal) * 100, 0), textColor: "text-amber-400", barColor: "rgba(251,191,36,0.25)", dotColor: "bg-amber-400" },
+        { label: "Paid", amount: pipeline.paid, pct: Math.max((pipeline.paid / pipelineTotal) * 100, 0), textColor: "text-emerald-400", barColor: "rgba(52,211,153,0.25)", dotColor: "bg-emerald-400" },
       ]
     : [];
 
@@ -364,7 +362,7 @@ export function EarningsClient({
                             ? "border-zinc-700 text-zinc-300"
                             : "border-zinc-700 text-zinc-400"
                         }`}>
-                          {c.tier_type === "direct" ? "Direct" : c.tier_type}
+                          {c.tier_type === "direct" ? "Direct" : c.tier_type === "tier2" ? "Tier 2" : "Tier 3"}
                         </span>
                       </td>
                       <td className="px-5 py-3"><StatusBadge status={c.status} /></td>

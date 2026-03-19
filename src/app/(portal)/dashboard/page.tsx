@@ -215,7 +215,7 @@ export default async function DashboardPage() {
     })),
   };
 
-  if (affiliate.tier_level === 1) {
+  if (affiliate.tier_level <= 2) {
     const { data: subAffiliates } = await supabase
       .from("affiliates")
       .select("id, name")

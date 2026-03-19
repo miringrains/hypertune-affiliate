@@ -67,7 +67,7 @@ export function AppSidebar({
     : affiliateNav.map((group) => ({
         ...group,
         items: group.items.filter((item) => {
-          if (item.tierRequired && tierLevel !== item.tierRequired) return false;
+          if (item.tierMax && tierLevel > item.tierMax) return false;
           return true;
         }),
       }));

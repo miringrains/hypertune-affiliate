@@ -254,7 +254,7 @@ export function SettingsClient({ affiliate, userEmail, payoutMethods: initialMet
                   Tier
                 </span>
                 <span className="text-[13px]">Tier {affiliate.tier_level}</span>
-                {affiliate.tier_level === 1 && (
+                {affiliate.tier_level <= 2 && (
                   <span className="text-[11px] text-muted-foreground">
                     ({affiliate.sub_affiliate_rate}% from sub-affiliates)
                   </span>

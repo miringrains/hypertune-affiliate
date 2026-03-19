@@ -667,7 +667,7 @@ export function DashboardClient({
   hasTaxForm,
 }: DashboardClientProps) {
   const isAdmin = affiliate.role === "admin";
-  const isTier1 = affiliate.tier_level === 1 && !isAdmin;
+  const hasSubAffiliates = affiliate.tier_level <= 2 && !isAdmin;
 
   if (isAdmin) {
     return (
@@ -752,7 +752,7 @@ export function DashboardClient({
           <h1 className="text-display-sm">Dashboard</h1>
           <p className="text-[14px] text-muted-foreground mt-1">Welcome back, {affiliate.name}</p>
         </div>
-        {isTier1 && subAffiliateCount !== undefined && (
+        {hasSubAffiliates && subAffiliateCount !== undefined && (
           <a href="/team" className="flex items-center gap-2 text-[12px] font-medium text-zinc-400 hover:text-zinc-300 transition-colors px-3 py-1.5 rounded-lg border border-zinc-700 bg-zinc-950">
             <Users size={14} strokeWidth={ICON_STROKE_WIDTH} />
             {subAffiliateCount} sub-affiliate{subAffiliateCount !== 1 ? "s" : ""}
@@ -780,9 +780,9 @@ export function DashboardClient({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <CustomerBreakdown
           states={chartData.customerStates}
-          title={isTier1 ? "Your Customers" : "Customer Breakdown"}
+          title={hasSubAffiliates ? "Your Customers" : "Customer Breakdown"}
         />
-        {isTier1 && subCustomerStates && (
+        {hasSubAffiliates && subCustomerStates && (
           <CustomerBreakdown states={subCustomerStates} title="Sub-Affiliate Customers" />
         )}
       </div>

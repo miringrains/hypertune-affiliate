@@ -65,10 +65,9 @@ export default async function EarningsPage() {
   const dbApproved = Number(s?.approved_amount ?? 0);
 
   const paidAmount = withBaselineMoney(bPaid, dbPaid);
-  const pendingAmount = bOwed + dbPending;
-  const approvedAmount = dbApproved;
+  const owedAmount = withBaselineMoney(bOwed, dbPending + dbApproved);
 
-  const lifetimeEarned = paidAmount + pendingAmount + approvedAmount;
+  const lifetimeEarned = paidAmount + owedAmount;
   const hasTier2 = s?.has_tier2 ?? false;
 
   const payouts = payoutsRes.data ?? [];
@@ -100,12 +99,12 @@ export default async function EarningsPage() {
     <EarningsClient
       hero={{
         lifetimeEarned,
-        pending: pendingAmount + approvedAmount,
+        pending: owedAmount,
         lastPayout: lastPayout
           ? { amount: Number(lastPayout.amount), date: lastPayout.completed_at ?? lastPayout.created_at }
           : null,
       }}
-      pipeline={{ pending: pendingAmount, approved: approvedAmount, paid: paidAmount }}
+      pipeline={{ owed: owedAmount, paid: paidAmount }}
       monthlyEarnings={monthlyEarnings}
       hasTier2={hasTier2}
       commissions={(recentComms ?? []).map((c) => ({

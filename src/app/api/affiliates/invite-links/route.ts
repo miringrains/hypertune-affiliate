@@ -1,12 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { requireTier1Affiliate, handleApiError } from "@/lib/auth";
+import { requireParentAffiliate, handleApiError } from "@/lib/auth";
 import { nanoid } from "@/lib/utils";
 import { COMMISSION_RATES } from "@/lib/constants";
 
 export async function GET() {
   try {
-    const affiliate = await requireTier1Affiliate();
+    const affiliate = await requireParentAffiliate();
 
     const supabase = await createServiceClient();
     const { data: links, error } = await supabase
@@ -26,7 +26,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const affiliate = await requireTier1Affiliate();
+    const affiliate = await requireParentAffiliate();
 
     const body = await request.json();
     const { commission_rate, label } = body;
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const affiliate = await requireTier1Affiliate();
+    const affiliate = await requireParentAffiliate();
 
     const { searchParams } = request.nextUrl;
     const id = searchParams.get("id");

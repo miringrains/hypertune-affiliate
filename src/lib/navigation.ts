@@ -18,7 +18,7 @@ export interface NavItem {
   label: string;
   href: string;
   icon: LucideIcon;
-  tierRequired?: number;
+  tierMax?: number;
 }
 
 export interface NavGroup {
@@ -33,7 +33,7 @@ export const affiliateNav: NavGroup[] = [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       { label: "Performance", href: "/performance", icon: TrendingUp },
       { label: "Earnings", href: "/earnings", icon: DollarSign },
-      { label: "Team", href: "/team", icon: Users, tierRequired: 1 },
+      { label: "Team", href: "/team", icon: Users, tierMax: 2 },
     ],
   },
   {

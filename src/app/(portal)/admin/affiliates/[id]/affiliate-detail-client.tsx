@@ -127,7 +127,7 @@ export function AffiliateDetailClient({
     }
   }
 
-  const isTier1 = affiliate.tier_level === 1;
+  const hasSubAffiliates = affiliate.tier_level <= 2;
 
   return (
     <div className="space-y-8">
@@ -177,7 +177,7 @@ export function AffiliateDetailClient({
           commissionRate={affiliate.commission_rate}
         />
 
-        {isTier1 && subStats && (
+        {hasSubAffiliates && subStats && (
           <>
             <div className="border-t border-zinc-700" />
             <PerformanceSection
@@ -287,7 +287,7 @@ export function AffiliateDetailClient({
             />
           </EditField>
 
-          {isTier1 && (
+          {hasSubAffiliates && (
             <>
               <EditField
                 label="Sub-affiliate Override Rate (%)"

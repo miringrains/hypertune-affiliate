@@ -218,21 +218,35 @@ export default async function DashboardPage() {
   if (affiliate.tier_level <= 2) {
     const { data: subAffiliates } = await svc
       .from("affiliates")
-      .select("id, name")
+      .select("id, name, baseline_customers, baseline_churned")
       .eq("parent_id", affiliate.id);
 
-    const subIds = (subAffiliates ?? []).map((s) => s.id);
+    const subs = subAffiliates ?? [];
+    const subIds = subs.map((s) => s.id);
     let subCustomerStates = { active: 0, trialing: 0, churned: 0 };
     if (subIds.length > 0) {
       const { data: subData } = await svc.rpc("get_affiliate_detail_stats", { aff_ids: subIds });
       const sr = subData?.[0];
-      if (sr) {
-        subCustomerStates = {
-          active: Number(sr.active_monthly) + Number(sr.active_annual),
-          trialing: Number(sr.trialing),
-          churned: Number(sr.canceled),
-        };
+      const liveActive = Number(sr?.active_monthly ?? 0) + Number(sr?.active_annual ?? 0);
+      const liveTrialing = Number(sr?.trialing ?? 0);
+      const liveCanceled = Number(sr?.canceled ?? 0);
+
+      let totalBaselineCustomers = 0;
+      let totalBaselineChurned = 0;
+      for (const sub of subs) {
+        totalBaselineCustomers += sub.baseline_customers ?? 0;
+        totalBaselineChurned += Number(sub.baseline_churned ?? 0);
       }
+
+      const totalCustomers = totalBaselineCustomers + liveActive + liveTrialing + liveCanceled;
+      const totalChurned = totalBaselineChurned + liveCanceled;
+      const activeFromBaseline = Math.max(totalCustomers - liveTrialing - totalChurned, 0);
+
+      subCustomerStates = {
+        active: activeFromBaseline,
+        trialing: liveTrialing,
+        churned: totalChurned,
+      };
     }
 
     return (

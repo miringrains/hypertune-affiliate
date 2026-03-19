@@ -216,7 +216,7 @@ export default async function DashboardPage() {
   };
 
   if (affiliate.tier_level <= 2) {
-    const { data: subAffiliates } = await supabase
+    const { data: subAffiliates } = await svc
       .from("affiliates")
       .select("id, name")
       .eq("parent_id", affiliate.id);

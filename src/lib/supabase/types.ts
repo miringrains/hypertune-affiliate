@@ -831,6 +831,13 @@ export type Database = {
           lead_count: number
         }[]
       }
+      count_clicks_by_affiliate: {
+        Args: { aff_ids: string[] }
+        Returns: {
+          affiliate_id: string
+          click_count: number
+        }[]
+      }
       get_tier2_earnings: { Args: { aff_id: string }; Returns: number }
       get_weekly_trend: {
         Args: { aff_ids: string[]; p_weeks?: number }

@@ -3,6 +3,7 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { AuroraBackdrop } from "@/components/shared/aurora";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { TopBar } from "@/components/layout/top-bar";
+import { MigrationBanner } from "@/components/shared/migration-banner";
 
 async function tryRecoverAffiliate(user: {
   id: string;
@@ -137,6 +138,7 @@ export default async function PortalLayout({
               userEmail={affiliate?.email}
             />
             <main className="mx-auto max-w-[var(--content-max-width)] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+              <MigrationBanner />
               {children}
             </main>
           </div>

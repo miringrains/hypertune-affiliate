@@ -92,7 +92,7 @@ export default async function PerformancePage() {
   const f = funnelRows?.[0];
   const directIds = [affiliate.id];
 
-  // For Tier 1, funnel shows only direct stats
+  // For Tier 1, compute separate direct and combined stats
   let directFunnel = f;
   if (isTier1 && f) {
     const { data: directRows } = await svc.rpc("get_performance_funnel", {
@@ -102,9 +102,13 @@ export default async function PerformancePage() {
     directFunnel = directRows?.[0] ?? f;
   }
 
-  const monthlyActive = Number(f?.active_monthly ?? 0);
-  const annualActive = Number(f?.active_annual ?? 0);
-  const estimatedMRR = monthlyActive * PLAN_PRICES.monthly + annualActive * (PLAN_PRICES.annual / 12);
+  const directMonthly = Number(directFunnel?.active_monthly ?? 0);
+  const directAnnual = Number(directFunnel?.active_annual ?? 0);
+  const directMRR = directMonthly * PLAN_PRICES.monthly + directAnnual * (PLAN_PRICES.annual / 12);
+
+  const combinedMonthly = Number(f?.active_monthly ?? 0);
+  const combinedAnnual = Number(f?.active_annual ?? 0);
+  const combinedMRR = combinedMonthly * PLAN_PRICES.monthly + combinedAnnual * (PLAN_PRICES.annual / 12);
 
   // Weekly trend
   const weeklyData = (trendRows ?? []).map((r) => {
@@ -162,11 +166,20 @@ export default async function PerformancePage() {
         customers: displayedCustomers,
       }}
       customerStates={{
-        active: monthlyActive + annualActive,
-        trialing: Number(f?.trialing ?? 0),
-        churned: Number(f?.churned ?? 0),
-        mrr: estimatedMRR,
+        active: directMonthly + directAnnual,
+        trialing: Number(directFunnel?.trialing ?? 0),
+        churned: Number(directFunnel?.churned ?? 0),
+        mrr: directMRR,
       }}
+      networkStats={isTier1 ? {
+        leads: sourceBreakdown.filter(s => !s.isDirect).reduce((sum, s) => sum + s.leads, 0),
+        customers: sourceBreakdown.filter(s => !s.isDirect).reduce((sum, s) => sum + s.customers, 0),
+        active: (combinedMonthly + combinedAnnual) - (directMonthly + directAnnual),
+        trialing: Number(f?.trialing ?? 0) - Number(directFunnel?.trialing ?? 0),
+        churned: Number(f?.churned ?? 0) - Number(directFunnel?.churned ?? 0),
+        mrr: combinedMRR - directMRR,
+        subCount: allIds.length - 1,
+      } : undefined}
       weeklyTrend={weeklyData}
       isTier1={isTier1}
       sourceBreakdown={sourceBreakdown}

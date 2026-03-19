@@ -75,9 +75,20 @@ interface CustomerRow {
   created_at: string;
 }
 
+interface NetworkStats {
+  leads: number;
+  customers: number;
+  active: number;
+  trialing: number;
+  churned: number;
+  mrr: number;
+  subCount: number;
+}
+
 interface PerformanceClientProps {
   funnel: FunnelData;
   customerStates: CustomerStates;
+  networkStats?: NetworkStats;
   weeklyTrend: WeeklyPoint[];
   isTier1: boolean;
   sourceBreakdown: SourceRow[];
@@ -166,6 +177,7 @@ function SourceBreakdownSection({ sourceBreakdown }: { sourceBreakdown: SourceRo
 export function PerformanceClient({
   funnel,
   customerStates,
+  networkStats,
   weeklyTrend,
   isTier1,
   sourceBreakdown,
@@ -198,7 +210,9 @@ export function PerformanceClient({
       <div>
         <h1 className="text-display-sm">Performance</h1>
         <p className="text-[14px] text-muted-foreground mt-1">
-          Your full conversion funnel — from clicks to paying customers.
+          {isTier1
+            ? "Your direct stats and network performance — separated for clarity."
+            : "Your full conversion funnel — from clicks to paying customers."}
         </p>
       </div>
 
@@ -206,7 +220,9 @@ export function PerformanceClient({
       <div className="rounded-2xl border border-zinc-700 bg-zinc-950 p-6 sm:p-8">
         <div className="flex items-center gap-2 mb-6">
           <Activity size={16} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-400" />
-          <h2 className="text-[13px] font-medium text-zinc-400">Conversion Funnel</h2>
+          <h2 className="text-[13px] font-medium text-zinc-400">
+            {isTier1 ? "Your Direct Performance" : "Conversion Funnel"}
+          </h2>
           <span className="ml-auto text-[11px] text-zinc-400">All time</span>
         </div>
 
@@ -278,6 +294,59 @@ export function PerformanceClient({
           </div>
         </div>
       </div>
+
+      {/* ── Network Overview (Tier 1 only) ── */}
+      {isTier1 && networkStats && (
+        <div className="rounded-2xl border border-zinc-700 bg-zinc-950 p-6 sm:p-8">
+          <div className="flex items-center gap-2 mb-6">
+            <Users size={16} strokeWidth={ICON_STROKE_WIDTH} className="text-zinc-400" />
+            <h2 className="text-[13px] font-medium text-zinc-400">
+              Your Network
+            </h2>
+            <span className="ml-auto text-[11px] text-zinc-400">
+              {networkStats.subCount} sub-affiliate{networkStats.subCount !== 1 ? "s" : ""}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="p-4 rounded-xl border border-zinc-700 bg-black text-center">
+              <p className="text-[28px] sm:text-[34px] font-semibold tracking-tight leading-none text-white">
+                {networkStats.leads.toLocaleString()}
+              </p>
+              <p className="text-[12px] text-zinc-400 mt-1.5">Leads</p>
+            </div>
+            <div className="p-4 rounded-xl border border-zinc-700 bg-black text-center">
+              <p className="text-[28px] sm:text-[34px] font-semibold tracking-tight leading-none text-white">
+                {networkStats.customers.toLocaleString()}
+              </p>
+              <p className="text-[12px] text-zinc-400 mt-1.5">Customers</p>
+            </div>
+            <div className="p-4 rounded-xl border border-zinc-700 bg-black text-center">
+              <p className="text-[28px] sm:text-[34px] font-semibold tracking-tight leading-none text-white">
+                {fmtCurrency(networkStats.mrr)}
+              </p>
+              <p className="text-[12px] text-zinc-400 mt-1.5">Network MRR</p>
+            </div>
+            <div className="p-4 rounded-xl border border-zinc-700 bg-black text-center">
+              <div className="flex justify-center gap-4 text-[13px] mt-2">
+                <div>
+                  <span className="text-emerald-400 font-semibold">{networkStats.active}</span>
+                  <span className="text-zinc-500 ml-1 text-[11px]">active</span>
+                </div>
+                <div>
+                  <span className="text-amber-400 font-semibold">{networkStats.trialing}</span>
+                  <span className="text-zinc-500 ml-1 text-[11px]">trial</span>
+                </div>
+                <div>
+                  <span className="text-rose-500 font-semibold">{networkStats.churned}</span>
+                  <span className="text-zinc-500 ml-1 text-[11px]">churned</span>
+                </div>
+              </div>
+              <p className="text-[12px] text-zinc-400 mt-1.5">Breakdown</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Weekly Trend Chart ── */}
       <div className="rounded-xl border border-zinc-700 bg-zinc-950 p-5">

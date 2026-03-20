@@ -2,14 +2,18 @@ import { NextResponse, type NextRequest } from "next/server";
 import { requireAffiliate, handleApiError, ApiError } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
+const VALID_METHOD_TYPES = ["paypal", "wise"] as const;
+type MethodType = (typeof VALID_METHOD_TYPES)[number];
+
 export async function POST(request: NextRequest) {
   try {
     const affiliate = await requireAffiliate();
     const body = await request.json();
-    const { details } = body;
+    const { details, method_type } = body;
+    const type: MethodType = VALID_METHOD_TYPES.includes(method_type) ? method_type : "paypal";
 
     if (!details?.email) {
-      throw new ApiError(400, "PayPal email is required.");
+      throw new ApiError(400, `${type === "wise" ? "Wise" : "PayPal"} email is required.`);
     }
 
     const supabase = await createClient();
@@ -25,7 +29,7 @@ export async function POST(request: NextRequest) {
       .from("payout_methods")
       .insert({
         affiliate_id: affiliate.id,
-        method_type: "paypal",
+        method_type: type,
         details: { email: details.email },
         is_primary: isFirst,
       })

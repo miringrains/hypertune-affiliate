@@ -48,8 +48,8 @@ export function SettingsClient({ affiliate, userEmail, payoutMethods: initialMet
 
   // Payout methods
   const [methods, setMethods] = useState<PayoutMethod[]>(initialMethods);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newPaypalEmail, setNewPaypalEmail] = useState("");
+  const [showAddForm, setShowAddForm] = useState<"paypal" | "wise" | null>(null);
+  const [newEmail, setNewEmail] = useState("");
   const [addingMethod, setAddingMethod] = useState(false);
 
 
@@ -88,23 +88,22 @@ export function SettingsClient({ affiliate, userEmail, payoutMethods: initialMet
   }
 
   async function addPayoutMethod() {
-    if (!newPaypalEmail) {
-      toast.error("Please enter your PayPal email");
-      return;
-    }
+    if (!newEmail || !showAddForm) return;
+    const methodType = showAddForm;
+    const label = methodType === "wise" ? "Wise" : "PayPal";
     setAddingMethod(true);
 
     const res = await fetch("/api/affiliates/payout-methods", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ details: { email: newPaypalEmail } }),
+      body: JSON.stringify({ method_type: methodType, details: { email: newEmail } }),
     });
 
     setAddingMethod(false);
 
     if (!res.ok) {
       const { error } = await res.json();
-      toast.error("Failed to add PayPal", { description: error });
+      toast.error(`Failed to add ${label}`, { description: error });
       return;
     }
 
@@ -113,12 +112,14 @@ export function SettingsClient({ affiliate, userEmail, payoutMethods: initialMet
       ...prev,
       { id: created.id, type: created.method_type, details: created.details, isPrimary: created.is_primary },
     ]);
-    setShowAddForm(false);
-    setNewPaypalEmail("");
-    toast.success("PayPal account linked");
+    setShowAddForm(null);
+    setNewEmail("");
+    toast.success(`${label} account linked`);
   }
 
   async function deleteMethod(id: string) {
+    const method = methods.find((m) => m.id === id);
+    const label = method?.type === "wise" ? "Wise" : "PayPal";
     const res = await fetch(`/api/affiliates/payout-methods?id=${id}`, { method: "DELETE" });
     if (!res.ok) {
       toast.error("Failed to remove payout method");
@@ -131,7 +132,7 @@ export function SettingsClient({ affiliate, userEmail, payoutMethods: initialMet
       }
       return remaining;
     });
-    toast.success("PayPal account removed");
+    toast.success(`${label} account removed`);
   }
 
 
@@ -277,41 +278,30 @@ export function SettingsClient({ affiliate, userEmail, payoutMethods: initialMet
         </CardContent>
       </Card>
 
-      {/* Payout — PayPal Only */}
+      {/* Payout Methods */}
       <Card>
         <CardContent className="p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <h2 className="text-heading-3">Payout Method</h2>
-              <Image
-                src="/paypal-logo.png"
-                alt="PayPal"
-                width={70}
-                height={18}
-                className="opacity-70"
-              />
-            </div>
-            {!showAddForm && methods.length === 0 && (
-              <Button size="xs" variant="ghost" onClick={() => setShowAddForm(true)}>
-                <Plus size={14} strokeWidth={ICON_STROKE_WIDTH} />
-                Connect PayPal
-              </Button>
-            )}
-          </div>
+          <h2 className="text-heading-3">Payout Method</h2>
 
           {methods.length === 0 && !showAddForm && (
             <div className="rounded-lg border border-zinc-700 bg-black p-4">
               <p className="text-[13px] text-zinc-400">
-                Link your PayPal account to receive payouts. You&apos;ll be paid directly to your PayPal email.
+                Link a payout account to receive your earnings. Choose one of the options below.
               </p>
-              <Button
-                size="sm"
-                className="mt-3"
-                onClick={() => setShowAddForm(true)}
-              >
-                <Plus size={14} strokeWidth={ICON_STROKE_WIDTH} />
-                Add PayPal Email
-              </Button>
+              <div className="flex flex-wrap gap-3 mt-4">
+                <button
+                  onClick={() => setShowAddForm("paypal")}
+                  className="flex items-center gap-2.5 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 hover:border-zinc-500 transition-colors"
+                >
+                  <Image src="/paypal-logo.png" alt="PayPal" width={60} height={15} className="opacity-80" />
+                </button>
+                <button
+                  onClick={() => setShowAddForm("wise")}
+                  className="flex items-center gap-2.5 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 hover:border-zinc-500 transition-colors"
+                >
+                  <Image src="/Wise_logo_light-on-dark.png" alt="Wise" width={60} height={15} className="opacity-80" />
+                </button>
+              </div>
             </div>
           )}
 
@@ -320,13 +310,11 @@ export function SettingsClient({ affiliate, userEmail, payoutMethods: initialMet
               {methods.map((m) => (
                 <div key={m.id} className="flex items-center justify-between gap-3 rounded-lg border border-zinc-700 bg-black px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <Image
-                      src="/paypal-logo.png"
-                      alt="PayPal"
-                      width={50}
-                      height={13}
-                      className="opacity-60"
-                    />
+                    {m.type === "wise" ? (
+                      <Image src="/Wise_logo_light-on-dark.png" alt="Wise" width={50} height={13} className="opacity-70" />
+                    ) : (
+                      <Image src="/paypal-logo.png" alt="PayPal" width={50} height={13} className="opacity-60" />
+                    )}
                     <span className="text-[13px] text-zinc-300">{m.details?.email}</span>
                     {m.isPrimary && (
                       <span className="flex items-center gap-1 text-[11px] text-zinc-400">
@@ -342,39 +330,58 @@ export function SettingsClient({ affiliate, userEmail, payoutMethods: initialMet
               ))}
 
               {!showAddForm && (
-                <button
-                  onClick={() => setShowAddForm(true)}
-                  className="text-[11px] text-zinc-400 hover:text-zinc-400 transition-colors"
-                >
-                  + Add another PayPal account
-                </button>
+                <div className="flex gap-3 pt-1">
+                  <button
+                    onClick={() => setShowAddForm("paypal")}
+                    className="text-[11px] text-zinc-400 hover:text-zinc-300 transition-colors"
+                  >
+                    + Add PayPal
+                  </button>
+                  <button
+                    onClick={() => setShowAddForm("wise")}
+                    className="text-[11px] text-zinc-400 hover:text-zinc-300 transition-colors"
+                  >
+                    + Add Wise
+                  </button>
+                </div>
               )}
             </div>
           )}
 
           {showAddForm && (
             <div className="space-y-4 border-t border-border pt-4">
+              <div className="flex items-center gap-2 mb-1">
+                {showAddForm === "wise" ? (
+                  <Image src="/Wise_logo_light-on-dark.png" alt="Wise" width={55} height={14} className="opacity-80" />
+                ) : (
+                  <Image src="/paypal-logo.png" alt="PayPal" width={55} height={14} className="opacity-80" />
+                )}
+              </div>
               <div className="space-y-2">
-                <Label htmlFor="paypal-email" className="text-[12px]">PayPal email address</Label>
+                <Label htmlFor="payout-email" className="text-[12px]">
+                  {showAddForm === "wise" ? "Wise email address" : "PayPal email address"}
+                </Label>
                 <p className="text-[11px] text-zinc-400">
-                  Enter the email associated with your PayPal account. Payouts will be sent here.
+                  {showAddForm === "wise"
+                    ? "Enter the email associated with your Wise account. Payouts will be sent here."
+                    : "Enter the email associated with your PayPal account. Payouts will be sent here."}
                 </p>
                 <Input
-                  id="paypal-email"
+                  id="payout-email"
                   type="email"
                   placeholder="you@example.com"
-                  value={newPaypalEmail}
-                  onChange={(e) => setNewPaypalEmail(e.target.value)}
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
                   className="h-9 max-w-sm"
                   autoFocus
                 />
               </div>
 
               <div className="flex gap-2">
-                <Button size="sm" onClick={addPayoutMethod} disabled={addingMethod || !newPaypalEmail}>
-                  {addingMethod ? "Linking..." : "Link PayPal"}
+                <Button size="sm" onClick={addPayoutMethod} disabled={addingMethod || !newEmail}>
+                  {addingMethod ? "Linking..." : `Link ${showAddForm === "wise" ? "Wise" : "PayPal"}`}
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => setShowAddForm(false)}>
+                <Button size="sm" variant="ghost" onClick={() => { setShowAddForm(null); setNewEmail(""); }}>
                   Cancel
                 </Button>
               </div>

@@ -468,8 +468,8 @@ function PerformanceSection({
 function AdminPayoutMethods({ affiliateId }: { affiliateId: string }) {
   const [methods, setMethods] = useState<PayoutMethodRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAdd, setShowAdd] = useState(false);
-  const [paypalEmail, setPaypalEmail] = useState("");
+  const [showAdd, setShowAdd] = useState<"paypal" | "wise" | null>(null);
+  const [newEmail, setNewEmail] = useState("");
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
@@ -480,25 +480,30 @@ function AdminPayoutMethods({ affiliateId }: { affiliateId: string }) {
   }, [affiliateId]);
 
   async function addMethod() {
+    if (!showAdd || !newEmail) return;
+    const type = showAdd;
+    const label = type === "wise" ? "Wise" : "PayPal";
     setAdding(true);
     const res = await fetch(`/api/admin/affiliates/${affiliateId}/payout-methods`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ details: { email: paypalEmail } }),
+      body: JSON.stringify({ method_type: type, details: { email: newEmail } }),
     });
     setAdding(false);
     if (!res.ok) {
-      toast.error("Failed to add PayPal");
+      toast.error(`Failed to add ${label}`);
       return;
     }
     const created = await res.json();
     setMethods((prev) => [...prev, created]);
-    setShowAdd(false);
-    setPaypalEmail("");
-    toast.success("PayPal account linked");
+    setShowAdd(null);
+    setNewEmail("");
+    toast.success(`${label} account linked`);
   }
 
   async function deleteMethod(methodId: string) {
+    const method = methods.find((m) => m.id === methodId);
+    const label = method?.method_type === "wise" ? "Wise" : "PayPal";
     const res = await fetch(
       `/api/admin/affiliates/${affiliateId}/payout-methods?method_id=${methodId}`,
       { method: "DELETE" },
@@ -508,34 +513,44 @@ function AdminPayoutMethods({ affiliateId }: { affiliateId: string }) {
       return;
     }
     setMethods((prev) => prev.filter((m) => m.id !== methodId));
-    toast.success("PayPal account removed");
+    toast.success(`${label} account removed`);
   }
 
   return (
     <div className="rounded-lg border border-zinc-700 bg-zinc-950 p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-[15px] font-medium text-white">PayPal Payouts</h2>
+        <h2 className="text-[15px] font-medium text-white">Payout Methods</h2>
         {!showAdd && (
-          <button
-            onClick={() => setShowAdd(true)}
-            className="flex items-center gap-1 text-[12px] text-zinc-400 hover:text-white transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" /> Add
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowAdd("paypal")}
+              className="flex items-center gap-1 text-[12px] text-zinc-400 hover:text-white transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" /> PayPal
+            </button>
+            <button
+              onClick={() => setShowAdd("wise")}
+              className="flex items-center gap-1 text-[12px] text-zinc-400 hover:text-white transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" /> Wise
+            </button>
+          </div>
         )}
       </div>
 
       {loading ? (
         <p className="text-[13px] text-zinc-400">Loading...</p>
       ) : methods.length === 0 && !showAdd ? (
-        <p className="text-[13px] text-zinc-400">No PayPal account linked for this affiliate.</p>
+        <p className="text-[13px] text-zinc-400">No payout account linked for this affiliate.</p>
       ) : (
         <div className="space-y-2">
           {methods.map((m) => (
             <div key={m.id} className="flex items-center justify-between py-2 border-b border-zinc-700 last:border-0">
               <div className="flex items-center gap-2">
                 <Wallet className="w-4 h-4 text-zinc-400" />
-                <span className="text-[13px] text-white">PayPal</span>
+                <span className={`text-[13px] font-medium ${m.method_type === "wise" ? "text-[#9fe870]" : "text-white"}`}>
+                  {m.method_type === "wise" ? "Wise" : "PayPal"}
+                </span>
                 {m.details?.email && <span className="text-[12px] text-zinc-400">{m.details.email}</span>}
                 {m.is_primary && <span className="text-[10px] text-zinc-400 border border-zinc-700 rounded px-1.5 py-0.5">Active</span>}
               </div>
@@ -549,23 +564,26 @@ function AdminPayoutMethods({ affiliateId }: { affiliateId: string }) {
 
       {showAdd && (
         <div className="space-y-3 border-t border-zinc-700 pt-4">
+          <p className="text-[12px] text-zinc-400">
+            Add {showAdd === "wise" ? "Wise" : "PayPal"} email for this affiliate
+          </p>
           <input
             type="email"
-            placeholder="PayPal email address"
-            value={paypalEmail}
-            onChange={(e) => setPaypalEmail(e.target.value)}
+            placeholder={`${showAdd === "wise" ? "Wise" : "PayPal"} email address`}
+            value={newEmail}
+            onChange={(e) => setNewEmail(e.target.value)}
             className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-[13px] text-white outline-none focus:border-zinc-600"
           />
           <div className="flex gap-2">
             <button
               onClick={addMethod}
-              disabled={adding || !paypalEmail}
+              disabled={adding || !newEmail}
               className="px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-[12px] font-medium hover:bg-primary/80 disabled:opacity-40"
             >
-              {adding ? "Linking..." : "Link PayPal"}
+              {adding ? "Linking..." : `Link ${showAdd === "wise" ? "Wise" : "PayPal"}`}
             </button>
             <button
-              onClick={() => setShowAdd(false)}
+              onClick={() => { setShowAdd(null); setNewEmail(""); }}
               className="px-3 py-1.5 rounded-md border border-zinc-700 text-[12px] text-zinc-400 hover:text-white transition-colors"
             >
               Cancel

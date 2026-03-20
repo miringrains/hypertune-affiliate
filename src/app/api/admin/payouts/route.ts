@@ -132,28 +132,33 @@ export async function PATCH(request: NextRequest) {
 
       const { data: allMethods } = await supabase
         .from("payout_methods")
-        .select("affiliate_id, details")
+        .select("affiliate_id, method_type, details")
         .in("affiliate_id", affiliateIds)
-        .eq("method_type", "paypal")
         .eq("is_primary", true);
-      const methodMap = new Map((allMethods ?? []).map((m) => [m.affiliate_id, m]));
+      const methodMap = new Map(
+        (allMethods ?? []).map((m) => [m.affiliate_id, m]),
+      );
 
       const creds = await loadPaypalCredentials(supabase);
       const paypalItems: PayoutItem[] = [];
+      const wiseIds: string[] = [];
       const manualIds: string[] = [];
 
       for (const p of payoutRows) {
         const method = methodMap.get(p.affiliate_id);
         const aff = affMap.get(p.affiliate_id);
         const email = (method?.details as Record<string, string> | null)?.email;
+        const methodType = method?.method_type ?? null;
 
-        if (creds && email && aff) {
+        if (methodType === "paypal" && creds && email && aff) {
           paypalItems.push({
             recipientEmail: email,
             amount: Number(p.amount),
             payoutId: p.id,
             affiliateName: aff.name,
           });
+        } else if (methodType === "wise") {
+          wiseIds.push(p.id);
         } else {
           manualIds.push(p.id);
         }
@@ -174,21 +179,34 @@ export async function PATCH(request: NextRequest) {
 
       const now = new Date().toISOString();
       const paidIds = paypalItems.map((i) => i.payoutId);
-      const allPaidIds = [...paidIds, ...manualIds];
+      const allPaidIds = [...paidIds, ...wiseIds, ...manualIds];
+
+      if (paidIds.length > 0) {
+        await supabase
+          .from("payouts")
+          .update({ status: "completed", completed_at: now, method: "paypal" })
+          .in("id", paidIds);
+      }
+      if (wiseIds.length > 0) {
+        await supabase
+          .from("payouts")
+          .update({ status: "completed", completed_at: now, method: "wise" })
+          .in("id", wiseIds);
+      }
+      if (manualIds.length > 0) {
+        await supabase
+          .from("payouts")
+          .update({ status: "completed", completed_at: now, method: "manual" })
+          .in("id", manualIds);
+      }
+
+      updated = allPaidIds.length;
 
       if (allPaidIds.length > 0) {
-        const { count, error } = await supabase
-          .from("payouts")
-          .update({ status: "completed", completed_at: now })
-          .in("id", allPaidIds);
-        if (error) throw new ApiError(500, error.message);
-        updated = count ?? 0;
-
-        const { error: commErr } = await supabase
+        await supabase
           .from("commissions")
           .update({ status: "paid", paid_at: now })
           .in("payout_id", allPaidIds);
-        if (commErr) throw new ApiError(500, commErr.message);
 
         for (const p of payoutRows.filter((r) => allPaidIds.includes(r.id))) {
           const aff = affMap.get(p.affiliate_id);
@@ -202,6 +220,7 @@ export async function PATCH(request: NextRequest) {
         updated,
         paypal: !!paypalResult,
         paypalBatchId: paypalResult?.batchId ?? null,
+        wiseCount: wiseIds.length,
         manualCount: manualIds.length,
       });
     } else if (action === "revert") {

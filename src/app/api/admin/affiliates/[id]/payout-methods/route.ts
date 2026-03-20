@@ -39,10 +39,13 @@ export async function POST(
     await requireAdmin();
     const { id: affiliateId } = await params;
     const body = await request.json();
-    const { details } = body;
+    const { details, method_type } = body;
+
+    const validTypes = ["paypal", "wise"] as const;
+    const type = validTypes.includes(method_type) ? method_type : "paypal";
 
     if (!details?.email) {
-      throw new ApiError(400, "PayPal email is required.");
+      throw new ApiError(400, `${type === "wise" ? "Wise" : "PayPal"} email is required.`);
     }
 
     const service = getService();
@@ -56,7 +59,7 @@ export async function POST(
       .from("payout_methods")
       .insert({
         affiliate_id: affiliateId,
-        method_type: "paypal",
+        method_type: type,
         details: { email: details.email },
         is_primary: (count ?? 0) === 0,
       })

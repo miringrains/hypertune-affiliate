@@ -875,7 +875,7 @@ export type Database = {
         | "active_annual"
         | "canceled"
         | "dormant"
-      payout_method_type: "paypal" | "bank_transfer"
+      payout_method_type: "paypal" | "bank_transfer" | "wise"
       payout_status: "processing" | "completed"
       plan_type: "monthly" | "annual"
     }
@@ -1026,7 +1026,7 @@ export const Constants = {
         "canceled",
         "dormant",
       ],
-      payout_method_type: ["paypal", "bank_transfer"],
+      payout_method_type: ["paypal", "bank_transfer", "wise"],
       payout_status: ["processing", "completed"],
       plan_type: ["monthly", "annual"],
     },

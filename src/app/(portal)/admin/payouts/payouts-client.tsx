@@ -196,14 +196,11 @@ export function PayoutsClient({ payouts }: { payouts: Payout[] }) {
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
-                if (data.paypal) {
-                  toast.success(`Paid ${data.updated} payout${data.updated !== 1 ? "s" : ""} via PayPal`);
-                } else {
-                  toast.success(`Completed ${data.updated} payout${data.updated !== 1 ? "s" : ""}`);
-                }
-                if (data.manualCount > 0) {
-                  toast.info(`${data.manualCount} payout${data.manualCount !== 1 ? "s" : ""} without PayPal were marked as paid manually`);
-                }
+                const msgs: string[] = [];
+                if (data.paypal) msgs.push("PayPal");
+                if (data.wiseCount > 0) msgs.push(`${data.wiseCount} Wise`);
+                if (data.manualCount > 0) msgs.push(`${data.manualCount} manual`);
+                toast.success(`Processed ${data.updated} payout${data.updated !== 1 ? "s" : ""}${msgs.length > 0 ? ` (${msgs.join(", ")})` : ""}`);
                 setSelected(new Set());
                 router.refresh();
               } catch (e) {
@@ -215,7 +212,7 @@ export function PayoutsClient({ payouts }: { payouts: Payout[] }) {
             disabled={loading}
           >
             {loading ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
-            Pay via PayPal
+            Process Payouts
           </Button>
           <Button
             size="sm"
@@ -301,8 +298,8 @@ export function PayoutsClient({ payouts }: { payouts: Payout[] }) {
                   <td className="px-5 py-3">
                     <StatusBadge status={p.status} />
                   </td>
-                  <td className="px-5 py-3 text-[13px] capitalize text-zinc-400">
-                    {p.method?.replace(/_/g, " ") ?? "—"}
+                  <td className="px-5 py-3 text-[13px] text-zinc-400">
+                    {p.method === "paypal" ? "PayPal" : p.method === "wise" ? "Wise" : p.method ?? "—"}
                   </td>
                   <td className="px-5 py-3 text-[12px] text-zinc-400">
                     {new Date(p.createdAt).toLocaleDateString()}

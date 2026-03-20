@@ -1,19 +1,13 @@
 import { redirect } from "next/navigation";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
+import { getUser, getAffiliate } from "@/lib/session";
 import { SettingsAdminClient } from "./settings-admin-client";
 
 export default async function AdminSettingsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) redirect("/login");
 
-  const { data: affiliate } = await supabase
-    .from("affiliates")
-    .select("role")
-    .eq("user_id", user.id)
-    .single();
+  const affiliate = await getAffiliate();
   if (!affiliate || affiliate.role !== "admin") redirect("/dashboard");
 
   const service = await createServiceClient();

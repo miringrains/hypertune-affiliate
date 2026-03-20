@@ -1,20 +1,14 @@
 import { redirect } from "next/navigation";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
+import { getUser, getAffiliate } from "@/lib/session";
 import { withBaseline, withBaselineClicks, withBaselineMoney } from "@/lib/baselines";
 import { AdminAffiliatesClient } from "./admin-affiliates-client";
 
 export default async function AdminAffiliatesPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) redirect("/login");
 
-  const { data: affiliate } = await supabase
-    .from("affiliates")
-    .select("role")
-    .eq("user_id", user.id)
-    .single();
+  const affiliate = await getAffiliate();
   if (!affiliate || affiliate.role !== "admin") redirect("/dashboard");
 
   const service = await createServiceClient();
@@ -27,9 +21,13 @@ export default async function AdminAffiliatesPage() {
   const allAffs = affiliates ?? [];
   const affIds = allAffs.map((a) => a.id);
 
-  const { data: perAffStats } = affIds.length > 0
-    ? await service.rpc("get_sub_affiliate_stats", { sub_ids: affIds })
-    : { data: null };
+  const [{ data: perAffStats }, { data: clickRows }] =
+    affIds.length > 0
+      ? await Promise.all([
+          service.rpc("get_sub_affiliate_stats", { sub_ids: affIds }),
+          service.rpc("count_clicks_by_affiliate", { aff_ids: affIds }),
+        ])
+      : [{ data: null }, { data: null }];
 
   const parentNameMap = new Map<string, string>();
   for (const a of allAffs) {
@@ -46,11 +44,8 @@ export default async function AdminAffiliatesPage() {
   }
 
   const clickCountMap = new Map<string, number>();
-  if (affIds.length > 0) {
-    const { data: clickRows } = await service.rpc("count_clicks_by_affiliate", { aff_ids: affIds });
-    for (const r of clickRows ?? []) {
-      clickCountMap.set(r.affiliate_id, Number(r.click_count));
-    }
+  for (const r of clickRows ?? []) {
+    clickCountMap.set(r.affiliate_id, Number(r.click_count));
   }
 
   const rows = allAffs.map((a) => {

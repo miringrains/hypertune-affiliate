@@ -1,22 +1,14 @@
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { getUser, getAffiliate } from "@/lib/session";
 import { TeamClient } from "./team-client";
 import { withBaseline, withBaselineMoney } from "@/lib/baselines";
 
 export default async function TeamPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await getUser();
   if (!user) redirect("/login");
 
-  const { data: affiliate } = await supabase
-    .from("affiliates")
-    .select("*")
-    .eq("user_id", user.id)
-    .single();
-
+  const affiliate = await getAffiliate();
   if (!affiliate) redirect("/login");
 
   if (affiliate.tier_level > 2) {

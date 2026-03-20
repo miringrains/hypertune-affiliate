@@ -1,23 +1,16 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { getUser, getAffiliate } from "@/lib/session";
 import { SettingsClient } from "./settings-client";
 
 export default async function SettingsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await getUser();
   if (!user) redirect("/login");
 
-  const { data: affiliate } = await supabase
-    .from("affiliates")
-    .select("*")
-    .eq("user_id", user.id)
-    .single();
-
+  const affiliate = await getAffiliate();
   if (!affiliate) redirect("/login");
 
+  const supabase = await createClient();
   const [{ data: payoutMethods }, parentResult] = await Promise.all([
     supabase.from("payout_methods").select("*").eq("affiliate_id", affiliate.id),
     affiliate.parent_id

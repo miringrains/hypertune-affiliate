@@ -1,29 +1,20 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { getUser, getAffiliate } from "@/lib/session";
 import { MediaClient } from "./media-client";
-
-const IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
 function isImageByType(fileType: string): boolean {
   return fileType === "image";
 }
 
 export default async function MediaPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await getUser();
   if (!user) redirect("/login");
 
-  const { data: affiliate } = await supabase
-    .from("affiliates")
-    .select("*")
-    .eq("user_id", user.id)
-    .single();
-
+  const affiliate = await getAffiliate();
   if (!affiliate) redirect("/login");
 
+  const supabase = await createClient();
   const { data: folders } = await supabase
     .from("media_folders")
     .select(

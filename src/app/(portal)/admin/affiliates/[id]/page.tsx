@@ -1,5 +1,6 @@
 import { redirect, notFound } from "next/navigation";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
+import { getUser, getAffiliate } from "@/lib/session";
 import { AffiliateDetailClient } from "./affiliate-detail-client";
 import { withBaseline, withBaselineClicks, withBaselineMoney } from "@/lib/baselines";
 
@@ -36,17 +37,10 @@ export default async function AdminAffiliateDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
   if (!user) redirect("/login");
 
-  const { data: currentAffiliate } = await supabase
-    .from("affiliates")
-    .select("role")
-    .eq("user_id", user.id)
-    .single();
+  const currentAffiliate = await getAffiliate();
   if (!currentAffiliate || currentAffiliate.role !== "admin")
     redirect("/dashboard");
 
@@ -61,11 +55,10 @@ export default async function AdminAffiliateDetailPage({
 
   if (!affiliate) notFound();
 
-  const rawStats = await computeStatsForIds(service, [id]);
-
-  const { count: liveClicks } = await service
-    .from("clicks").select("id", { count: "exact", head: true })
-    .eq("affiliate_id", id);
+  const [rawStats, { count: liveClicks }] = await Promise.all([
+    computeStatsForIds(service, [id]),
+    service.from("clicks").select("id", { count: "exact", head: true }).eq("affiliate_id", id),
+  ]);
 
   const bPaid = Number(affiliate.baseline_paid ?? 0);
   const bOwed = Number(affiliate.baseline_owed ?? 0);

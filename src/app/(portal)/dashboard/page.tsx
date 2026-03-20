@@ -1,5 +1,6 @@
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { getUser, getAffiliate } from "@/lib/session";
 import { DashboardClient } from "./dashboard-client";
 import { PLAN_PRICES } from "@/lib/constants";
 import { withBaseline, withBaselineClicks, withBaselineMoney } from "@/lib/baselines";
@@ -41,19 +42,10 @@ function monthlyFromBuckets(
 }
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await getUser();
   if (!user) redirect("/login");
 
-  const { data: affiliate } = await supabase
-    .from("affiliates")
-    .select("*")
-    .eq("user_id", user.id)
-    .single();
-
+  const affiliate = await getAffiliate();
   if (!affiliate) redirect("/login");
 
   const now = new Date();
@@ -132,12 +124,14 @@ export default async function DashboardPage() {
 
   // ── Affiliate flow ──
   const svc = await createServiceClient();
+  const sb = await createClient();
   const [
     { data: affStats },
     { data: affClickBuckets },
     { data: affMonthlyRows },
     recentCommissionsRes,
     taxDocRes,
+    { count: liveClickCount },
   ] = await Promise.all([
     svc.rpc("get_affiliate_dashboard_stats", {
       p_affiliate_id: affiliate.id,
@@ -153,14 +147,18 @@ export default async function DashboardPage() {
       p_affiliate_id: affiliate.id,
       p_since: sixMonthsAgo,
     }),
-    supabase
+    sb
       .from("commissions")
       .select("id, amount, status, created_at, tier_type, customers(leads(email, name))")
       .eq("affiliate_id", affiliate.id)
       .order("created_at", { ascending: false })
       .limit(8),
-    supabase
+    sb
       .from("tax_documents")
+      .select("id", { count: "exact", head: true })
+      .eq("affiliate_id", affiliate.id),
+    svc
+      .from("clicks")
       .select("id", { count: "exact", head: true })
       .eq("affiliate_id", affiliate.id),
   ]);
@@ -168,10 +166,6 @@ export default async function DashboardPage() {
   const a = affStats?.[0];
   const recentComms = recentCommissionsRes.data ?? [];
   const hasTaxForm = (taxDocRes.count ?? 0) > 0;
-
-  const { count: liveClickCount } = await svc
-    .from("clicks").select("id", { count: "exact", head: true })
-    .eq("affiliate_id", affiliate.id);
 
   const displayedClicks = withBaselineClicks(affiliate.baseline_clicks ?? 0, liveClickCount ?? 0);
   const displayedLeads = withBaseline(affiliate.baseline_leads ?? 0, Number(a?.total_leads ?? 0));
@@ -225,9 +219,12 @@ export default async function DashboardPage() {
     const subIds = subs.map((s) => s.id);
     let subCustomerStates = { active: 0, trialing: 0, churned: 0 };
     if (subIds.length > 0) {
-      const { data: subData } = await svc.rpc("get_affiliate_detail_stats", { aff_ids: subIds });
+      const { data: subData } = await svc.rpc("get_affiliate_detail_stats", {
+        aff_ids: subIds,
+      });
       const sr = subData?.[0];
-      const liveActive = Number(sr?.active_monthly ?? 0) + Number(sr?.active_annual ?? 0);
+      const liveActive =
+        Number(sr?.active_monthly ?? 0) + Number(sr?.active_annual ?? 0);
       const liveTrialing = Number(sr?.trialing ?? 0);
       const liveCanceled = Number(sr?.canceled ?? 0);
 
@@ -238,9 +235,13 @@ export default async function DashboardPage() {
         totalBaselineChurned += Number(sub.baseline_churned ?? 0);
       }
 
-      const totalCustomers = totalBaselineCustomers + liveActive + liveTrialing + liveCanceled;
+      const totalCustomers =
+        totalBaselineCustomers + liveActive + liveTrialing + liveCanceled;
       const totalChurned = totalBaselineChurned + liveCanceled;
-      const activeFromBaseline = Math.max(totalCustomers - liveTrialing - totalChurned, 0);
+      const activeFromBaseline = Math.max(
+        totalCustomers - liveTrialing - totalChurned,
+        0,
+      );
 
       subCustomerStates = {
         active: activeFromBaseline,

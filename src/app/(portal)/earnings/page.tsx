@@ -1,23 +1,15 @@
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { unstable_cache } from "next/cache";
+import { getUser, getAffiliate } from "@/lib/session";
 import { EarningsClient } from "./earnings-client";
 import { withBaselineMoney } from "@/lib/baselines";
 
 export default async function EarningsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await getUser();
   if (!user) redirect("/login");
 
-  const { data: affiliate } = await supabase
-    .from("affiliates")
-    .select("*")
-    .eq("user_id", user.id)
-    .single();
-
+  const affiliate = await getAffiliate();
   if (!affiliate) redirect("/login");
 
   const now = new Date();

@@ -1,24 +1,16 @@
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { unstable_cache } from "next/cache";
+import { getUser, getAffiliate } from "@/lib/session";
 import { PLAN_PRICES } from "@/lib/constants";
 import { PerformanceClient } from "./performance-client";
 import { withBaseline, withBaselineClicks, withBaselineMoney } from "@/lib/baselines";
 
 export default async function PerformancePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await getUser();
   if (!user) redirect("/login");
 
-  const { data: affiliate } = await supabase
-    .from("affiliates")
-    .select("*")
-    .eq("user_id", user.id)
-    .single();
-
+  const affiliate = await getAffiliate();
   if (!affiliate) redirect("/login");
 
   const svc = await createServiceClient();
@@ -92,14 +84,28 @@ export default async function PerformancePage() {
   const f = funnelRows?.[0];
   const directIds = [affiliate.id];
 
-  // For Tier 1, compute separate direct and combined stats
+  // For Tier 1, fetch direct funnel and click count in parallel
   let directFunnel = f;
-  if (hasSubAffiliates && f) {
-    const { data: directRows } = await svc.rpc("get_performance_funnel", {
-      aff_ids: directIds,
-      p_clicks_since: thirtyDaysAgo,
-    });
-    directFunnel = directRows?.[0] ?? f;
+  const directFunnelPromise =
+    hasSubAffiliates && f
+      ? svc.rpc("get_performance_funnel", {
+          aff_ids: directIds,
+          p_clicks_since: thirtyDaysAgo,
+        })
+      : null;
+
+  const clickCountPromise = svc
+    .from("clicks")
+    .select("id", { count: "exact", head: true })
+    .eq("affiliate_id", affiliate.id);
+
+  const [directFunnelResult, { count: liveClickCount }] = await Promise.all([
+    directFunnelPromise,
+    clickCountPromise,
+  ]);
+
+  if (directFunnelResult?.data?.[0]) {
+    directFunnel = directFunnelResult.data[0];
   }
 
   const directMonthly = Number(directFunnel?.active_monthly ?? 0);
@@ -148,10 +154,6 @@ export default async function PerformancePage() {
         return b.customers - a.customers;
       });
   }
-
-  const { count: liveClickCount } = await svc
-    .from("clicks").select("id", { count: "exact", head: true })
-    .eq("affiliate_id", affiliate.id);
 
   const displayedClicks = withBaselineClicks(affiliate.baseline_clicks ?? 0, liveClickCount ?? 0);
   const displayedLeads = withBaseline(affiliate.baseline_leads ?? 0, Number(directFunnel?.total_leads ?? 0));

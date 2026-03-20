@@ -107,6 +107,25 @@ export default async function PortalLayout({
     affiliate = await tryRecoverAffiliate(user);
   }
 
+  if (!affiliate && user.email) {
+    const service = await createServiceClient();
+    const { data: byEmail } = await service
+      .from("affiliates")
+      .select("name, email, role, tier_level")
+      .ilike("email", user.email)
+      .is("user_id", null)
+      .single();
+
+    if (byEmail) {
+      await service
+        .from("affiliates")
+        .update({ user_id: user.id })
+        .ilike("email", user.email)
+        .is("user_id", null);
+      affiliate = byEmail;
+    }
+  }
+
   if (!affiliate) {
     redirect("/login?error=no_account");
   }

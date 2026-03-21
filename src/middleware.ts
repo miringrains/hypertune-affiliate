@@ -40,7 +40,7 @@ export async function middleware(request: NextRequest) {
       url.searchParams.set("am_id", slug);
       return NextResponse.rewrite(url);
     }
-    return NextResponse.redirect(PORTAL_URL);
+    return NextResponse.redirect("https://hypertune.gg");
   }
 
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));

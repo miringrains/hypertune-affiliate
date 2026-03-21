@@ -360,19 +360,18 @@ function OnboardingBanner({ slug }: { slug: string }) {
 
 function FunnelStrip({ stats }: { stats: DashboardStats }) {
   const pct = (num: number, den: number) =>
-    den > 0 ? ((num / den) * 100).toFixed(1) : "—";
+    den > 0 ? Math.min((num / den) * 100, 100).toFixed(1) : "—";
 
-  const steps = [
+  const funnelSteps = [
     { label: "Clicks", value: stats.clicks, icon: MousePointerClick, pct: pct(stats.leads, stats.clicks) },
-    { label: "Leads", value: stats.leads, icon: Users, pct: pct(stats.trials, stats.leads) },
-    { label: "Trialing", value: stats.trials, icon: Clock, pct: pct(stats.customers, stats.trials) },
+    { label: "Leads", value: stats.leads, icon: Users, pct: pct(stats.customers, stats.leads) },
     { label: "Customers", value: stats.customers, icon: UserCheck, pct: null },
   ];
 
   return (
     <div className="rounded-2xl border border-zinc-700 bg-zinc-950 p-6 sm:p-8">
       <div className="flex flex-col sm:flex-row items-stretch gap-0">
-        {steps.map((step, i) => (
+        {funnelSteps.map((step, i) => (
           <div key={step.label} className="flex items-stretch flex-1 min-w-0">
             <div className="flex-1 text-center p-4 sm:p-5 rounded-xl border border-zinc-700 bg-black">
               <step.icon size={22} strokeWidth={ICON_STROKE_WIDTH} className="mx-auto mb-2 text-zinc-400" />
@@ -382,7 +381,7 @@ function FunnelStrip({ stats }: { stats: DashboardStats }) {
               <p className="text-[12px] text-zinc-400 mt-1.5">{step.label}</p>
             </div>
 
-            {i < steps.length - 1 && (
+            {i < funnelSteps.length - 1 && (
               <>
                 <div className="hidden sm:flex flex-col items-center justify-center px-3 shrink-0">
                   <ArrowRight size={16} className="text-zinc-400" />
@@ -399,6 +398,19 @@ function FunnelStrip({ stats }: { stats: DashboardStats }) {
             )}
           </div>
         ))}
+
+        <div className="flex items-stretch flex-1 min-w-0">
+          <div className="hidden sm:flex flex-col items-center justify-center px-3 shrink-0">
+            <span className="text-[10px] text-zinc-500">·</span>
+          </div>
+          <div className="flex-1 text-center p-4 sm:p-5 rounded-xl border border-dashed border-zinc-700 bg-black/50">
+            <Clock size={22} strokeWidth={ICON_STROKE_WIDTH} className="mx-auto mb-2 text-zinc-500" />
+            <p className="text-[28px] sm:text-[34px] font-semibold tracking-tight leading-none text-zinc-300">
+              {stats.trials.toLocaleString()}
+            </p>
+            <p className="text-[12px] text-zinc-500 mt-1.5">Trialing</p>
+          </div>
+        </div>
       </div>
     </div>
   );

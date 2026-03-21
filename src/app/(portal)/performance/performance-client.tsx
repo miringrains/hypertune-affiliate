@@ -189,10 +189,9 @@ export function PerformanceClient({
   const [search, setSearch] = useState("");
 
   const pct = (num: number, den: number) =>
-    den > 0 ? ((num / den) * 100).toFixed(1) : "—";
+    den > 0 ? Math.min((num / den) * 100, 100).toFixed(1) : "—";
   const clickToLead = pct(funnel.leads, funnel.clicks);
-  const leadToTrial = pct(funnel.trials, funnel.leads);
-  const trialToCustomer = pct(funnel.customers, funnel.trials);
+  const leadToCustomer = pct(funnel.customers, funnel.leads);
   const overallConversion = pct(funnel.customers, funnel.clicks);
 
   const filteredLeads = useMemo(
@@ -229,8 +228,7 @@ export function PerformanceClient({
         <div className="flex flex-col sm:flex-row items-stretch gap-0">
           {[
             { icon: MousePointerClick, label: "Clicks", value: funnel.clicks, pct: clickToLead },
-            { icon: Users, label: "Leads", value: funnel.leads, pct: leadToTrial },
-            { icon: Clock, label: "Trialing", value: funnel.trials, pct: trialToCustomer },
+            { icon: Users, label: "Leads", value: funnel.leads, pct: leadToCustomer },
             { icon: UserCheck, label: "Customers", value: funnel.customers, pct: null },
           ].map((stage, i, arr) => (
             <div key={stage.label} className="flex items-stretch flex-1 min-w-0">
@@ -259,6 +257,19 @@ export function PerformanceClient({
               )}
             </div>
           ))}
+
+          <div className="flex items-stretch flex-1 min-w-0">
+            <div className="hidden sm:flex flex-col items-center justify-center px-3 shrink-0">
+              <span className="text-[10px] text-zinc-500">·</span>
+            </div>
+            <div className="flex-1 text-center p-4 sm:p-5 rounded-xl border border-dashed border-zinc-700 bg-black/50">
+              <Clock size={22} strokeWidth={ICON_STROKE_WIDTH} className="mx-auto mb-2 text-zinc-500" />
+              <p className="text-[28px] sm:text-[34px] font-semibold tracking-tight leading-none text-zinc-300">
+                {funnel.trials.toLocaleString()}
+              </p>
+              <p className="text-[12px] text-zinc-500 mt-1.5">Trialing</p>
+            </div>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-6 mt-6 pt-5 border-t border-zinc-700">

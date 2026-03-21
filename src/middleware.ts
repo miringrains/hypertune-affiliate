@@ -12,16 +12,24 @@ const PUBLIC_PATHS = [
   "/api/affiliates/check-slug",
 ];
 
-const TRACKING_HOST = process.env.NEXT_PUBLIC_TRACKING_DOMAIN
-  ? new URL(process.env.NEXT_PUBLIC_TRACKING_DOMAIN).hostname
-  : null;
-const PORTAL_URL = process.env.NEXT_PUBLIC_APP_URL || "https://affiliate.hypertune.gg";
+const PORTAL_HOSTS = new Set([
+  "affiliate.hypertune.gg",
+  "localhost",
+  "127.0.0.1",
+]);
+const PORTAL_URL = "https://affiliate.hypertune.gg";
+
+function isPortalHost(host: string | null | undefined): boolean {
+  if (!host) return true;
+  const hostname = host.split(":")[0];
+  return PORTAL_HOSTS.has(hostname) || hostname.endsWith(".vercel.app");
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const host = request.headers.get("host")?.split(":")[0];
+  const host = request.headers.get("host");
 
-  if (TRACKING_HOST && host === TRACKING_HOST) {
+  if (!isPortalHost(host)) {
     if (pathname.startsWith("/api/track") || pathname.startsWith("/_next")) {
       return NextResponse.next();
     }
@@ -32,7 +40,7 @@ export async function middleware(request: NextRequest) {
       url.searchParams.set("am_id", slug);
       return NextResponse.rewrite(url);
     }
-    return NextResponse.redirect(`${PORTAL_URL}${pathname}`);
+    return NextResponse.redirect(PORTAL_URL);
   }
 
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));

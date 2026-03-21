@@ -12,8 +12,21 @@ const PUBLIC_PATHS = [
   "/api/affiliates/check-slug",
 ];
 
+const TRACKING_HOST = process.env.NEXT_PUBLIC_TRACKING_DOMAIN
+  ? new URL(process.env.NEXT_PUBLIC_TRACKING_DOMAIN).hostname
+  : null;
+const PORTAL_URL = process.env.NEXT_PUBLIC_APP_URL || "https://affiliate.hypertune.gg";
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const host = request.headers.get("host")?.split(":")[0];
+
+  if (TRACKING_HOST && host === TRACKING_HOST) {
+    if (pathname.startsWith("/api/track") || pathname.startsWith("/_next")) {
+      return NextResponse.next();
+    }
+    return NextResponse.redirect(`${PORTAL_URL}${pathname}`);
+  }
 
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
   if (isPublic || pathname === "/") {

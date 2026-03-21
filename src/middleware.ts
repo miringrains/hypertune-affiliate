@@ -25,6 +25,13 @@ export async function middleware(request: NextRequest) {
     if (pathname.startsWith("/api/track") || pathname.startsWith("/_next")) {
       return NextResponse.next();
     }
+    const slug = pathname.slice(1);
+    if (slug && !slug.includes("/")) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/api/track/click";
+      url.searchParams.set("am_id", slug);
+      return NextResponse.rewrite(url);
+    }
     return NextResponse.redirect(`${PORTAL_URL}${pathname}`);
   }
 

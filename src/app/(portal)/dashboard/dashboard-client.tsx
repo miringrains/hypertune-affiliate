@@ -179,10 +179,11 @@ function ReferralLinkBar({ affiliate }: { affiliate: Tables<"affiliates"> }) {
   const [slug, setSlug] = useState(affiliate.slug);
   const [saving, setSaving] = useState(false);
 
-  const trackingDomain =
-    process.env.NEXT_PUBLIC_TRACKING_DOMAIN ||
-    (typeof window !== "undefined" ? window.location.origin : "");
-  const referralLink = `${trackingDomain}/api/track/click?am_id=${slug}`;
+  const trackingDomain = process.env.NEXT_PUBLIC_TRACKING_DOMAIN;
+  const appUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const referralLink = trackingDomain
+    ? `${trackingDomain}/${slug}`
+    : `${appUrl}/api/track/click?am_id=${slug}`;
 
   async function copyLink() {
     await navigator.clipboard.writeText(referralLink);

@@ -51,6 +51,7 @@ interface WeeklyPoint {
 interface SourceRow {
   name: string;
   slug: string;
+  clicks: number;
   leads: number;
   customers: number;
   earned: number;
@@ -107,7 +108,6 @@ function fmtCurrency(amount: number) {
 
 function SourceBreakdownSection({ sourceBreakdown }: { sourceBreakdown: SourceRow[] }) {
   const [expandedSlug, setExpandedSlug] = useState<string | null>(null);
-  const totalLeads = Math.max(sourceBreakdown.reduce((s, r) => s + r.leads, 0), 1);
   const maxLeads = Math.max(...sourceBreakdown.map((r) => r.leads), 1);
 
   return (
@@ -115,7 +115,9 @@ function SourceBreakdownSection({ sourceBreakdown }: { sourceBreakdown: SourceRo
       <h3 className="text-[13px] font-medium text-zinc-300 mb-4">Source Breakdown</h3>
       <div className="space-y-1">
         {sourceBreakdown.map((src) => {
-          const convRate = src.leads > 0 ? ((src.customers / src.leads) * 100).toFixed(1) : "0.0";
+          const convRate = src.leads > 0
+            ? Math.min((src.customers / src.leads) * 100, 100).toFixed(1)
+            : "0.0";
           const barWidth = ((src.leads / maxLeads) * 100).toFixed(0);
           const isExpanded = expandedSlug === src.slug;
 
@@ -137,10 +139,12 @@ function SourceBreakdownSection({ sourceBreakdown }: { sourceBreakdown: SourceRo
                     className="h-full rounded-md flex items-center px-2"
                     style={{
                       width: `${Math.max(Number(barWidth), 4)}%`,
-                      background: src.isDirect ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.08)",
+                      background: src.isDirect
+                        ? "rgba(255,255,255,0.04)"
+                        : "linear-gradient(90deg, #dc2626, #991b1b)",
                     }}
                   >
-                    <span className="text-[10px] font-medium text-zinc-400 whitespace-nowrap">
+                    <span className={`text-[10px] font-medium whitespace-nowrap ${src.isDirect ? "text-zinc-400" : "text-white"}`}>
                       {src.leads} leads · {src.customers} customers
                     </span>
                   </div>
@@ -149,20 +153,26 @@ function SourceBreakdownSection({ sourceBreakdown }: { sourceBreakdown: SourceRo
               </button>
 
               {isExpanded && !src.isDirect && (
-                <div className="ml-32 mr-14 mb-2 mt-1 grid grid-cols-3 gap-3 rounded-lg border border-zinc-700/50 bg-black p-3">
+                <div className="ml-32 mr-14 mb-2 mt-1 grid grid-cols-5 gap-3 rounded-lg border border-zinc-700/50 bg-black p-3">
+                  <div>
+                    <p className="text-[18px] font-semibold text-white">{src.clicks.toLocaleString()}</p>
+                    <p className="text-[10px] text-zinc-500">Clicks</p>
+                  </div>
+                  <div>
+                    <p className="text-[18px] font-semibold text-white">{src.leads.toLocaleString()}</p>
+                    <p className="text-[10px] text-zinc-500">Leads</p>
+                  </div>
+                  <div>
+                    <p className="text-[18px] font-semibold text-white">{src.customers.toLocaleString()}</p>
+                    <p className="text-[10px] text-zinc-500">Customers</p>
+                  </div>
                   <div>
                     <p className="text-[18px] font-semibold text-white">{convRate}%</p>
-                    <p className="text-[10px] text-zinc-500">Conversion rate</p>
+                    <p className="text-[10px] text-zinc-500">Conversion</p>
                   </div>
                   <div>
                     <p className="text-[18px] font-semibold text-white">{fmtCurrency(src.earned)}</p>
-                    <p className="text-[10px] text-zinc-500">Revenue earned</p>
-                  </div>
-                  <div>
-                    <p className="text-[18px] font-semibold text-white">
-                      {src.customers > 0 ? fmtCurrency(src.earned / src.customers) : "—"}
-                    </p>
-                    <p className="text-[10px] text-zinc-500">Avg per customer</p>
+                    <p className="text-[10px] text-zinc-500">Revenue</p>
                   </div>
                 </div>
               )}

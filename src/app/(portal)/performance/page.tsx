@@ -60,6 +60,7 @@ export default async function PerformancePage() {
         { data: funnelRows },
         { data: trendRows },
         { data: subStats },
+        { data: subClickRows },
         { data: recentLeads },
         { data: recentCustomers },
       ] = await Promise.all([
@@ -68,17 +69,20 @@ export default async function PerformancePage() {
         hasSubAffiliates
           ? svcInner.rpc("get_sub_affiliate_stats", { sub_ids: ids })
           : Promise.resolve({ data: null }),
+        hasSubAffiliates
+          ? svcInner.rpc("count_clicks_by_affiliate", { aff_ids: ids })
+          : Promise.resolve({ data: null }),
         svcInner.rpc("get_recent_leads", { aff_ids: ids, p_limit: 200 }),
         svcInner.rpc("get_recent_customers", { aff_ids: ids, p_limit: 200 }),
       ]);
 
-      return { funnelRows, trendRows, subStats, recentLeads, recentCustomers };
+      return { funnelRows, trendRows, subStats, subClickRows, recentLeads, recentCustomers };
     },
     [`perf-${affiliate.id}`],
     { revalidate: 60 },
   );
 
-  const { funnelRows, trendRows, subStats, recentLeads, recentCustomers } =
+  const { funnelRows, trendRows, subStats, subClickRows, recentLeads, recentCustomers } =
     await loadData(affiliate.id, allIds, thirtyDaysAgo);
 
   const f = funnelRows?.[0];
@@ -128,7 +132,14 @@ export default async function PerformancePage() {
   });
 
   // Source breakdown for Tier 1
-  let sourceBreakdown: { name: string; slug: string; leads: number; customers: number; earned: number; isDirect: boolean }[] = [];
+  const subClickMap: Record<string, number> = {};
+  if (subClickRows) {
+    for (const r of subClickRows as { affiliate_id: string; click_count: number }[]) {
+      subClickMap[r.affiliate_id] = Number(r.click_count);
+    }
+  }
+
+  let sourceBreakdown: { name: string; slug: string; clicks: number; leads: number; customers: number; earned: number; isDirect: boolean }[] = [];
   if (hasSubAffiliates && subStats) {
     sourceBreakdown = (subStats as { affiliate_id: string; lead_count: number; customer_count: number; earned: number }[])
       .map((s) => {
@@ -142,6 +153,7 @@ export default async function PerformancePage() {
         return {
           name: subIdMap[s.affiliate_id] ?? "Unknown",
           slug: subSlugMap[s.affiliate_id] ?? "",
+          clicks: subClickMap[s.affiliate_id] ?? 0,
           leads: withBaseline(blLeads, dbLeads),
           customers: withBaseline(blCustomers, dbCustomers),
           earned: withBaselineMoney(blPaid + blOwed, dbEarned),

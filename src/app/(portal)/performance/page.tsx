@@ -25,18 +25,20 @@ export default async function PerformancePage() {
   let subSlugMap: Record<string, string> = {};
   let subBaselineMap: Record<string, number> = {};
   let subBaselineCustomersMap: Record<string, number> = {};
+  let subBaselineClicksMap: Record<string, number> = {};
   let subBaselinePaidMap: Record<string, number> = {};
   let subBaselineOwedMap: Record<string, number> = {};
   if (hasSubAffiliates) {
     const { data: subs } = await svc
       .from("affiliates")
-      .select("id, name, slug, baseline_leads, baseline_customers, baseline_paid, baseline_owed")
+      .select("id, name, slug, baseline_leads, baseline_customers, baseline_clicks, baseline_paid, baseline_owed")
       .eq("parent_id", affiliate.id);
     if (subs) {
       subIdMap[affiliate.id] = "You (Direct)";
       subSlugMap[affiliate.id] = affiliate.slug;
       subBaselineMap[affiliate.id] = affiliate.baseline_leads ?? 0;
       subBaselineCustomersMap[affiliate.id] = affiliate.baseline_customers ?? 0;
+      subBaselineClicksMap[affiliate.id] = affiliate.baseline_clicks ?? 0;
       subBaselinePaidMap[affiliate.id] = Number(affiliate.baseline_paid ?? 0);
       subBaselineOwedMap[affiliate.id] = Number(affiliate.baseline_owed ?? 0);
       for (const s of subs) {
@@ -44,6 +46,7 @@ export default async function PerformancePage() {
         subSlugMap[s.id] = s.slug;
         subBaselineMap[s.id] = s.baseline_leads ?? 0;
         subBaselineCustomersMap[s.id] = s.baseline_customers ?? 0;
+        subBaselineClicksMap[s.id] = s.baseline_clicks ?? 0;
         subBaselinePaidMap[s.id] = Number(s.baseline_paid ?? 0);
         subBaselineOwedMap[s.id] = Number(s.baseline_owed ?? 0);
         allIds.push(s.id);
@@ -153,7 +156,7 @@ export default async function PerformancePage() {
         return {
           name: subIdMap[s.affiliate_id] ?? "Unknown",
           slug: subSlugMap[s.affiliate_id] ?? "",
-          clicks: subClickMap[s.affiliate_id] ?? 0,
+          clicks: withBaselineClicks(subBaselineClicksMap[s.affiliate_id] ?? 0, subClickMap[s.affiliate_id] ?? 0),
           leads: withBaseline(blLeads, dbLeads),
           customers: withBaseline(blCustomers, dbCustomers),
           earned: withBaselineMoney(blPaid + blOwed, dbEarned),

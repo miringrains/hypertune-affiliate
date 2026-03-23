@@ -47,7 +47,8 @@ export default function AdminCampaignsPage() {
   const [newName, setNewName] = useState("");
   const [newSlug, setNewSlug] = useState("");
 
-  const trackingUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const trackingDomain = process.env.NEXT_PUBLIC_TRACKING_DOMAIN;
+  const appUrl = typeof window !== "undefined" ? window.location.origin : "";
 
   const fetchCampaigns = useCallback(async () => {
     try {
@@ -115,7 +116,9 @@ export default function AdminCampaignsPage() {
   }
 
   async function copyTrackingUrl(slug: string, campaignId: string) {
-    const url = `${trackingUrl}/api/track/click?am_id=${slug}`;
+    const url = trackingDomain
+      ? `${trackingDomain}/${slug}`
+      : `${appUrl}/api/track/click?am_id=${slug}`;
     await navigator.clipboard.writeText(url);
     setCopiedId(campaignId);
     toast.success("Tracking URL copied!");
@@ -200,8 +203,9 @@ export default function AdminCampaignsPage() {
                 </div>
               </div>
               <p className="text-[12px] text-muted-foreground">
-                Tracking URL: {trackingUrl}/api/track/click?am_id=
-                {newSlug || "..."}
+                Tracking URL: {trackingDomain
+                  ? `${trackingDomain}/${newSlug || "..."}`
+                  : `${appUrl}/api/track/click?am_id=${newSlug || "..."}`}
               </p>
               <div className="flex gap-2">
                 <Button type="submit" disabled={creating || !newName.trim()}>
@@ -258,7 +262,7 @@ export default function AdminCampaignsPage() {
                         </span>
                       </div>
                       <p className="text-[12px] font-mono text-muted-foreground truncate">
-                        {trackingUrl}/api/track/click?am_id={c.slug}
+                        {trackingDomain ? `${trackingDomain}/${c.slug}` : `${appUrl}/api/track/click?am_id=${c.slug}`}
                       </p>
                       <p className="text-[11px] text-muted-foreground mt-1">
                         Created{" "}

@@ -47,7 +47,8 @@ export default function CampaignDetailPage() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
-  const trackingUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const trackingDomain = process.env.NEXT_PUBLIC_TRACKING_DOMAIN;
+  const appUrl = typeof window !== "undefined" ? window.location.origin : "";
 
   useEffect(() => {
     async function load() {
@@ -68,7 +69,9 @@ export default function CampaignDetailPage() {
 
   async function copyUrl() {
     if (!data) return;
-    const url = `${trackingUrl}/api/track/click?am_id=${data.campaign.slug}`;
+    const url = trackingDomain
+      ? `${trackingDomain}/${data.campaign.slug}`
+      : `${appUrl}/api/track/click?am_id=${data.campaign.slug}`;
     await navigator.clipboard.writeText(url);
     setCopied(true);
     toast.success("Tracking URL copied!");
@@ -134,7 +137,7 @@ export default function CampaignDetailPage() {
         <CardContent className="py-3 px-5">
           <p className="text-[11px] text-muted-foreground mb-1">Tracking URL</p>
           <p className="text-[13px] font-mono break-all">
-            {trackingUrl}/api/track/click?am_id={campaign.slug}
+            {trackingDomain ? `${trackingDomain}/${campaign.slug}` : `${appUrl}/api/track/click?am_id=${campaign.slug}`}
           </p>
         </CardContent>
       </Card>
